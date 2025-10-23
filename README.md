@@ -2,9 +2,8 @@
 
 # After cloning
 1. This repo uses submodules, run this after cloning: `git submodule update --init --recursive`
-
-# How to use?
-1. Always, source the setup file before doing anything: `source setup.sh`
+2. Install required tools, see section: [Installation of Tools](https://github.com/jona1115/SPEX-128?tab=readme-ov-file#installation-of-tools)
+3. Source the setup file, everytime, before doing anything: `source setup.sh`
 
 # Creating/running SVUnit Tests
 ```sh
@@ -24,7 +23,7 @@ runSVUnit -s verilator -f path/to/filelist.f # If you want to run svunit manuall
 ./svunit_run.sh # This script is just cool, use it instead of manually 
 ```
 ### Test Driven Development (TDD)
-I want to dedicate this section to describing my testing/developing philosophy. I use TDD, it works, and in my opinion, creates a positive feedback loop of self-documenting, and self-testing code. Not to mention easier to CI. So when you are reading the code, maybe take time to also look over the test. The code are derived by the test, not the other way around.
+I want to dedicate this section to describing my testing/developing philosophy. I use TDD, it works, and in my opinion, creates a positive feedback loop of self-documenting, and self-testing code. Not to mention easier to CI. So when you are reading the code, maybe take time to also look over the test. This is because the code is derived by the tests, not the other way around.
 
 
 # Installation of Tools
