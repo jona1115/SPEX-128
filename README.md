@@ -28,7 +28,7 @@ Installation commands:
 ```sh
 git clone git@github.com:svunit/svunit.git
 cd svunit
-git checkout v3.38.0
+git checkout v3.38.0 # this tag is tried and true
 
 # Commands below are from the README.md of SVUnit:
 export SVUNIT_INSTALL=`pwd`
@@ -40,7 +40,7 @@ source Setup.bsh
 ```sh
 git clone git@github.com:verilator/verilator.git
 cd verilator
-git checkout v5.040
+git checkout v5.040 # this tag is tried and true
 
 # Commands below are from the verilator installation docs
 # Prerequisites:
