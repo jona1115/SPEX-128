@@ -6,14 +6,8 @@
 # How to use?
 1. Always, source the setup file before doing anything: `source setup.sh`
 
-# Creating SVUnit Tests
+# Creating/running SVUnit Tests
 ```sh
-# Setup environment:
-# cd into your svunit folder
-# export SVUNIT_INSTALL=`pwd`
-# export PATH=$PATH:$SVUNIT_INSTALL"/bin"
-# source Setup.bsh
-
 # To create a test when you dont have the UUT (Unit Under Test) code yet
 create_unit_test.pl -module_name name_of_module_you_wanna_test
 

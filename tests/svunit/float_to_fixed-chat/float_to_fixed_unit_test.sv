@@ -1,15 +1,20 @@
 `include "svunit_defines.svh"
 
-module float_to_fixed_unit_test;
+module special_type_test_unit_test_single_mode;
     import svunit_pkg::svunit_testcase;
+    import float_flag_pkg::*;
 
     string name = "float_to_fixed_ut";
     svunit_testcase svunit_ut;
 
     // DUT IO
-    logic [127:0]     s_i_float;
-    logic [3:0]       s_i_ctrl;
-    logic [127:0]     s_o_fixed;
+    logic [127:0]   s_i_float;
+    logic [3:0]     s_i_ctrl;
+    logic [127:0]   s_o_fixed;
+    logic [2:0]     s_o_float_type_a,
+                    s_o_float_type_b,
+                    s_o_float_type_c,
+                    s_o_float_type_d;
 
     //===================================
     // This is the UUT that we're 
@@ -18,7 +23,11 @@ module float_to_fixed_unit_test;
     float_to_fixed my_float_to_fixed(
         .i_float(s_i_float),
         .i_ctrl(s_i_ctrl),
-        .o_fixed(s_o_fixed)
+        .o_fixed(s_o_fixed),
+        .o_float_type_a(s_o_float_type_a),
+        .o_float_type_b(s_o_float_type_b),
+        .o_float_type_c(s_o_float_type_c),
+        .o_float_type_d(s_o_float_type_d)
     );
 
 
@@ -68,12 +77,7 @@ module float_to_fixed_unit_test;
     //===================================
     `SVUNIT_TESTS_BEGIN
 
-        `SVTEST(passthrough_test0)
-            s_i_float = 128'hDEADBEEF;
-            // $display("s_i_float:%x", s_i_float);
-            #1;
-            `FAIL_UNLESS_EQUAL(s_o_fixed, s_i_float)
-        `SVTEST_END
+        `include "cases/pass_through_test.svh"
 
     `SVUNIT_TESTS_END
 
