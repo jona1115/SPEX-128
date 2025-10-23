@@ -24,6 +24,7 @@
 
 
 module float_to_fixed #() (
+    input   logic           i_clk,
     input   logic [127:0]   i_float,
     input   logic [3:0]     i_ctrl,
     output  logic [127:0]   o_fixed,

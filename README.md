@@ -18,8 +18,11 @@ create_unit_test.pl name_of_module_you_wanna_test.sv
 ./gen_filelist.sh # Run this in project root
 
 # Run the test using verilor simulator
-runSVUnit -s verilator -f path/to/filelist.f
-# e.g: jonathan@jonathan-msi:~/SPEX-128/tests/svunit/float_to_fixed_0 $ runSVUnit -s verilator -f ../filelist.f
+# cd to tests/svunit/float_to_fixed
+runSVUnit -s verilator -f path/to/filelist.f # If you want to run svunit manually
+# --- OR ---
+./svunit_run.sh # This script is just cool, use it instead of manually 
+
 ```
 
 # Installation of Tools
