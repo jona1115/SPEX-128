@@ -1,0 +1,6 @@
+<testsuites>
+  <testsuite name="__ts">
+    <testcase classname="float_to_fixed_ut" name="passthrough_test0">
+    </testcase>
+  </testsuite>
+</testsuites>
