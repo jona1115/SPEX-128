@@ -6,7 +6,7 @@
 +*
 
 # My script generate files:
-filelist.f
+# filelist.f
 
 # But keep .git*
 !.git*

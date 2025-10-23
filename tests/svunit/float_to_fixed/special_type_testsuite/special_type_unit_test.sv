@@ -2,20 +2,20 @@
 
 module special_type_unit_test;
     import svunit_pkg::svunit_testcase;
+
     import float_flag_pkg::*;
+    import sp_mode_pkg::*;
+    import float_metadata_pkg::*;
 
     string name = "float_to_fixed_ut";
     svunit_testcase svunit_ut;
 
     // DUT IO
-    logic           s_i_clk;
-    logic [127:0]   s_i_float;
-    logic [3:0]     s_i_ctrl;
-    logic [127:0]   s_o_fixed;
-    logic [2:0]     s_o_float_type_a,
-                    s_o_float_type_b,
-                    s_o_float_type_c,
-                    s_o_float_type_d;
+    logic               s_i_clk;
+    logic [127:0]       s_i_float;
+    logic [3:0]         s_i_ctrl;
+    logic [127:0]       s_o_fixed;
+    float_metadata_t    s_o_metadata;
 
     //===================================
     // This is the UUT that we're 
@@ -26,10 +26,7 @@ module special_type_unit_test;
         .i_float(s_i_float),
         .i_ctrl(s_i_ctrl),
         .o_fixed(s_o_fixed),
-        .o_float_type_a(s_o_float_type_a),
-        .o_float_type_b(s_o_float_type_b),
-        .o_float_type_c(s_o_float_type_c),
-        .o_float_type_d(s_o_float_type_d)
+        .o_metadata(s_o_metadata)
     );
 
 

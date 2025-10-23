@@ -22,25 +22,34 @@
  * 
  */
 
+// `include "float_metadata_pkg.svh"
 
 module float_to_fixed #() (
-    input   logic           i_clk,
-    input   logic [127:0]   i_float,
-    input   logic [3:0]     i_ctrl,
-    output  logic [127:0]   o_fixed,
-    output  logic [2:0]     o_float_type_a,
-                            o_float_type_b,
-                            o_float_type_c,
-                            o_float_type_d
+    input   logic               i_clk,
+    input   logic [127:0]       i_float,
+    input   logic [3:0]         i_ctrl,
+    output  logic [127:0]       o_fixed,
+    output  float_metadata_t    o_metadata
 );
 
 import float_flag_pkg::*;
+import sp_mode_pkg::*;
+import float_metadata_pkg::*;
+
+// Signal definitions
+logic [1:0] s_current_sp;
+
+always_comb begin : sp_mode_determiner
+    case (i_ctrl[1:0])
+        2'b00   : o_metadata.sp_mode = SINGLE_MODE;
+        2'b01   : o_metadata.sp_mode = TWO_SP_MODE;
+        2'b10   : o_metadata.sp_mode = FOUR_SP_MODE;
+        2'b11   : o_metadata.sp_mode = INVALID_SP_MODE;
+        default : o_metadata.sp_mode = INVALID_SP_MODE;
+    endcase
+end
 
 // Passthrough (temp)
 assign o_fixed = i_float;
-assign o_float_type_a = NA;
-assign o_float_type_b = NA;
-assign o_float_type_c = NA;
-assign o_float_type_d = NA;
 
 endmodule
