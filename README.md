@@ -22,8 +22,10 @@ create_unit_test.pl name_of_module_you_wanna_test.sv
 runSVUnit -s verilator -f path/to/filelist.f # If you want to run svunit manually
 # --- OR ---
 ./svunit_run.sh # This script is just cool, use it instead of manually 
-
 ```
+### Test Driven Development (TDD)
+I want to dedicate this section to describing my testing/developing philosophy. I use TDD, it works, and in my opinion, creates a positive feedback loop of self-documenting, and self-testing code. Not to mention easier to CI. So when you are reading the code, maybe take time to also look over the test. The code are derived by the test, not the other way around.
+
 
 # Installation of Tools
 ## SVUnit
