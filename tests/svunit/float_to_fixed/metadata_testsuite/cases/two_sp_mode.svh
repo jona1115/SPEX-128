@@ -30,19 +30,33 @@
 
 // Below is ChatGPT generated based off single_mode.svh
 
-// ++/- ZERO
-`SVTEST(two_mode_0)
+//============================================================
+// TWO-SP MODE (binary64 x2) special-type detection tests
+// Mode select: s_i_ctrl[1:0] = 2'b01
+// Lane mapping (MSB -> LSB):
+//   Lane A (float_type_a): s_i_float[127]      sign
+//                          s_i_float[126:116]  exp[10:0]
+//                          s_i_float[115:64]   frac[51:0]
+//
+//   Lane B (float_type_b): s_i_float[63]       sign
+//                          s_i_float[62:52]    exp[10:0]
+//                          s_i_float[51:0]     frac[51:0]
+// Lanes C/D are inactive in two-SP mode and must be NA.
+//============================================================
+
+// +0 / +0
+`SVTEST(two_sp_mode_0)
     s_i_ctrl[1:0] = 2'b01;
 
-    // lane B (+0)
-    s_i_float[127]     = '0;         // sign
-    s_i_float[126:116] = 11'd0;      // exp
-    s_i_float[115:64]  = '0;         // frac
+    // Lane A: +0
+    s_i_float[127]      = '0;
+    s_i_float[126:116]  = 11'd0;
+    s_i_float[115:64]   = '0;
 
-    // lane A (+0)
-    s_i_float[63]      = '0;
-    s_i_float[62:52]   = 11'd0;
-    s_i_float[51:0]    = '0;
+    // Lane B: +0
+    s_i_float[63]       = '0;
+    s_i_float[62:52]    = 11'd0;
+    s_i_float[51:0]     = '0;
 
     #1;
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, ZERO)
@@ -51,18 +65,19 @@
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_d, NA)
 `SVTEST_END
 
-`SVTEST(two_mode_1)
+// -0 / +0  (zeros are signless => ZERO for both)
+`SVTEST(two_sp_mode_1)
     s_i_ctrl[1:0] = 2'b01;
 
-    // lane B (+0)
-    s_i_float[127]     = '0;
-    s_i_float[126:116] = 11'd0;
-    s_i_float[115:64]  = '0;
+    // Lane A: -0
+    s_i_float[127]      = '1;
+    s_i_float[126:116]  = 11'd0;
+    s_i_float[115:64]   = '0;
 
-    // lane A (-0)
-    s_i_float[63]      = '1;
-    s_i_float[62:52]   = 11'd0;
-    s_i_float[51:0]    = '0;
+    // Lane B: +0
+    s_i_float[63]       = '0;
+    s_i_float[62:52]    = 11'd0;
+    s_i_float[51:0]     = '0;
 
     #1;
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, ZERO)
@@ -71,19 +86,19 @@
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_d, NA)
 `SVTEST_END
 
-// +/- INF
-`SVTEST(two_mode_2)
+// +INF / -INF
+`SVTEST(two_sp_mode_2)
     s_i_ctrl[1:0] = 2'b01;
 
-    // lane B (-inf)
-    s_i_float[127]     = '1;
-    s_i_float[126:116] = 11'h7FF;
-    s_i_float[115:64]  = '0;
+    // Lane A: +INF
+    s_i_float[127]      = '0;
+    s_i_float[126:116]  = 11'h7FF;
+    s_i_float[115:64]   = '0;
 
-    // lane A (+inf)
-    s_i_float[63]      = '0;
-    s_i_float[62:52]   = 11'h7FF;
-    s_i_float[51:0]    = '0;
+    // Lane B: -INF
+    s_i_float[63]       = '1;
+    s_i_float[62:52]    = 11'h7FF;
+    s_i_float[51:0]     = '0;
 
     #1;
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, POS_INF)
@@ -92,19 +107,19 @@
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_d, NA)
 `SVTEST_END
 
-// +/- NaN
-`SVTEST(two_mode_3)
+// NaN / NaN  (sign ignored for NaN)
+`SVTEST(two_sp_mode_3)
     s_i_ctrl[1:0] = 2'b01;
 
-    // lane B (+NaN)
-    s_i_float[127]     = '0;
-    s_i_float[126:116] = 11'h7FF;
-    s_i_float[115:64]  = 52'd5; // nonzero payload
+    // Lane A: NaN
+    s_i_float[127]      = '0;
+    s_i_float[126:116]  = 11'h7FF;
+    s_i_float[115:64]   = 'd5; // non-zero frac
 
-    // lane A (-NaN) (sign irrelevant)
-    s_i_float[63]      = '1;
-    s_i_float[62:52]   = 11'h7FF;
-    s_i_float[51:0]    = 52'd9; // nonzero payload
+    // Lane B: NaN
+    s_i_float[63]       = '1;
+    s_i_float[62:52]    = 11'h7FF;
+    s_i_float[51:0]     = 'd9; // non-zero frac
 
     #1;
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, NAN)
@@ -113,60 +128,40 @@
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_d, NA)
 `SVTEST_END
 
-// +/- Denormal
-`SVTEST(two_mode_4)
+// +Denormal / -Denormal
+`SVTEST(two_sp_mode_4)
     s_i_ctrl[1:0] = 2'b01;
 
-    // lane B (-denorm)
-    s_i_float[127]     = '1;
-    s_i_float[126:116] = 11'd0;
-    s_i_float[115:64]  = 52'd7; // nonzero
+    // Lane A: +denormal
+    s_i_float[127]      = '0;
+    s_i_float[126:116]  = 11'd0;
+    s_i_float[115:64]   = 'd7; // non-zero frac
 
-    // lane A (+denorm)
-    s_i_float[63]      = '0;
-    s_i_float[62:52]   = 11'd0;
-    s_i_float[51:0]    = 52'd3; // nonzero
+    // Lane B: -denormal
+    s_i_float[63]       = '1;
+    s_i_float[62:52]    = 11'd0;
+    s_i_float[51:0]     = 'd11; // non-zero frac
 
     #1;
-    `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, DENORMAL)
-    `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, DENORMAL)
+    `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, POS_DENORMAL)
+    `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, NEG_DENORMAL)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_c, NA)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_d, NA)
 `SVTEST_END
 
-// NORMALs (moderate exponents)
-`SVTEST(two_mode_5)
+// Normal(+)/Normal(-)
+`SVTEST(two_sp_mode_5)
     s_i_ctrl[1:0] = 2'b01;
 
-    // lane B (+normal)
-    s_i_float[127]     = '0;
-    s_i_float[126:116] = 11'd10;
-    s_i_float[115:64]  = 52'd5;
+    // Lane A: normal (+)
+    s_i_float[127]      = '0;
+    s_i_float[126:116]  = 11'd10;
+    s_i_float[115:64]   = 'd1234;
 
-    // lane A (+normal)
-    s_i_float[63]      = '0;
-    s_i_float[62:52]   = 11'd12;
-    s_i_float[51:0]    = 52'd11;
-
-    #1;
-    `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, NORMAL)
-    `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, NORMAL)
-    `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_c, NA)
-    `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_d, NA)
-`SVTEST_END
-
-`SVTEST(two_mode_6)
-    s_i_ctrl[1:0] = 2'b01;
-
-    // lane B (+normal)
-    s_i_float[127]     = '0;
-    s_i_float[126:116] = 11'd100;
-    s_i_float[115:64]  = 52'd12345;
-
-    // lane A (-normal)
-    s_i_float[63]      = '1;
-    s_i_float[62:52]   = 11'd55;
-    s_i_float[51:0]    = 52'd6789;
+    // Lane B: normal (-)
+    s_i_float[63]       = '1;
+    s_i_float[62:52]    = 11'd100;
+    s_i_float[51:0]     = 'd999;
 
     #1;
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, NORMAL)
@@ -175,65 +170,44 @@
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_d, NA)
 `SVTEST_END
 
-// NORMAL near max exponent (7FE != 7FF)
-`SVTEST(two_mode_7)
+// Normal near max exp / +0
+`SVTEST(two_sp_mode_6)
     s_i_ctrl[1:0] = 2'b01;
 
-    // lane B (max-normal)
-    s_i_float[127]     = '1;          // sign doesn't change NORMAL
-    s_i_float[126:116] = 11'h7FE;
-    s_i_float[115:64]  = 52'd8324;
+    // Lane A: normal near max exponent (0x7FE)
+    s_i_float[127]      = '1;       // sign doesn't change NORMAL
+    s_i_float[126:116]  = 11'h7FE;
+    s_i_float[115:64]   = 'd123;
 
-    // lane A (max-normal)
-    s_i_float[63]      = '0;
-    s_i_float[62:52]   = 11'h7FE;
-    s_i_float[51:0]    = 52'd1;
+    // Lane B: +0
+    s_i_float[63]       = '0;
+    s_i_float[62:52]    = 11'd0;
+    s_i_float[51:0]     = '0;
 
     #1;
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, NORMAL)
-    `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, NORMAL)
+    `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, ZERO)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_c, NA)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_d, NA)
 `SVTEST_END
 
-// Mixed: A=NaN, B=normal
-`SVTEST(two_mode_8)
+// NaN / Normal(+)
+`SVTEST(two_sp_mode_7)
     s_i_ctrl[1:0] = 2'b01;
 
-    // lane B normal
-    s_i_float[127]     = '0;
-    s_i_float[126:116] = 11'd20;
-    s_i_float[115:64]  = 52'd55;
+    // Lane A: NaN
+    s_i_float[127]      = '1;
+    s_i_float[126:116]  = 11'h7FF;
+    s_i_float[115:64]   = 'd42; // non-zero
 
-    // lane A NaN
-    s_i_float[63]      = '0;
-    s_i_float[62:52]   = 11'h7FF;
-    s_i_float[51:0]    = 52'd999;
+    // Lane B: normal (+)
+    s_i_float[63]       = '0;
+    s_i_float[62:52]    = 11'd30;
+    s_i_float[51:0]     = 'd55;
 
     #1;
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, NAN)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, NORMAL)
-    `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_c, NA)
-    `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_d, NA)
-`SVTEST_END
-
-// Mixed: A=denorm, B=-0
-`SVTEST(two_mode_9)
-    s_i_ctrl[1:0] = 2'b01;
-
-    // lane B -0
-    s_i_float[127]     = '1;
-    s_i_float[126:116] = 11'd0;
-    s_i_float[115:64]  = '0;
-
-    // lane A denorm
-    s_i_float[63]      = '0;
-    s_i_float[62:52]   = 11'd0;
-    s_i_float[51:0]    = 52'd7;
-
-    #1;
-    `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, DENORMAL)
-    `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, ZERO)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_c, NA)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_d, NA)
 `SVTEST_END
