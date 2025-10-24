@@ -39,6 +39,8 @@ module float_to_fixed #() (
 // Signal definitions
 sp_mode_t s_current_sp;
 
+// Determine what sp (subword parallel) mode we are in based on input control
+// signals.
 always_comb begin : sp_mode_determiner
     case (i_ctrl[1:0])
         2'b00   : s_current_sp = SINGLE_MODE;
@@ -49,13 +51,48 @@ always_comb begin : sp_mode_determiner
     endcase
 end
 
+// Determine what the output float types are based on s_current_sp
+always_comb begin : float_type_determiner
+    case (s_current_sp)
+        SINGLE_MODE: begin
+            o_metadata.float_type_a = NORMAL;
+            o_metadata.float_type_b = NA;
+            o_metadata.float_type_c = NA;
+            o_metadata.float_type_d = NA;
+        end
+
+        TWO_SP_MODE: begin
+            o_metadata.float_type_a = NA; // TODO
+            o_metadata.float_type_b = NA;
+            o_metadata.float_type_c = NA;
+            o_metadata.float_type_d = NA;
+        end
+
+        FOUR_SP_MODE: begin
+            o_metadata.float_type_a = NA; // TODO
+            o_metadata.float_type_b = NA;
+            o_metadata.float_type_c = NA;
+            o_metadata.float_type_d = NA;
+        end
+
+        INVALID_SP_MODE: begin
+            o_metadata.float_type_a = NA; // TODO
+            o_metadata.float_type_b = NA;
+            o_metadata.float_type_c = NA;
+            o_metadata.float_type_d = NA;
+        end
+
+        default: begin
+            o_metadata.float_type_a = NA;
+            o_metadata.float_type_b = NA;
+            o_metadata.float_type_c = NA;
+            o_metadata.float_type_d = NA;
+        end
+    endcase
+end
 
 always_comb begin
-    // s_current_sp = sp_mode_t'(i_ctrl[1:0]);
-    // s_current_sp = sp_mode_t'(2'b10);
     o_metadata.sp_mode = s_current_sp;
-
-    // o_metadata.float_type_a = float_flag_t'(i_ctrl[1:0]); //temp
 
     // Passthrough (temp)
     o_fixed = i_float;
