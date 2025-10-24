@@ -24,6 +24,10 @@
 
 // `include "float_metadata_pkg.svh"
 
+import float_flag_pkg::*;
+import sp_mode_pkg::*;
+import float_metadata_pkg::*;
+
 module float_to_fixed #() (
     input   logic               i_clk,
     input   logic [127:0]       i_float,
@@ -32,30 +36,26 @@ module float_to_fixed #() (
     output  float_metadata_t    o_metadata
 );
 
-import float_flag_pkg::*;
-import sp_mode_pkg::*;
-import float_metadata_pkg::*;
-
 // Signal definitions
 sp_mode_t s_current_sp;
 
-// always_comb begin : sp_mode_determiner
-//     case (i_ctrl[1:0])
-//         2'b00   : s_current_sp = SINGLE_MODE;
-//         2'b01   : s_current_sp = TWO_SP_MODE;
-//         2'b10   : s_current_sp = FOUR_SP_MODE;
-//         2'b11   : s_current_sp = INVALID_SP_MODE;
-//         default : s_current_sp = INVALID_SP_MODE;
-//     endcase
-// end
+always_comb begin : sp_mode_determiner
+    case (i_ctrl[1:0])
+        2'b00   : s_current_sp = SINGLE_MODE;
+        2'b01   : s_current_sp = TWO_SP_MODE;
+        2'b10   : s_current_sp = FOUR_SP_MODE;
+        2'b11   : s_current_sp = INVALID_SP_MODE;
+        default : s_current_sp = INVALID_SP_MODE;
+    endcase
+end
 
 
 always_comb begin
-    s_current_sp = sp_mode_t'(i_ctrl[1:0]);
+    // s_current_sp = sp_mode_t'(i_ctrl[1:0]);
     // s_current_sp = sp_mode_t'(2'b10);
     o_metadata.sp_mode = s_current_sp;
 
-    o_metadata.float_type_a = float_flag_t'(i_ctrl[1:0]); //temp
+    // o_metadata.float_type_a = float_flag_t'(i_ctrl[1:0]); //temp
 
     // Passthrough (temp)
     o_fixed = i_float;

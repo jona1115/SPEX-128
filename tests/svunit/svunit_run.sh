@@ -13,7 +13,7 @@ set -u -o pipefail
 
 usage() {
   cat <<'EOF'
-Usage: svunit_run.sh [-v|--verbose] [--ci] [-h|--help]
+Usage: $0 [-v|--verbose] [--ci] [-s|--simulator <questa|verilator|vcs|...] [-h|--help]
 Runs:  runSVUnit -s verilator -f ../filelist.f
 
 Behavior:
@@ -36,6 +36,13 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     -v|--verbose) VERBOSE=1; shift ;;
     --ci) CI_MODE=1; shift ;;
+    -s|--simulator)
+      if (( $# >= 2 )) && [[ ${2} != -* ]]; then
+        SIMULATOR="$2"; shift 2
+      else
+        echo "Error: -s|--simulator requires an argument"; usage; exit 2
+      fi
+      ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown arg: $1"; usage; exit 2 ;;
   esac
@@ -47,7 +54,7 @@ if [[ ${GITHUB_ACTIONS:-} == "true" ]]; then
 fi
 
 # Command to run (as requested)
-CMD=(runSVUnit -s verilator -f ../filelist.f)
+CMD=(runSVUnit -s "$SIMULATOR" -f ../filelist.f)
 
 # Print the running command BEFORE doing anything
 echo "Running: ${CMD[*]}"
