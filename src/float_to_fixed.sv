@@ -27,6 +27,9 @@
 import float_flag_pkg::*;
 import sp_mode_pkg::*;
 import float_metadata_pkg::*;
+import binary128_pkg::*;
+import binary64_pkg::*;
+import binary32_pkg::*;
 
 module float_to_fixed #() (
     input   logic               i_clk,
@@ -38,18 +41,21 @@ module float_to_fixed #() (
 
 // Signal definitions
 sp_mode_t s_current_sp;
+binary128_t s_binary128;
 
 // Determine what sp (subword parallel) mode we are in based on input control
 // signals.
-always_comb begin : sp_mode_determiner
-    case (i_ctrl[1:0])
-        2'b00   : s_current_sp = SINGLE_MODE;
-        2'b01   : s_current_sp = TWO_SP_MODE;
-        2'b10   : s_current_sp = FOUR_SP_MODE;
-        2'b11   : s_current_sp = INVALID_SP_MODE;
-        default : s_current_sp = INVALID_SP_MODE;
-    endcase
-end
+// Using assign will make it "continuous assignment", so it is eval-ed before 
+// always_comb blocks, usually we use assign for decoders. - ChatGPT
+assign s_current_sp =
+    (i_ctrl[1:0] == 2'b00) ? SINGLE_MODE  :
+    (i_ctrl[1:0] == 2'b01) ? TWO_SP_MODE  :
+    (i_ctrl[1:0] == 2'b10) ? FOUR_SP_MODE : INVALID_SP_MODE;
+
+assign s_binary128.sign = i_float[127];
+assign s_binary128.exp = i_float[126:112];
+assign s_binary128.mantissa = i_float[111:0];
+
 
 // Determine what the output float types are based on s_current_sp
 always_comb begin : float_type_determiner
