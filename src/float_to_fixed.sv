@@ -5,9 +5,9 @@
  *    elif i_ctrl[1:0] is 01:   2 x binary64  aka two_sp_mode (sp == subword parallel)
  *    elif i_ctrl[1:0] is 10:   4 x binary32  aka four_sp_mode
  * 1. Do special type check and output for o_float_type_n accordingly.
- *    single_mode will only use o_float_type_a, and set NA to the b, c, d o_float_type_n
- *    two_sp_mode will only use o_float_type_a, and b, and set NA to the c, d o_float_type_n
- *    four_sp_mode will use all o_float_type_a, b, c, d
+ *    single_mode will only use o_metadata.float_type_a, and set NA to the b, c, d o_metadata.float_type_n
+ *    two_sp_mode will only use o_metadata.float_type_a, and b, and set NA to the c, d o_metadata.float_type_n
+ *    four_sp_mode will use all o_metadata.float_type_a, b, c, d
  * 2. We first calculate the "offset" of the exponent component
  *    if single_mode:
  *        shift_amount_a = i_float[126:112] - 16383

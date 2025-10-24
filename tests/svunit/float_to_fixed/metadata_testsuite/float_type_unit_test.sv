@@ -78,8 +78,8 @@ module float_type_unit_test;
     `SVUNIT_TESTS_BEGIN
 
         `include "cases/single_mode.svh"
-        // `include "cases/two_sp_mode.svh"
-        // `include "cases/four_sp_mode.svh"
+        `include "cases/two_sp_mode.svh"
+        `include "cases/four_sp_mode.svh"
 
     `SVUNIT_TESTS_END
 
