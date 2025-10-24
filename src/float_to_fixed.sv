@@ -5,9 +5,9 @@
  *  elif i_ctrl[1:0] is 01:   2 x binary64  aka two_sp_mode (sp == subword parallel)
  *  elif i_ctrl[1:0] is 10:   4 x binary32  aka four_sp_mode
  * 1. Do special type check and output for o_float_type_n accordingly.
- *  single_mode will only use o_metadata.float_type_a, and set NA to the b, c, d o_metadata.float_type_n
- *  two_sp_mode will only use o_metadata.float_type_a, and b, and set NA to the c, d o_metadata.float_type_n
- *  four_sp_mode will use all o_metadata.float_type_a, b, c, d
+ *  single_mode will only use s_float_type_a, and set NA to the b, c, d o_metadata.float_type_n
+ *  two_sp_mode will only use s_float_type_a, and b, and set NA to the c, d o_metadata.float_type_n
+ *  four_sp_mode will use all s_float_type_a, b, c, d
  * 2. We first calculate the "offset" of the exponent component
  *  if single_mode:
  *    shift_amount_a = i_float[126:112] - 16383
@@ -32,9 +32,9 @@ import binary64_pkg::*;
 import binary32_pkg::*;
 
 module float_to_fixed #() (
-  input   logic         i_clk,
+  input   logic             i_clk,
   input   logic [127:0]     i_float,
-  input   logic [3:0]     i_ctrl,
+  input   logic [3:0]       i_ctrl,
   output  logic [127:0]     o_fixed,
   output  float_metadata_t  o_metadata
 );
@@ -48,6 +48,11 @@ binary32_t s_binary32_a;
 binary32_t s_binary32_b;
 binary32_t s_binary32_c;
 binary32_t s_binary32_d;
+
+float_flag_t s_float_type_a;
+float_flag_t s_float_type_b;
+float_flag_t s_float_type_c;
+float_flag_t s_float_type_d;
 
 // Determine what sp (subword parallel) mode we are in based on input control
 // signals.
@@ -89,7 +94,7 @@ assign s_binary32_d.mantissa  = i_float[22:0];
 always_comb begin : float_type_determiner
   case (s_current_sp)
     SINGLE_MODE: begin
-      o_metadata.float_type_a = 
+      s_float_type_a = 
                 (s_binary128.exp == '0 && s_binary128.mantissa == '0)                               ? ZERO          :
                 (s_binary128.sign == '0 && s_binary128.exp == '1 && s_binary128.mantissa == '0)     ? POS_INF       :
                 (s_binary128.sign == '1 && s_binary128.exp == '1 && s_binary128.mantissa == '0)     ? NEG_INF       :
@@ -97,13 +102,13 @@ always_comb begin : float_type_determiner
                 (s_binary128.sign == '0 && s_binary128.exp == '0 && s_binary128.mantissa != '0)     ? POS_DENORMAL  :
                 (s_binary128.sign == '1 && s_binary128.exp == '0 && s_binary128.mantissa != '0)     ? NEG_DENORMAL  :
                 NORMAL;
-      o_metadata.float_type_b = NA;
-      o_metadata.float_type_c = NA;
-      o_metadata.float_type_d = NA;
+      s_float_type_b = NA;
+      s_float_type_c = NA;
+      s_float_type_d = NA;
     end
 
     TWO_SP_MODE: begin
-      o_metadata.float_type_a = 
+      s_float_type_a = 
                 (s_binary64_a.exp == '0 && s_binary64_a.mantissa == '0)                             ? ZERO          :
                 (s_binary64_a.sign == '0 && s_binary64_a.exp == '1 && s_binary64_a.mantissa == '0)  ? POS_INF       :
                 (s_binary64_a.sign == '1 && s_binary64_a.exp == '1 && s_binary64_a.mantissa == '0)  ? NEG_INF       :
@@ -111,7 +116,7 @@ always_comb begin : float_type_determiner
                 (s_binary64_a.sign == '0 && s_binary64_a.exp == '0 && s_binary64_a.mantissa != '0)  ? POS_DENORMAL  :
                 (s_binary64_a.sign == '1 && s_binary64_a.exp == '0 && s_binary64_a.mantissa != '0)  ? NEG_DENORMAL  :
                 NORMAL;
-      o_metadata.float_type_b = 
+      s_float_type_b = 
                 (s_binary64_b.exp == '0 && s_binary64_b.mantissa == '0)                             ? ZERO          :
                 (s_binary64_b.sign == '0 && s_binary64_b.exp == '1 && s_binary64_b.mantissa == '0)  ? POS_INF       :
                 (s_binary64_b.sign == '1 && s_binary64_b.exp == '1 && s_binary64_b.mantissa == '0)  ? NEG_INF       :
@@ -119,12 +124,12 @@ always_comb begin : float_type_determiner
                 (s_binary64_b.sign == '0 && s_binary64_b.exp == '0 && s_binary64_b.mantissa != '0)  ? POS_DENORMAL  :
                 (s_binary64_b.sign == '1 && s_binary64_b.exp == '0 && s_binary64_b.mantissa != '0)  ? NEG_DENORMAL  :
                 NORMAL;
-      o_metadata.float_type_c = NA;
-      o_metadata.float_type_d = NA;
+      s_float_type_c = NA;
+      s_float_type_d = NA;
     end
 
     FOUR_SP_MODE: begin
-      o_metadata.float_type_a = 
+      s_float_type_a = 
                 (s_binary32_a.exp == '0 && s_binary32_a.mantissa == '0)                             ? ZERO          :
                 (s_binary32_a.sign == '0 && s_binary32_a.exp == '1 && s_binary32_a.mantissa == '0)  ? POS_INF       :
                 (s_binary32_a.sign == '1 && s_binary32_a.exp == '1 && s_binary32_a.mantissa == '0)  ? NEG_INF       :
@@ -132,7 +137,7 @@ always_comb begin : float_type_determiner
                 (s_binary32_a.sign == '0 && s_binary32_a.exp == '0 && s_binary32_a.mantissa != '0)  ? POS_DENORMAL  :
                 (s_binary32_a.sign == '1 && s_binary32_a.exp == '0 && s_binary32_a.mantissa != '0)  ? NEG_DENORMAL  :
                 NORMAL;
-      o_metadata.float_type_b = 
+      s_float_type_b = 
                 (s_binary32_b.exp == '0 && s_binary32_b.mantissa == '0)                             ? ZERO          :
                 (s_binary32_b.sign == '0 && s_binary32_b.exp == '1 && s_binary32_b.mantissa == '0)  ? POS_INF       :
                 (s_binary32_b.sign == '1 && s_binary32_b.exp == '1 && s_binary32_b.mantissa == '0)  ? NEG_INF       :
@@ -140,7 +145,7 @@ always_comb begin : float_type_determiner
                 (s_binary32_b.sign == '0 && s_binary32_b.exp == '0 && s_binary32_b.mantissa != '0)  ? POS_DENORMAL  :
                 (s_binary32_b.sign == '1 && s_binary32_b.exp == '0 && s_binary32_b.mantissa != '0)  ? NEG_DENORMAL  :
                 NORMAL;
-      o_metadata.float_type_c = 
+      s_float_type_c = 
                 (s_binary32_c.exp == '0 && s_binary32_c.mantissa == '0)                             ? ZERO          :
                 (s_binary32_c.sign == '0 && s_binary32_c.exp == '1 && s_binary32_c.mantissa == '0)  ? POS_INF       :
                 (s_binary32_c.sign == '1 && s_binary32_c.exp == '1 && s_binary32_c.mantissa == '0)  ? NEG_INF       :
@@ -148,7 +153,7 @@ always_comb begin : float_type_determiner
                 (s_binary32_c.sign == '0 && s_binary32_c.exp == '0 && s_binary32_c.mantissa != '0)  ? POS_DENORMAL  :
                 (s_binary32_c.sign == '1 && s_binary32_c.exp == '0 && s_binary32_c.mantissa != '0)  ? NEG_DENORMAL  :
                 NORMAL;
-      o_metadata.float_type_d = 
+      s_float_type_d = 
                 (s_binary32_d.exp == '0 && s_binary32_d.mantissa == '0)                             ? ZERO          :
                 (s_binary32_d.sign == '0 && s_binary32_d.exp == '1 && s_binary32_d.mantissa == '0)  ? POS_INF       :
                 (s_binary32_d.sign == '1 && s_binary32_d.exp == '1 && s_binary32_d.mantissa == '0)  ? NEG_INF       :
@@ -159,26 +164,30 @@ always_comb begin : float_type_determiner
     end
 
     INVALID_SP_MODE: begin
-      o_metadata.float_type_a = NA;
-      o_metadata.float_type_b = NA;
-      o_metadata.float_type_c = NA;
-      o_metadata.float_type_d = NA;
+      s_float_type_a = NA;
+      s_float_type_b = NA;
+      s_float_type_c = NA;
+      s_float_type_d = NA;
     end
 
     default: begin
-      o_metadata.float_type_a = NA;
-      o_metadata.float_type_b = NA;
-      o_metadata.float_type_c = NA;
-      o_metadata.float_type_d = NA;
+      s_float_type_a = NA;
+      s_float_type_b = NA;
+      s_float_type_c = NA;
+      s_float_type_d = NA;
     end
   endcase
 end
 
-always_comb begin
-  o_metadata.sp_mode = s_current_sp;
 
-  // Passthrough (temp)
-  o_fixed = i_float;
-end
+// Final assignment
+assign o_metadata.sp_mode       = s_current_sp;
+assign o_metadata.float_type_a  = s_float_type_a;
+assign o_metadata.float_type_b  = s_float_type_b;
+assign o_metadata.float_type_c  = s_float_type_c;
+assign o_metadata.float_type_d  = s_float_type_d;
+
+// Passthrough (temp)
+assign o_fixed = i_float;
 
 endmodule
