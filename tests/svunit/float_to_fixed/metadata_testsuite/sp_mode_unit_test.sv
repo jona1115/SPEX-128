@@ -1,6 +1,6 @@
 `include "svunit_defines.svh"
 
-module special_type_unit_test;
+module sp_mode_unit_test;
     import svunit_pkg::svunit_testcase;
 
     import float_flag_pkg::*;
@@ -46,8 +46,8 @@ module special_type_unit_test;
         /* Place Setup Code Here */
         s_i_clk = '0;
         s_i_float = '0;
-        s_i_ctrl = '0;
-        s_o_fixed = '0;
+        // s_i_ctrl = '0;
+        s_i_ctrl = 4'd2;
     endtask
 
 
@@ -77,9 +77,7 @@ module special_type_unit_test;
     //===================================
     `SVUNIT_TESTS_BEGIN
 
-        `include "cases/single_mode.svh"
-        // `include "cases/two_sp_mode.svh"
-        // `include "cases/four_sp_mode.svh"
+        `include "cases/sp_mode.svh"
 
     `SVUNIT_TESTS_END
 

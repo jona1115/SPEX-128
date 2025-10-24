@@ -1,6 +1,6 @@
 `include "svunit_defines.svh"
 
-module passthrough_unit_test;
+module float_type_unit_test;
     import svunit_pkg::svunit_testcase;
 
     import float_flag_pkg::*;
@@ -47,6 +47,7 @@ module passthrough_unit_test;
         s_i_clk = '0;
         s_i_float = '0;
         s_i_ctrl = '0;
+        s_o_fixed = '0;
     endtask
 
 
@@ -76,17 +77,9 @@ module passthrough_unit_test;
     //===================================
     `SVUNIT_TESTS_BEGIN
 
-        `SVTEST(passthrough_test0)
-            s_i_float = 128'hDEADBEEF;
-            // $display("s_i_float:%x", s_i_float);
-            #1;
-            // $display("s_o_fixed=%x", s_o_fixed);
-            `FAIL_UNLESS_EQUAL(s_o_fixed, s_i_float)
-            // `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, NA)
-            // `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, NA)
-            // `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_c, NA)
-            // `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_d, NA)
-        `SVTEST_END
+        `include "cases/single_mode.svh"
+        // `include "cases/two_sp_mode.svh"
+        // `include "cases/four_sp_mode.svh"
 
     `SVUNIT_TESTS_END
 
