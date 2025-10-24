@@ -20,14 +20,15 @@ create_unit_test.pl name_of_module_you_wanna_test.sv
 # cd to tests/svunit/float_to_fixed
 runSVUnit -s verilator -f path/to/filelist.f # If you want to run svunit manually
 # --- OR ---
-./svunit_run.sh # This script is just cool, use it instead of manually 
+./svunit_run.sh -s <simulator> # This script is just cool, use it instead of manually 
+                               # for <simulator>, use questasim, verilator doesn't work
 ```
 ### Test Driven Development (TDD)
 I want to dedicate this section to describing my testing/developing philosophy. I use TDD, it works, and in my opinion, creates a positive feedback loop of self-documenting, and self-testing code. Not to mention easier to CI. So when you are reading the code, maybe take time to also look over the test. This is because the code is derived by the tests, not the other way around.
 
 
 # Installation of Tools
-## SVUnit
+## SVUnit (no need to install, see ["After cloning"](https://github.com/jona1115/SPEX-128?tab=readme-ov-file#after-cloning))
 Installation commands:
 ```sh
 git clone git@github.com:svunit/svunit.git
@@ -40,7 +41,7 @@ export PATH=$PATH:$SVUNIT_INSTALL"/bin"
 source Setup.bsh
 ```
 
-## Verilator
+## Verilator (not used for this project)
 ```sh
 git clone git@github.com:verilator/verilator.git
 cd verilator
