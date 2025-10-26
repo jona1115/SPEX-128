@@ -101,8 +101,8 @@
   )
 `SVTEST_END
 
-// There exists a range where the mantissa will not be truncated (full accurate conversion)
-// Let's test that
+// There exists a range where the mantissa will not be truncated (full accuracy conversion)
+// Let's test that now:
 // The range for the exponent for that is +/- [18378, 16392] or [0x3FFA, 0x4008], let's test inputs
 // that is within that range, we should get full accuracy
 // Lower bound (18378) check:
