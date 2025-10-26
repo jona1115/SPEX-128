@@ -1,5 +1,25 @@
 `include "svunit_defines.svh"
 
+// ChatGPT gave me this awesome macro
+`define CHECK_LATENCY_2_CYCLES(in_float, in_ctrl, expected) \
+  begin \
+    logic [127:0] _prev = s_o_fixed;              \
+    @(negedge s_i_clk);                           \
+    s_i_ctrl       = in_ctrl;                     \
+    s_i_float      = in_float;                    \
+    @(posedge s_i_clk); /* +1 */                  \
+    `FAIL_UNLESS_EQUAL(s_o_fixed, _prev)          \
+    @(posedge s_i_clk); /* +2 */                  \
+    `FAIL_UNLESS_EQUAL(s_o_fixed, expected)       \
+  end
+
+/**
+ * 
+ * This test checks for:
+ * 1. Latency of the module (should be 2 cycles)
+ * 2. Result of the module
+ * 
+ */
 module exp_functionality_unit_test;
   import svunit_pkg::svunit_testcase;
 
@@ -46,18 +66,22 @@ module exp_functionality_unit_test;
   // Setup for running the Unit Tests
   //===================================
   task setup();
+    // For testing latency
+    logic [127:0] prev_out;
+  
     svunit_ut.setup();
     /* Place Setup Code Here */
     s_i_float = '0;
     s_i_ctrl = '0;
-    s_o_fixed = '0;
 
     
   endtask
 
-  // Toggle clock
-  always #1 s_i_clk = ~s_i_clk;
-
+// Toggle clock
+initial begin
+  s_i_clk = 1'b0;
+  forever #1 s_i_clk = ~s_i_clk; // 2 unit period
+end
 
   //===================================
   // Here we deconstruct anything we 
