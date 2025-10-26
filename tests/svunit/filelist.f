@@ -4,6 +4,7 @@
 #          heuristic (packages first). If build fails due to type/interface order,
 #          manually reorder this file so defining units appear before users.
 /home/jona1115/SPEX-128/src/packages/binary128_pkg.sv
+/home/jona1115/SPEX-128/src/packages/fixed128_pkg.sv
 /home/jona1115/SPEX-128/src/packages/binary32_pkg.sv
 /home/jona1115/SPEX-128/src/packages/binary64_pkg.sv
 /home/jona1115/SPEX-128/src/packages/float_flag_pkg.sv

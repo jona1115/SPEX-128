@@ -30,16 +30,32 @@ import float_metadata_pkg::*;
 import binary128_pkg::*;
 import binary64_pkg::*;
 import binary32_pkg::*;
+import fixed128_pkg::*;
 
 module float_to_fixed #() (
   input   logic             i_clk,
+  input   logic             i_reset, // Synchronous
+
   input   logic [127:0]     i_float,
   input   logic [3:0]       i_ctrl,
   output  logic [127:0]     o_fixed,
-  output  float_metadata_t  o_metadata
+  output  float_metadata_t  o_metadata,
+
+  output  logic [3:0]       o_sanity_identifier
 );
 
+//=====================================================================================
+// State definition
+//=====================================================================================
+typedef enum logic [1:0] { 
+  S0_IDLE               = 2'b00,
+  S1_GET_SHIFT_AMOUNT   = 2'b01,
+  S2_CONVERT            = 2'b10
+} state_t;
+
+//=====================================================================================
 // Signal definitions
+//=====================================================================================
 sp_mode_t s_current_sp;
 binary128_t s_binary128;
 binary64_t s_binary64_a;
@@ -48,11 +64,19 @@ binary32_t s_binary32_a;
 binary32_t s_binary32_b;
 binary32_t s_binary32_c;
 binary32_t s_binary32_d;
-
+// For the type of float
 float_flag_t s_float_type_a;
 float_flag_t s_float_type_b;
 float_flag_t s_float_type_c;
 float_flag_t s_float_type_d;
+// For temporary output
+fixed128_t s_fixed128;
+fixed128_t s_fixed64_a;
+fixed128_t s_fixed64_b;
+fixed128_t s_fixed32_a;
+fixed128_t s_fixed32_b;
+fixed128_t s_fixed32_c;
+fixed128_t s_fixed32_d;
 
 // Determine what sp (subword parallel) mode we are in based on input control
 // signals.
@@ -179,8 +203,111 @@ always_comb begin : float_type_determiner
   endcase
 end
 
+// FSM
+state_t s_curr_state, s_next_state;
+always_ff @( posedge i_clk ) begin : float_to_fixed_FSM
+  if (!i_reset) begin
+    s_curr_state <= S0_IDLE;
+  end
+  else begin
+    s_curr_state <= s_next_state;
+  end
+end
 
+// todo
+logic s_stage1_en, s_stage2_en;
+always_comb begin : stage_en_control
+  // Defaults
+  s_next_state = s_curr_state;
+  s_stage1_en = 1'b0;
+  s_stage1_en = 1'b0;
+
+  unique case (s_curr_state)
+    S0_IDLE: begin
+      s_next_state = S1_GET_SHIFT_AMOUNT;
+    end
+    S1_GET_SHIFT_AMOUNT: begin
+      s_stage1_en = 1'b1;
+      s_next_state = S2_CONVERT;
+    end
+    S2_CONVERT: begin
+      s_stage2_en = 1'b1;
+      s_next_state = S0_IDLE;
+    end 
+    default: begin
+      s_next_state = S0_IDLE;
+    end
+  endcase
+end
+
+// Stage 1 block:
+typedef logic signed [14:0] sh_t;
+sh_t shift_amount_a, shift_amount_b, shift_amount_c, shift_amount_d; // Why 14:0? Because in the worse case, we want to accomodate shifting 16383 position for binary128 decoding. Do we ACTUALLY have to accomodate that number? No, but for now, this is easiest to implement.
+always_ff @( posedge i_clk ) begin : stage1_get_shift_amount
+  if (!i_reset) begin
+    shift_amount_a <= '0;
+    shift_amount_b <= '0;
+    shift_amount_c <= '0;
+    shift_amount_d <= '0;
+  end
+  else if (s_stage1_en) begin
+    // Default case
+    shift_amount_a <= '0;
+    shift_amount_b <= '0;
+    shift_amount_c <= '0;
+    shift_amount_d <= '0;
+    
+    // Switch case
+    case (s_current_sp)
+      SINGLE_MODE: begin
+        // s_binary128.exp is 15 bits (0..32767). Zero-extend, then cast to signed.
+        // Do the math in 16-bit signed to avoid reinterpreting the MSB as a sign.
+        automatic logic signed [15:0] tmp128;
+        tmp128 = $signed({1'b0, s_binary128.exp}) - 16'sd16383;
+        shift_amount_a <= sh_t'(tmp128);           // truncate safely into 15 signed bits
+      end
+      TWO_SP_MODE: begin
+        shift_amount_a <= $signed({1'b0, s_binary64_a.exp}) - 12'sd1023;
+        shift_amount_b <= $signed({1'b0, s_binary64_b.exp}) - 12'sd1023;
+      end
+      FOUR_SP_MODE: begin
+        shift_amount_a <= $signed({1'b0, s_binary32_a.exp}) - 9'sd127;
+        shift_amount_b <= $signed({1'b0, s_binary32_b.exp}) - 9'sd127;
+        shift_amount_c <= $signed({1'b0, s_binary32_c.exp}) - 9'sd127;
+        shift_amount_d <= $signed({1'b0, s_binary32_d.exp}) - 9'sd127;
+      end
+      default: begin
+        // Already have default assignment
+      end
+    endcase
+  end // else if (s_stage1_en)
+  else begin
+    shift_amount_a <= '0;
+    shift_amount_b <= '0;
+    shift_amount_c <= '0;
+    shift_amount_d <= '0;
+  end // else
+end
+
+// Stage 2 block:
+always_ff @( posedge i_clk ) begin : stage2_convert
+  if (!i_reset) begin
+
+  end
+  else if (s_stage2_en) begin
+    // do the shift
+    s_fixed128.sign_portion = s_binary128.sign;
+    // assign the integer and frac
+  end
+  else begin
+    
+  end
+end
+
+
+//=====================================================================================
 // Final assignment
+//=====================================================================================
 assign o_metadata.sp_mode       = s_current_sp;
 assign o_metadata.float_type_a  = s_float_type_a;
 assign o_metadata.float_type_b  = s_float_type_b;
@@ -189,5 +316,8 @@ assign o_metadata.float_type_d  = s_float_type_d;
 
 // Passthrough (temp)
 assign o_fixed = i_float;
+
+// This is the identifier (ie version number) of this block
+assign o_sanity_identifier      = 4'b0000;
 
 endmodule
