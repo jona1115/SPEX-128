@@ -110,6 +110,8 @@ end
   `SVUNIT_TESTS_BEGIN
 
     `include "cases/single_mode_basic_float_to_fixed_functionality.svh"
+    `include "cases/two_sp_mode_basic_float_to_fixed_functionality.svh"
+    `include "cases/four_sp_mode_basic_float_to_fixed_functionality.svh"
     // `include "cases/float_to_fixed_tests_from_file.svh"
 
   `SVUNIT_TESTS_END
