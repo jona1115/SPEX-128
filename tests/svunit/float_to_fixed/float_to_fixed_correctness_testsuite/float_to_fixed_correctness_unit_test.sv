@@ -36,11 +36,13 @@ module float_to_fixed_correctness_unit_test;
   svunit_testcase svunit_ut;
 
   // DUT IO
-  logic         s_i_clk;
+  logic             s_i_clk;
+  logic             s_i_reset;
   logic [127:0]     s_i_float;
-  logic [3:0]     s_i_ctrl;
+  logic [3:0]       s_i_ctrl;
   logic [127:0]     s_o_fixed;
   float_metadata_t  s_o_metadata;
+  logic [3:0]       s_o_sanity_identifier;
 
   //===================================
   // This is the UUT that we're 
@@ -48,10 +50,12 @@ module float_to_fixed_correctness_unit_test;
   //===================================
   float_to_fixed my_float_to_fixed(
     .i_clk(s_i_clk),
+    .i_reset(s_i_reset),
     .i_float(s_i_float),
     .i_ctrl(s_i_ctrl),
     .o_fixed(s_o_fixed),
-    .o_metadata(s_o_metadata)
+    .o_metadata(s_o_metadata),
+    .o_sanity_identifier(s_o_sanity_identifier)
   );
 
 

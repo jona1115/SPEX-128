@@ -270,17 +270,17 @@ always_ff @( posedge i_clk ) begin : stage1_get_shift_amount
       // Switch case
       case (s_current_sp)
         SINGLE_MODE: begin
-          s_shift_amount_a = $signed({1'b0, s_binary128.exp}) - 16'sd16383;
+          s_shift_amount_a <= $signed({1'b0, s_binary128.exp}) - 16'sd16383;
         end
         TWO_SP_MODE: begin
-          s_shift_amount_a <= $signed({1'b0, s_binary64_a.exp}) - 12'sd1023;
-          s_shift_amount_b <= $signed({1'b0, s_binary64_b.exp}) - 12'sd1023;
+          s_shift_amount_a <= $signed({5'b0, s_binary64_a.exp}) - 16'sd1023;
+          s_shift_amount_b <= $signed({5'b0, s_binary64_b.exp}) - 16'sd1023;
         end
         FOUR_SP_MODE: begin
-          s_shift_amount_a <= $signed({1'b0, s_binary32_a.exp}) - 9'sd127;
-          s_shift_amount_b <= $signed({1'b0, s_binary32_b.exp}) - 9'sd127;
-          s_shift_amount_c <= $signed({1'b0, s_binary32_c.exp}) - 9'sd127;
-          s_shift_amount_d <= $signed({1'b0, s_binary32_d.exp}) - 9'sd127;
+          s_shift_amount_a <= $signed({8'b0, s_binary32_a.exp}) - 16'sd127;
+          s_shift_amount_b <= $signed({8'b0, s_binary32_b.exp}) - 16'sd127;
+          s_shift_amount_c <= $signed({8'b0, s_binary32_c.exp}) - 16'sd127;
+          s_shift_amount_d <= $signed({8'b0, s_binary32_d.exp}) - 16'sd127;
         end
         default: begin
           // Already have default assignment

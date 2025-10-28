@@ -6,6 +6,7 @@
 +*
 transcript
 **/work/
+wavedrom.svh
 
 # My script generate files (because it is system based aka it uses absolute paths):
 filelist.f
