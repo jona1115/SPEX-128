@@ -95,13 +95,16 @@ fixed128_t s_fixed32_b;
 fixed128_t s_fixed32_c;
 fixed128_t s_fixed32_d;
 // Mantissa extended
-logic [112:0] s_binary128_mantissa_extended = {1'b1, s_binary128.mantissa};
-logic [52:0]  s_binary64_a_mantissa_extended = {1'b1, s_binary64_a.mantissa};
-logic [52:0]  s_binary64_b_mantissa_extended = {1'b1, s_binary64_b.mantissa};
-logic [23:0]  s_binary32_a_mantissa_extended = {1'b1, s_binary32_a.mantissa};
-logic [23:0]  s_binary32_b_mantissa_extended = {1'b1, s_binary32_b.mantissa};
-logic [23:0]  s_binary32_c_mantissa_extended = {1'b1, s_binary32_c.mantissa};
-logic [23:0]  s_binary32_d_mantissa_extended = {1'b1, s_binary32_d.mantissa};
+logic [112:0] s_binary128_mantissa_extended;
+logic [52:0]  s_binary64_a_mantissa_extended;
+logic [52:0]  s_binary64_b_mantissa_extended;
+logic [23:0]  s_binary32_a_mantissa_extended;
+logic [23:0]  s_binary32_b_mantissa_extended;
+logic [23:0]  s_binary32_c_mantissa_extended;
+logic [23:0]  s_binary32_d_mantissa_extended;
+// Error and debug signals
+logic [ERROR_SIGNAL_NUM_BITS-1:0] s_o_error;
+logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_o_debug;
 
 // Determine what sp (subword parallel) mode we are in based on input control
 // signals.
@@ -137,7 +140,26 @@ assign s_binary32_c.mantissa  = i_float[54:32];
 assign s_binary32_d.sign      = i_float[31];
 assign s_binary32_d.exp       = i_float[30:23];
 assign s_binary32_d.mantissa  = i_float[22:0];
+// extended mantissa
+assign s_binary128_mantissa_extended = {1'b1, s_binary128.mantissa};
+assign s_binary64_a_mantissa_extended = {1'b1, s_binary64_a.mantissa};
+assign s_binary64_b_mantissa_extended = {1'b1, s_binary64_b.mantissa};
+assign s_binary32_a_mantissa_extended = {1'b1, s_binary32_a.mantissa};
+assign s_binary32_b_mantissa_extended = {1'b1, s_binary32_b.mantissa};
+assign s_binary32_c_mantissa_extended = {1'b1, s_binary32_c.mantissa};
+assign s_binary32_d_mantissa_extended = {1'b1, s_binary32_d.mantissa};
 
+// Default stuff out
+always_ff @( posedge i_clk ) begin : defaulter
+  if (!i_reset) begin
+    s_o_error <= '0;
+    s_o_debug <= '0;
+  end
+  // else begin // commented out because there are drivers of these signals in other always_ff blocks, but by commenting this part out might lead to infer latches
+  //   s_o_error <= s_o_error;
+  //   s_o_debug <= s_o_debug;
+  // end
+end
 
 // Determine what the output float types are based on s_current_sp
 always_comb begin : float_type_determiner
@@ -366,9 +388,8 @@ always_ff @( posedge i_clk ) begin : stage2_convert
           end
           else begin
             // Should never be the case
-            assert (0)
-            else begin
-              o_error[0] <= 1'b1;
+            assert (0) else begin
+              s_o_error[0] <= 1'b1;
               $fatal("Entered illegal branch"); // This is for simulator not synthesis
             end
           end
@@ -411,5 +432,8 @@ assign o_fixed = (s_current_sp == SINGLE_MODE)  ? s_fixed128                    
 
 // This is the identifier (ie version number) of this block
 assign o_sanity_identifier      = 4'b0000;
+
+assign o_error = s_o_error;
+assign o_debug = s_o_debug; 
 
 endmodule // module float_to_fixed #()
