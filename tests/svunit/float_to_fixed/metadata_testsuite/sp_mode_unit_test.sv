@@ -1,36 +1,63 @@
 `include "svunit_defines.svh"
 
 module sp_mode_unit_test;
+
+`define NUM_BITS_128 128
+`define NUM_BITS_64 64
+`define NUM_BITS_32 32
+`define FIXED128_SHIFT_AMOUNT_INT_PORTION_OVERFLOW 9
+`define FIXED64_SHIFT_AMOUNT_INT_PORTION_OVERFLOW 9
+`define FIXED32_SHIFT_AMOUNT_INT_PORTION_OVERFLOW 9
+`define ERROR_SIGNAL_NUM_BITS 32
+`define DEBUG_SIGNAL_NUM_BITS 32
+
   import svunit_pkg::svunit_testcase;
 
   import float_flag_pkg::*;
   import sp_mode_pkg::*;
   import float_metadata_pkg::*;
+  import binary128_pkg::*;
+  import binary64_pkg::*;
+  import binary32_pkg::*;
+
 
   string name = "float_to_fixed_ut";
   svunit_testcase svunit_ut;
 
   // DUT IO
-  logic             s_i_clk;
-  logic             s_i_reset;
-  logic [127:0]     s_i_float;
-  logic [3:0]       s_i_ctrl;
-  logic [127:0]     s_o_fixed;
-  float_metadata_t  s_o_metadata;
-  logic [3:0]       s_o_sanity_identifier;
+  logic                                   s_i_clk;
+  logic                                   s_i_reset; // Synchronous
+  logic [`NUM_BITS_128-1:0]                s_i_float;
+  logic [3:0]                             s_i_ctrl;
+  logic [127:0]                           s_o_fixed;
+  float_metadata_t                        s_o_metadata;
+  logic [3:0]                             s_o_sanity_identifier;
+  logic [`ERROR_SIGNAL_NUM_BITS-1:0]       s_o_error;
+  logic [`DEBUG_SIGNAL_NUM_BITS-1:0]       s_o_debug;
 
   //===================================
   // This is the UUT that we're 
   // running the Unit Tests on
   //===================================
-  float_to_fixed my_float_to_fixed(
+  float_to_fixed #(
+    .NUM_BITS_128(`NUM_BITS_128),
+    .NUM_BITS_64(`NUM_BITS_64),
+    .NUM_BITS_32(`NUM_BITS_32),
+    .FIXED128_SHIFT_AMOUNT_INT_PORTION_OVERFLOW(`FIXED128_SHIFT_AMOUNT_INT_PORTION_OVERFLOW),
+    .FIXED64_SHIFT_AMOUNT_INT_PORTION_OVERFLOW(`FIXED64_SHIFT_AMOUNT_INT_PORTION_OVERFLOW),
+    .FIXED32_SHIFT_AMOUNT_INT_PORTION_OVERFLOW(`FIXED32_SHIFT_AMOUNT_INT_PORTION_OVERFLOW),
+    .ERROR_SIGNAL_NUM_BITS(`ERROR_SIGNAL_NUM_BITS),
+    .DEBUG_SIGNAL_NUM_BITS(`DEBUG_SIGNAL_NUM_BITS)
+  ) my_float_to_fixed(
     .i_clk(s_i_clk),
     .i_reset(s_i_reset),
     .i_float(s_i_float),
     .i_ctrl(s_i_ctrl),
     .o_fixed(s_o_fixed),
     .o_metadata(s_o_metadata),
-    .o_sanity_identifier(s_o_sanity_identifier)
+    .o_sanity_identifier(s_o_sanity_identifier),
+    .o_error(s_o_error),
+    .o_debug(s_o_debug)
   );
 
 
