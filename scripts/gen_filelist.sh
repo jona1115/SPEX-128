@@ -5,7 +5,8 @@
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+ROOT="$(cd "$SCRIPT_DIR/.." && pwd -P)"
 SRC="$ROOT/src"
 PKG_DIR="$SRC/packages"
 OUTDIR="$ROOT/tests/svunit"

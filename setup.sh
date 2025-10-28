@@ -14,6 +14,8 @@ if [ ! -d "$SVUNIT_DIR" ]; then
   if [ $_is_sourced -eq 1 ]; then return 1; else exit 1; fi
 fi
 
+echo "Setting up environment variables..."
+
 # Export expected vars before sourcing
 export SVUNIT_INSTALL="$SVUNIT_DIR"
 
@@ -30,3 +32,9 @@ source "./Setup.bsh"
 popd >/dev/null
 
 # echo "SVUNIT_INSTALL=$SVUNIT_INSTALL"
+
+echo "Setting up tests/svunit/filelist.f..."
+./scripts/gen_filelist.sh
+./scripts/reorder_filelist.sh tests/svunit/filelist.f
+
+echo "Done"
