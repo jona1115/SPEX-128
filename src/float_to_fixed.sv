@@ -32,16 +32,33 @@ import binary64_pkg::*;
 import binary32_pkg::*;
 import fixed128_pkg::*;
 
-module float_to_fixed #() (
-  input   logic             i_clk,
-  input   logic             i_reset, // Synchronous
+module float_to_fixed #(
+  parameter int NUM_BITS_128  = 128,
+  parameter int NUM_BITS_64   = 64,
+  parameter int NUM_BITS_32   = 32,
+  
+  parameter int FIXED128_SHIFT_AMOUNT_INT_PORTION_OVERFLOW  = 9, // 9 because there is 10 int portion bits and with the implicit 1, we can only afford to shift right by 10-1
+  parameter int FIXED64_SHIFT_AMOUNT_INT_PORTION_OVERFLOW   = 9,  // 9 because there is 10 int portion bits and with the implicit 1, we can only afford to shift right by 10-1
+  parameter int FIXED32_SHIFT_AMOUNT_INT_PORTION_OVERFLOW   = 9,  // 9 because there is 10 int portion bits and with the implicit 1, we can only afford to shift right by 10-1
 
-  input   logic [127:0]     i_float,
-  input   logic [3:0]       i_ctrl,
-  output  logic [127:0]     o_fixed,
-  output  float_metadata_t  o_metadata,
+  // Error and debug parameters
+  parameter int ERROR_SIGNAL_NUM_BITS = 32,
+  parameter int DEBUG_SIGNAL_NUM_BITS = 32
+) (
+  input   logic                                   i_clk,
+  input   logic                                   i_reset, // Synchronous
 
-  output  logic [3:0]       o_sanity_identifier
+  input   logic [NUM_BITS_128-1:0]                i_float,
+  input   logic [3:0]                             i_ctrl,
+  output  logic [127:0]                           o_fixed,
+  output  float_metadata_t                        o_metadata,
+
+  // Module identifier
+  output  logic [3:0]                             o_sanity_identifier,
+
+  // Error and debug signals
+  output  logic [ERROR_SIGNAL_NUM_BITS-1:0]       o_error,
+  output  logic [DEBUG_SIGNAL_NUM_BITS-1:0]       o_debug
 );
 
 //=====================================================================================
@@ -79,12 +96,12 @@ fixed128_t s_fixed32_c;
 fixed128_t s_fixed32_d;
 // Mantissa extended
 logic [112:0] s_binary128_mantissa_extended = {1'b1, s_binary128.mantissa};
-logic [52:0] s_binary64_a_mantissa_extended = {1'b1, s_binary64_a.mantissa};
-logic [52:0] s_binary64_b_mantissa_extended = {1'b1, s_binary64_b.mantissa};
-logic [23:0] s_binary32_a_mantissa_extended = {1'b1, s_binary32_a.mantissa};
-logic [23:0] s_binary32_b_mantissa_extended = {1'b1, s_binary32_b.mantissa};
-logic [23:0] s_binary32_c_mantissa_extended = {1'b1, s_binary32_c.mantissa};
-logic [23:0] s_binary32_d_mantissa_extended = {1'b1, s_binary32_d.mantissa};
+logic [52:0]  s_binary64_a_mantissa_extended = {1'b1, s_binary64_a.mantissa};
+logic [52:0]  s_binary64_b_mantissa_extended = {1'b1, s_binary64_b.mantissa};
+logic [23:0]  s_binary32_a_mantissa_extended = {1'b1, s_binary32_a.mantissa};
+logic [23:0]  s_binary32_b_mantissa_extended = {1'b1, s_binary32_b.mantissa};
+logic [23:0]  s_binary32_c_mantissa_extended = {1'b1, s_binary32_c.mantissa};
+logic [23:0]  s_binary32_d_mantissa_extended = {1'b1, s_binary32_d.mantissa};
 
 // Determine what sp (subword parallel) mode we are in based on input control
 // signals.
@@ -287,30 +304,39 @@ always_ff @( posedge i_clk ) begin : stage1_get_shift_amount
         end
       endcase // case (s_current_sp)
     end // if (s_stage1_en) begin
+
+    // Also, let's initialize stage 2 output in this stage too
+    s_fixed128 <= '0;
+    s_fixed64_a <= '0;
+    s_fixed64_b <= '0;
+    s_fixed32_a <= '0;
+    s_fixed32_b <= '0;
+    s_fixed32_c <= '0;
+    s_fixed32_d <= '0;
   end // else begin
 end // always_ff
 
 // Stage 2 block:
 always_ff @( posedge i_clk ) begin : stage2_convert
   if (!i_reset) begin
-    s_fixed128 = '0;
-    s_fixed64_a = '0;
-    s_fixed64_b = '0;
-    s_fixed32_a = '0;
-    s_fixed32_b = '0;
-    s_fixed32_c = '0;
-    s_fixed32_d = '0;
+    s_fixed128  <= '0;
+    s_fixed64_a <= '0;
+    s_fixed64_b <= '0;
+    s_fixed32_a <= '0;
+    s_fixed32_b <= '0;
+    s_fixed32_c <= '0;
+    s_fixed32_d <= '0;
   end
   else begin
     if (s_stage2_en) begin
       // Default case
-      s_fixed128 = '0;
-      s_fixed64_a = '0;
-      s_fixed64_b = '0;
-      s_fixed32_a = '0;
-      s_fixed32_b = '0;
-      s_fixed32_c = '0;
-      s_fixed32_d = '0;
+      s_fixed128  <= '0;
+      s_fixed64_a <= '0;
+      s_fixed64_b <= '0;
+      s_fixed32_a <= '0;
+      s_fixed32_b <= '0;
+      s_fixed32_c <= '0;
+      s_fixed32_d <= '0;
 
       // assign the integer and frac
       case (s_current_sp)
@@ -318,17 +344,34 @@ always_ff @( posedge i_clk ) begin : stage2_convert
           // do the sign
           s_fixed128.sign_portion = s_binary128.sign;
 
-          if (s_shift_amount_a >= 0) begin
-            if (s_shift_amount_a >= 128) begin
-              s_fixed128.int_portion = '1;
-            end // if (s_shift_amount_a >= 128) begin
-            else begin
-              
-            end
-          end // if (s_shift_amount_a >= 0) begin
+          // This is one whole block of unreadable code
+          if (s_shift_amount_a >= 0 && s_shift_amount_a <= 9) begin
+            // Case a:
+            s_fixed128 <= s_fixed128 | (s_binary128_mantissa_extended << (s_shift_amount_a + 5));
+          end
+          else if (s_shift_amount_a >= -4 && s_shift_amount_a < 0) begin
+            // Case b:
+            s_fixed128 <= s_fixed128 | {4'b0, s_binary128_mantissa_extended} >> s_shift_amount_a;
+          end
+          else if (s_shift_amount_a > 9) begin
+            // Case c:
+            // s_fixed128 <= s_fixed128 | ((s_binary128_mantissa_extended[(112-1-s_shift_amount_a):0]) << (112-1-s_shift_amount_a)); // variable range is illegal
+            s_fixed128 <= s_fixed128 | ((s_binary128_mantissa_extended & (113'b1 << (112-1-s_shift_amount_a+1))) << (112-1-s_shift_amount_a));
+          end
+          else if (s_shift_amount_a < -4) begin
+            // Case d:
+            // I think should be same as case b
+            // copy pasted from case b:
+            s_fixed128 <= s_fixed128 | {4'b0, s_binary128_mantissa_extended} >> s_shift_amount_a;
+          end
           else begin
-            // s_shift_amount_a < 0
-          end // else begin
+            // Should never be the case
+            assert (0)
+            else begin
+              o_error[0] <= 1'b1;
+              $fatal("Entered illegal branch"); // This is for simulator not synthesis
+            end
+          end
         end
         TWO_SP_MODE: begin
           // do the sign
@@ -361,9 +404,12 @@ assign o_metadata.float_type_c  = s_float_type_c;
 assign o_metadata.float_type_d  = s_float_type_d;
 
 // Passthrough (temp)
-assign o_fixed = i_float;
+assign o_fixed = (s_current_sp == SINGLE_MODE)  ? s_fixed128                                            :
+                 (s_current_sp == TWO_SP_MODE)  ? {s_fixed64_a, s_fixed64_b}                            :
+                 (s_current_sp == FOUR_SP_MODE) ? {s_fixed32_a, s_fixed32_b, s_fixed32_c, s_fixed32_d}  :
+                 '0;
 
 // This is the identifier (ie version number) of this block
 assign o_sanity_identifier      = 4'b0000;
 
-endmodule
+endmodule // module float_to_fixed #()
