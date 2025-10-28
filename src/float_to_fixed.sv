@@ -10,15 +10,15 @@
  *  four_sp_mode will use all s_float_type_a, b, c, d
  * 2. We first calculate the "offset" of the exponent component
  *  if single_mode:
- *    shift_amount_a = i_float[126:112] - 16383
+ *    s_shift_amount_a = i_float[126:112] - 16383
  *  elif two_sp_mode:
- *    shift_amount_a = i_float[126:116] - 1023
- *    shift_amount_b = i_float[62:52] - 1023
+ *    s_shift_amount_a = i_float[126:116] - 1023
+ *    s_shift_amount_b = i_float[62:52] - 1023
  *  elif four_sp_mode:
- *    shift_amount_a = i_float[126:119] - 127
- *    shift_amount_b = i_float[94:87] - 127
- *    shift_amount_c = i_float[62:55] - 127
- *    shift_amount_d = i_float[30:23] - 127
+ *    s_shift_amount_a = i_float[126:119] - 127
+ *    s_shift_amount_b = i_float[94:87] - 127
+ *    s_shift_amount_c = i_float[62:55] - 127
+ *    s_shift_amount_d = i_float[30:23] - 127
  * 
  */
 
@@ -77,6 +77,14 @@ fixed128_t s_fixed32_a;
 fixed128_t s_fixed32_b;
 fixed128_t s_fixed32_c;
 fixed128_t s_fixed32_d;
+// Mantissa extended
+logic [112:0] s_binary128_mantissa_extended = {1'b1, s_binary128.mantissa};
+logic [52:0] s_binary64_a_mantissa_extended = {1'b1, s_binary64_a.mantissa};
+logic [52:0] s_binary64_b_mantissa_extended = {1'b1, s_binary64_b.mantissa};
+logic [23:0] s_binary32_a_mantissa_extended = {1'b1, s_binary32_a.mantissa};
+logic [23:0] s_binary32_b_mantissa_extended = {1'b1, s_binary32_b.mantissa};
+logic [23:0] s_binary32_c_mantissa_extended = {1'b1, s_binary32_c.mantissa};
+logic [23:0] s_binary32_d_mantissa_extended = {1'b1, s_binary32_d.mantissa};
 
 // Determine what sp (subword parallel) mode we are in based on input control
 // signals.
@@ -241,68 +249,106 @@ always_comb begin : stage_en_control
 end
 
 // Stage 1 block:
-typedef logic signed [14:0] sh_t;
-sh_t shift_amount_a, shift_amount_b, shift_amount_c, shift_amount_d; // Why 14:0? Because in the worse case, we want to accomodate shifting 16383 position for binary128 decoding. Do we ACTUALLY have to accomodate that number? No, but for now, this is easiest to implement.
+typedef logic signed [15:0] sh_t; // we use 16 bits so we can properly represent -ve shift amount 
+                                  // for single_mode
+sh_t s_shift_amount_a, s_shift_amount_b, s_shift_amount_c, s_shift_amount_d; // Why 14:0? Because in the worse case, we want to accomodate shifting 16383 position for binary128 decoding. Do we ACTUALLY have to accomodate that number? No, but for now, this is easiest to implement.
 always_ff @( posedge i_clk ) begin : stage1_get_shift_amount
   if (!i_reset) begin
-    shift_amount_a <= '0;
-    shift_amount_b <= '0;
-    shift_amount_c <= '0;
-    shift_amount_d <= '0;
+    s_shift_amount_a <= '0;
+    s_shift_amount_b <= '0;
+    s_shift_amount_c <= '0;
+    s_shift_amount_d <= '0;
   end
-  else if (s_stage1_en) begin
-    // Default case
-    shift_amount_a <= '0;
-    shift_amount_b <= '0;
-    shift_amount_c <= '0;
-    shift_amount_d <= '0;
-    
-    // Switch case
-    case (s_current_sp)
-      SINGLE_MODE: begin
-        // s_binary128.exp is 15 bits (0..32767). Zero-extend, then cast to signed.
-        // Do the math in 16-bit signed to avoid reinterpreting the MSB as a sign.
-        automatic logic signed [15:0] tmp128;
-        tmp128 = $signed({1'b0, s_binary128.exp}) - 16'sd16383;
-        shift_amount_a <= sh_t'(tmp128);           // truncate safely into 15 signed bits
-      end
-      TWO_SP_MODE: begin
-        shift_amount_a <= $signed({1'b0, s_binary64_a.exp}) - 12'sd1023;
-        shift_amount_b <= $signed({1'b0, s_binary64_b.exp}) - 12'sd1023;
-      end
-      FOUR_SP_MODE: begin
-        shift_amount_a <= $signed({1'b0, s_binary32_a.exp}) - 9'sd127;
-        shift_amount_b <= $signed({1'b0, s_binary32_b.exp}) - 9'sd127;
-        shift_amount_c <= $signed({1'b0, s_binary32_c.exp}) - 9'sd127;
-        shift_amount_d <= $signed({1'b0, s_binary32_d.exp}) - 9'sd127;
-      end
-      default: begin
-        // Already have default assignment
-      end
-    endcase
-  end // else if (s_stage1_en)
   else begin
-    shift_amount_a <= '0;
-    shift_amount_b <= '0;
-    shift_amount_c <= '0;
-    shift_amount_d <= '0;
-  end // else
-end
+    // Default case
+    s_shift_amount_a <= '0;
+    s_shift_amount_b <= '0;
+    s_shift_amount_c <= '0;
+    s_shift_amount_d <= '0;
+
+    if (s_stage1_en) begin
+      // Switch case
+      case (s_current_sp)
+        SINGLE_MODE: begin
+          s_shift_amount_a = $signed({1'b0, s_binary128.exp}) - 16'sd16383;
+        end
+        TWO_SP_MODE: begin
+          s_shift_amount_a <= $signed({1'b0, s_binary64_a.exp}) - 12'sd1023;
+          s_shift_amount_b <= $signed({1'b0, s_binary64_b.exp}) - 12'sd1023;
+        end
+        FOUR_SP_MODE: begin
+          s_shift_amount_a <= $signed({1'b0, s_binary32_a.exp}) - 9'sd127;
+          s_shift_amount_b <= $signed({1'b0, s_binary32_b.exp}) - 9'sd127;
+          s_shift_amount_c <= $signed({1'b0, s_binary32_c.exp}) - 9'sd127;
+          s_shift_amount_d <= $signed({1'b0, s_binary32_d.exp}) - 9'sd127;
+        end
+        default: begin
+          // Already have default assignment
+        end
+      endcase // case (s_current_sp)
+    end // if (s_stage1_en) begin
+  end // else begin
+end // always_ff
 
 // Stage 2 block:
 always_ff @( posedge i_clk ) begin : stage2_convert
   if (!i_reset) begin
-
-  end
-  else if (s_stage2_en) begin
-    // do the shift
-    s_fixed128.sign_portion = s_binary128.sign;
-    // assign the integer and frac
+    s_fixed128 = '0;
+    s_fixed64_a = '0;
+    s_fixed64_b = '0;
+    s_fixed32_a = '0;
+    s_fixed32_b = '0;
+    s_fixed32_c = '0;
+    s_fixed32_d = '0;
   end
   else begin
-    
-  end
-end
+    if (s_stage2_en) begin
+      // Default case
+      s_fixed128 = '0;
+      s_fixed64_a = '0;
+      s_fixed64_b = '0;
+      s_fixed32_a = '0;
+      s_fixed32_b = '0;
+      s_fixed32_c = '0;
+      s_fixed32_d = '0;
+
+      // assign the integer and frac
+      case (s_current_sp)
+        SINGLE_MODE: begin
+          // do the sign
+          s_fixed128.sign_portion = s_binary128.sign;
+
+          if (s_shift_amount_a >= 0) begin
+            if (s_shift_amount_a >= 128) begin
+              s_fixed128.int_portion = '1;
+            end // if (s_shift_amount_a >= 128) begin
+            else begin
+              
+            end
+          end // if (s_shift_amount_a >= 0) begin
+          else begin
+            // s_shift_amount_a < 0
+          end // else begin
+        end
+        TWO_SP_MODE: begin
+          // do the sign
+          s_fixed64_a.sign_portion = s_binary64_a.sign;
+          s_fixed64_b.sign_portion = s_binary64_b.sign;
+        end
+        FOUR_SP_MODE: begin
+          // do the sign
+          s_fixed32_a.sign_portion = s_binary32_a.sign;
+          s_fixed32_b.sign_portion = s_binary32_b.sign;
+          s_fixed32_c.sign_portion = s_binary32_c.sign;
+          s_fixed32_d.sign_portion = s_binary32_d.sign;
+        end
+        default: begin
+
+        end
+      endcase
+    end // if (s_stage2_en) begin
+  end // else begin
+end // always_ff
 
 
 //=====================================================================================
