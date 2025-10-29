@@ -1,7 +1,20 @@
 # After cloning
 1. This repo uses submodules, run this after cloning: `git submodule update --init --recursive`
 2. Install required tools, see section: [Installation of Tools](https://github.com/jona1115/SPEX-128?tab=readme-ov-file#installation-of-tools)
-3. Source the setup file, everytime, before doing anything: `source setup.sh`
+3. ⚠️ Source the setup file, everytime, before doing anything: `source setup.sh`
+
+# Shortcuts
+Below are easy, copy-pastable commands to do stuff. They, in theory, should "just work".
+1. Run svunit test using Modelsim/Questasim:
+    ```sh
+    cd tests/svunit/float_to_fixed      # You can go into any test folders
+    ./svunit_run.sh -s modelsim --ci    # Run -h for more info, --ci flag is more cleaner imo
+    ```
+2. Run svunit test (simulator questasim or modelsim) and open questa/modelsim waveform viewer:
+    ```sh
+    cd tests/svunit/float_to_fixed      # You can go into any test folders
+    ../sim_and_wave.sh                  # Run -h flag for more info
+    ```
 
 # Creating/running SVUnit Tests
 ```sh

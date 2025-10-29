@@ -7,6 +7,8 @@
 transcript
 **/work/
 wavedrom.svh
+modelsim.ini
+**/waves/
 
 # My script generate files (because it is system based aka it uses absolute paths):
 filelist.f
