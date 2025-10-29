@@ -14,6 +14,10 @@ Below are easy, copy-pastable commands to do stuff. They, in theory, should "jus
     ```sh
     cd tests/svunit/float_to_fixed      # You can go into any test folders
     ../sim_and_wave.sh                  # Run -h flag for more info
+    # You could also generate and open modelsim in oneline:
+    ../sim_and_wave.sh && vsim -view ./waves/svunit.wlf &
+    # And even include the do file cli:
+    ../sim_and_wave.sh && vsim -view ./waves/svunit.wlf -do "./dos/wave.do" &
     ```
 
 # Creating/running SVUnit Tests

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# sim_and_view_wave.sh — clean → run SVUnit → generate wave → open ModelSim
+# sim_and_gen_waveform.sh — clean → run SVUnit → generate wave
 # Works when sourced or executed from a test directory:
-#   source ../sim_and_view_wave.sh [svunit_run flags...]
-#   ../sim_and_view_wave.sh         [svunit_run flags...]
+#   source ../sim_and_gen_waveform.sh [svunit_run flags...]
+#   ../sim_and_gen_waveform.sh         [svunit_run flags...]
 
 set -euo pipefail
 
@@ -12,13 +12,12 @@ _is_sourced=0
 
 usage() {
   cat <<'EOF'
-Usage: source sim_and_view_wave.sh [OPTIONS for svunit_run.sh]
+Usage: source sim_and_gen_waveform.sh [OPTIONS for svunit_run.sh]
 
 What does it do:
   1) clean.sh
   2) svunit_run.sh [forwarded options]
   3) <proj-root>/scripts/generate_modelsim_wave.sh
-  4) vsim -view ./waves/svunit.wlf
 
 Common options (forwarded to svunit_run.sh):
   -v, --verbose
@@ -138,21 +137,22 @@ fi
 echo "==> Generate ModelSim wave artifacts"
 "$GEN_WAVE_SH" || die "generate_modelsim_wave.sh failed"
 
-echo "==> Waiting for WLF to be ready: $WLF_PATH"
-if ! wait_for_wlf_stable "$WLF_PATH" "$WLF_TIMEOUT_SEC" "$WLF_STABLE_WINDOW_SEC"; then
-  echo "WLF not stable within timeout (${WLF_TIMEOUT_SEC}s). Attempting to open anyway."
-fi
+# echo "==> Waiting for WLF to be ready: $WLF_PATH"
+# if ! wait_for_wlf_stable "$WLF_PATH" "$WLF_TIMEOUT_SEC" "$WLF_STABLE_WINDOW_SEC"; then
+#   echo "WLF not stable within timeout (${WLF_TIMEOUT_SEC}s). Attempting to open anyway."
+# fi
 
 command -v vsim >/dev/null 2>&1 || die "vsim not found in PATH"
 if [[ -z "${DISPLAY:-}" ]]; then
   echo "Warning: \$DISPLAY is not set; vsim GUI may fail."
 fi
 
-echo "==> Opening ModelSim waveform"
-sleep 2 # I (jonathan) have no idea why you need to wait
-echo "==> Note: If modelsim fail to open, run: vsim -view ./waves/svunit.wlf"
-# Launch in background; 'disown' avoids job-control messages if sourced
-vsim -view "$WLF_PATH" & disown || true
+# echo "==> Opening ModelSim waveform"
+# sleep 2 # I (jonathan) have no idea why you need to wait
+# echo "==> Note: If modelsim fail to open, run: vsim -view ./waves/svunit.wlf"
+echo "==> Next step, to view waveform, run: vsim -view ./waves/svunit.wlf"
+# # Launch in background; 'disown' avoids job-control messages if sourced
+# vsim -view "$WLF_PATH" & disown || true
 
 # Return overall status = SVUnit's status (viewer already launched)
 if (( _is_sourced )); then
