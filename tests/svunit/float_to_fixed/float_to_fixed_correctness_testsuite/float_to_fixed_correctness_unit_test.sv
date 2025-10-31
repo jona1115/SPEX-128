@@ -6,11 +6,15 @@
   begin \
     logic [127:0] _prev = s_o_fixed;              \
     @(negedge s_i_clk);                           \
+    s_i_valid      = '1;                          \
     s_i_ctrl       = in_ctrl;                     \
     s_i_float      = in_float;                    \
-    @(posedge s_i_clk); /* +1 */                  \
+    @(posedge s_i_clk); /* +1 = 1 */              \
     `FAIL_UNLESS_EQUAL(s_o_fixed, _prev)          \
-    @(posedge s_i_clk); /* +2 */                  \
+    @(posedge s_i_clk); /* +1 = 2 */              \
+    @(posedge s_i_clk); /* +1 = 3 */              \
+    @(posedge s_i_clk); /* +1 = 4 */              \
+    @(negedge s_i_clk);                           \
     `FAIL_UNLESS_EQUAL(s_o_fixed, expected)       \
   end
 
@@ -48,13 +52,14 @@ module float_to_fixed_correctness_unit_test;
   // DUT IO
   logic                                   s_i_clk;
   logic                                   s_i_reset; // Synchronous
-  logic [`NUM_BITS_128-1:0]                s_i_float;
+  logic [`NUM_BITS_128-1:0]               s_i_float;
   logic [3:0]                             s_i_ctrl;
   logic [127:0]                           s_o_fixed;
   float_metadata_t                        s_o_metadata;
+  logic                                   s_i_valid;
   logic [3:0]                             s_o_sanity_identifier;
-  logic [`ERROR_SIGNAL_NUM_BITS-1:0]       s_o_error;
-  logic [`DEBUG_SIGNAL_NUM_BITS-1:0]       s_o_debug;
+  logic [`ERROR_SIGNAL_NUM_BITS-1:0]      s_o_error;
+  logic [`DEBUG_SIGNAL_NUM_BITS-1:0]      s_o_debug;
 
   //===================================
   // This is the UUT that we're 
@@ -76,6 +81,7 @@ module float_to_fixed_correctness_unit_test;
     .i_ctrl(s_i_ctrl),
     .o_fixed(s_o_fixed),
     .o_metadata(s_o_metadata),
+    .i_valid(s_i_valid),
     .o_sanity_identifier(s_o_sanity_identifier),
     .o_error(s_o_error),
     .o_debug(s_o_debug)
@@ -99,10 +105,14 @@ module float_to_fixed_correctness_unit_test;
   
     svunit_ut.setup();
     /* Place Setup Code Here */
-    s_i_float = '0;
-    s_i_ctrl = '0;
+    s_i_float   = '0;
+    s_i_ctrl    = '0;
+    s_i_valid   = '0;
 
-    
+    s_i_reset   = 1'b0;                 // assert sync reset
+    repeat (2) @(posedge s_i_clk);      // hold for > one posedge
+    s_i_reset   = 1'b1;                 // deassert
+    @(posedge s_i_clk);                 // let it stablize
   endtask
 
 // Toggle clock

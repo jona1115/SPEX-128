@@ -89,9 +89,9 @@ module float_to_fixed_no_error_unit_test;
     s_i_ctrl = '0;
 
     s_i_reset = 1'b0;                 // assert sync reset
-    repeat (2) @(posedge s_i_clk);    // hold through at least one posedge
+    repeat (2) @(posedge s_i_clk);    // hold for > one posedge
     s_i_reset = 1'b1;                 // deassert
-    @(posedge s_i_clk);               // give it a cycle before checking outputs
+    @(posedge s_i_clk);               // let it stablize
   endtask
 
 // Toggle clock

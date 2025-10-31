@@ -53,6 +53,10 @@ module float_to_fixed #(
   output  logic [127:0]                           o_fixed,
   output  float_metadata_t                        o_metadata,
 
+  // Handshake
+  input   logic                                   i_valid,
+  // output  logic                                   o_ready,
+
   // Module identifier
   output  logic [3:0]                             o_sanity_identifier,
 
@@ -67,7 +71,8 @@ module float_to_fixed #(
 typedef enum logic [1:0] { 
   S0_IDLE               = 2'b00,
   S1_GET_SHIFT_AMOUNT   = 2'b01,
-  S2_CONVERT            = 2'b10
+  S2_CONVERT            = 2'b10,
+  S3_FINALIZE           = 2'b11
 } state_t;
 
 //=====================================================================================
@@ -86,7 +91,7 @@ float_flag_t s_float_type_a;
 float_flag_t s_float_type_b;
 float_flag_t s_float_type_c;
 float_flag_t s_float_type_d;
-// For temporary output
+// For internal output
 fixed128_t s_fixed128;
 fixed128_t s_fixed64_a;
 fixed128_t s_fixed64_b;
@@ -94,6 +99,14 @@ fixed128_t s_fixed32_a;
 fixed128_t s_fixed32_b;
 fixed128_t s_fixed32_c;
 fixed128_t s_fixed32_d;
+// For temporary internal output
+fixed128_t s_fixed128_temp;
+fixed128_t s_fixed64_a_temp;
+fixed128_t s_fixed64_b_temp;
+fixed128_t s_fixed32_a_temp;
+fixed128_t s_fixed32_b_temp;
+fixed128_t s_fixed32_c_temp;
+fixed128_t s_fixed32_d_temp;
 // Mantissa extended
 logic [112:0] s_binary128_mantissa_extended;
 logic [52:0]  s_binary64_a_mantissa_extended;
@@ -105,6 +118,9 @@ logic [23:0]  s_binary32_d_mantissa_extended;
 // Error and debug signals
 logic [ERROR_SIGNAL_NUM_BITS-1:0] s_o_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_o_debug;
+// For status
+logic s_S1_busy;
+logic s_S2_busy;
 
 // Determine what sp (subword parallel) mode we are in based on input control
 // signals.
@@ -114,6 +130,11 @@ assign s_current_sp =
   (i_ctrl[1:0] == 2'b00) ? SINGLE_MODE  :
   (i_ctrl[1:0] == 2'b01) ? TWO_SP_MODE  :
   (i_ctrl[1:0] == 2'b10) ? FOUR_SP_MODE : INVALID_SP_MODE;
+// // Check that INVALID_SP_MODE should never be passed into this module; commented because cant do this ouside a always block or need to use property, but todo we still want to perform this check
+// assert(s_current_sp != INVALID_SP_MODE && i_valid == 1'b1) else begin
+//   s_o_error[2] <= 1'b1;
+//   $fatal("INVALID_SP_MODE detected"); // This is for simulator not synthesis
+// end
 
 // Generate a bunch of helper signals as decoders
 // single mode
@@ -161,7 +182,9 @@ always_ff @( posedge i_clk ) begin : defaulter
   // end
 end
 
-// Determine what the output float types are based on s_current_sp
+/**
+ * Determine what the output float types are based on s_current_sp
+ */
 always_comb begin : float_type_determiner
   case (s_current_sp)
     SINGLE_MODE: begin
@@ -250,7 +273,9 @@ always_comb begin : float_type_determiner
   endcase
 end
 
-// FSM
+/**
+ * FSM
+ */
 state_t s_curr_state, s_next_state;
 always_ff @( posedge i_clk ) begin : float_to_fixed_FSM
   if (!i_reset) begin
@@ -261,17 +286,20 @@ always_ff @( posedge i_clk ) begin : float_to_fixed_FSM
   end
 end
 
-// todo
-logic s_stage1_en, s_stage2_en;
+logic s_stage1_en, s_stage2_en, s_stage3_en;
 always_comb begin : stage_en_control
   // Defaults
   s_next_state = s_curr_state;
   s_stage1_en = 1'b0;
-  s_stage1_en = 1'b0;
+  s_stage2_en = 1'b0;
+  s_stage3_en = 1'b0;
 
   unique case (s_curr_state)
     S0_IDLE: begin
-      s_next_state = S1_GET_SHIFT_AMOUNT;
+      if (i_valid) begin
+        // Only proceed when input is valid
+        s_next_state = S1_GET_SHIFT_AMOUNT;
+      end
     end
     S1_GET_SHIFT_AMOUNT: begin
       s_stage1_en = 1'b1;
@@ -279,17 +307,34 @@ always_comb begin : stage_en_control
     end
     S2_CONVERT: begin
       s_stage2_en = 1'b1;
+      s_next_state = S3_FINALIZE;
+    end
+    S3_FINALIZE: begin
+      s_stage3_en = 'b1;
       s_next_state = S0_IDLE;
-    end 
+    end
     default: begin
       s_next_state = S0_IDLE;
     end
   endcase
 end
 
-// Stage 1 block:
+/**
+ * Stage 1 block
+ */
 typedef logic signed [15:0] sh_t; // we use 16 bits so we can properly represent -ve shift amount 
                                   // for single_mode
+function automatic sh_t unbias_q128 (input logic [14:0] exp);
+  // IEEE-754: for subnormal (exp==0), unbiased exponent is 1 - bias
+  return (exp == 15'd0) ? sh_t'(-16'sd16382)
+                        : sh_t'($signed({1'b0, exp}) - 16'sd16383);
+endfunction
+function automatic sh_t unbias_q64  (input logic [10:0] exp);
+  return (exp == 11'd0) ? sh_t'(-16'sd1022) : sh_t'($signed({5'b0, exp}) - 16'sd1023);
+endfunction
+function automatic sh_t unbias_q32  (input logic  [7:0] exp);
+  return (exp ==  8'd0) ? sh_t'( -16'sd126) : sh_t'($signed({8'b0, exp}) - 16'sd127);
+endfunction
 sh_t s_shift_amount_a, s_shift_amount_b, s_shift_amount_c, s_shift_amount_d; // Why 14:0? Because in the worse case, we want to accomodate shifting 16383 position for binary128 decoding. Do we ACTUALLY have to accomodate that number? No, but for now, this is easiest to implement.
 always_ff @( posedge i_clk ) begin : stage1_get_shift_amount
   if (!i_reset) begin
@@ -297,48 +342,56 @@ always_ff @( posedge i_clk ) begin : stage1_get_shift_amount
     s_shift_amount_b <= '0;
     s_shift_amount_c <= '0;
     s_shift_amount_d <= '0;
+
+    s_fixed128_temp  <= '0;
+    s_fixed64_a_temp <= '0;
+    s_fixed64_b_temp <= '0;
+    s_fixed32_a_temp <= '0;
+    s_fixed32_b_temp <= '0;
+    s_fixed32_c_temp <= '0;
+    s_fixed32_d_temp <= '0;
   end
   else begin
-    // Default case
-    s_shift_amount_a <= '0;
-    s_shift_amount_b <= '0;
-    s_shift_amount_c <= '0;
-    s_shift_amount_d <= '0;
-
     if (s_stage1_en) begin
       // Switch case
       case (s_current_sp)
         SINGLE_MODE: begin
-          s_shift_amount_a <= $signed({1'b0, s_binary128.exp}) - 16'sd16383;
+          s_shift_amount_a <= unbias_q128(s_binary128.exp);
         end
         TWO_SP_MODE: begin
-          s_shift_amount_a <= $signed({5'b0, s_binary64_a.exp}) - 16'sd1023;
-          s_shift_amount_b <= $signed({5'b0, s_binary64_b.exp}) - 16'sd1023;
+          s_shift_amount_a <= unbias_q64(s_binary64_a.exp);
+          s_shift_amount_b <= unbias_q64(s_binary64_b.exp);
         end
         FOUR_SP_MODE: begin
-          s_shift_amount_a <= $signed({8'b0, s_binary32_a.exp}) - 16'sd127;
-          s_shift_amount_b <= $signed({8'b0, s_binary32_b.exp}) - 16'sd127;
-          s_shift_amount_c <= $signed({8'b0, s_binary32_c.exp}) - 16'sd127;
-          s_shift_amount_d <= $signed({8'b0, s_binary32_d.exp}) - 16'sd127;
+          s_shift_amount_a <= unbias_q32(s_binary32_a.exp);
+          s_shift_amount_b <= unbias_q32(s_binary32_b.exp);
+          s_shift_amount_c <= unbias_q32(s_binary32_c.exp);
+          s_shift_amount_d <= unbias_q32(s_binary32_d.exp);
         end
         default: begin
-          // Already have default assignment
+          assert (0) else begin
+              s_o_error[1] <= 1'b1;
+              $fatal("Entered illegal branch"); // This is for simulator not synthesis
+            end
         end
       endcase // case (s_current_sp)
     end // if (s_stage1_en) begin
 
-    // Also, let's initialize stage 2 output in this stage too
-    s_fixed128 <= '0;
-    s_fixed64_a <= '0;
-    s_fixed64_b <= '0;
-    s_fixed32_a <= '0;
-    s_fixed32_b <= '0;
-    s_fixed32_c <= '0;
-    s_fixed32_d <= '0;
+    // Map extended mantissa(s) of input to fixed temporarily
+    // s_fixed128_temp  <= {10'b0, s_binary128_mantissa_extended, 5'b0};
+    s_fixed128_temp[117:5]  <= s_binary128_mantissa_extended;
+    s_fixed64_a_temp <= {10'b0, s_binary64_a_mantissa_extended, 1'b0};
+    s_fixed64_b_temp <= {10'b0, s_binary64_b_mantissa_extended, 1'b0};
+    s_fixed32_a_temp <= {10'b0, s_binary32_a_mantissa_extended[22:2]};
+    s_fixed32_b_temp <= {10'b0, s_binary32_b_mantissa_extended[22:2]};
+    s_fixed32_c_temp <= {10'b0, s_binary32_c_mantissa_extended[22:2]};
+    s_fixed32_d_temp <= {10'b0, s_binary32_d_mantissa_extended[22:2]};
   end // else begin
 end // always_ff
 
-// Stage 2 block:
+/**
+ * Stage 2
+ */
 always_ff @( posedge i_clk ) begin : stage2_convert
   if (!i_reset) begin
     s_fixed128  <= '0;
@@ -351,40 +404,36 @@ always_ff @( posedge i_clk ) begin : stage2_convert
   end
   else begin
     if (s_stage2_en) begin
-      // Default case
-      s_fixed128  <= '0;
-      s_fixed64_a <= '0;
-      s_fixed64_b <= '0;
-      s_fixed32_a <= '0;
-      s_fixed32_b <= '0;
-      s_fixed32_c <= '0;
-      s_fixed32_d <= '0;
-
       // assign the integer and frac
       case (s_current_sp)
         SINGLE_MODE: begin
-          // do the sign
-          s_fixed128.sign_portion = s_binary128.sign;
+          // // do the sign todo do this somewhere else
+          // s_fixed128.sign_portion <= s_binary128.sign;
 
           // This is one whole block of unreadable code
           if (s_shift_amount_a >= 0 && s_shift_amount_a <= 9) begin
             // Case a:
-            s_fixed128 <= s_fixed128 | (s_binary128_mantissa_extended << (s_shift_amount_a + 5));
+            s_fixed128 <= s_fixed128_temp << s_shift_amount_a; // Infer barrel shifter
+            $display(">>>>> Hi i am in case a");
           end
           else if (s_shift_amount_a >= -4 && s_shift_amount_a < 0) begin
             // Case b:
-            s_fixed128 <= s_fixed128 | {4'b0, s_binary128_mantissa_extended} >> s_shift_amount_a;
+            s_fixed128 <= s_fixed128_temp >> -s_shift_amount_a; // Infer barrel shifter, the "-" take the twos complement
+            $display(">>>>> Hi i am in case b");
           end
           else if (s_shift_amount_a > 9) begin
             // Case c:
-            // s_fixed128 <= s_fixed128 | ((s_binary128_mantissa_extended[(112-1-s_shift_amount_a):0]) << (112-1-s_shift_amount_a)); // variable range is illegal
-            s_fixed128 <= s_fixed128 | ((s_binary128_mantissa_extended & (113'b1 << (112-1-s_shift_amount_a+1))) << (112-1-s_shift_amount_a));
+            // todo we also need to put all 1s in the int part somewhere
+            // In that case, it should behave like case a:
+            s_fixed128 <= '1;
+            $display(">>>>> Hi i am in case c");
           end
           else if (s_shift_amount_a < -4) begin
             // Case d:
             // I think should be same as case b
             // copy pasted from case b:
-            s_fixed128 <= s_fixed128 | {4'b0, s_binary128_mantissa_extended} >> s_shift_amount_a;
+            s_fixed128 <= s_fixed128_temp >> -s_shift_amount_a; // Infer barrel shifter, the "-" take the twos complement
+            $display(">>>>> Hi i am in case d");
           end
           else begin
             // Should never be the case
@@ -395,21 +444,61 @@ always_ff @( posedge i_clk ) begin : stage2_convert
           end
         end
         TWO_SP_MODE: begin
-          // do the sign
-          s_fixed64_a.sign_portion = s_binary64_a.sign;
-          s_fixed64_b.sign_portion = s_binary64_b.sign;
+          // todo
         end
         FOUR_SP_MODE: begin
-          // do the sign
-          s_fixed32_a.sign_portion = s_binary32_a.sign;
-          s_fixed32_b.sign_portion = s_binary32_b.sign;
-          s_fixed32_c.sign_portion = s_binary32_c.sign;
-          s_fixed32_d.sign_portion = s_binary32_d.sign;
+          // todo
         end
         default: begin
 
         end
       endcase
+    end // if (s_stage2_en) begin
+  end // else begin
+end // always_ff
+
+/**
+ * Stage 3
+ * In this stage we will deal with:
+ * 1. Assigning sign bit.
+ * 2. Deal with int portion overflow and we need to fill it with 1s case.
+ */
+always_ff @( posedge i_clk ) begin : stage3_finalize
+  if (!i_reset) begin
+  end
+  else begin
+    if (s_stage3_en) begin
+      case (s_current_sp)
+        SINGLE_MODE: begin
+          // 1. Assigning sign bit.
+          s_fixed128.sign_portion <= s_binary128.sign;
+
+          // 2. Deal with int portion overflow and we need to fill it with 1s case.
+          if (s_shift_amount_a > 9) begin
+            s_fixed128.int_portion = '1;
+          end
+        end
+        TWO_SP_MODE: begin
+          // 1. Assigning sign bit.
+          s_fixed64_a.sign_portion <= s_binary64_a.sign;
+          s_fixed64_b.sign_portion <= s_binary64_b.sign;
+
+          // 2. Deal with int portion overflow and we need to fill it with 1s case.
+          // todo
+        end
+        FOUR_SP_MODE: begin
+          // 1. Assigning sign bit.
+          s_fixed32_a.sign_portion <= s_binary32_a.sign;
+          s_fixed32_b.sign_portion <= s_binary32_b.sign;
+          s_fixed32_c.sign_portion <= s_binary32_c.sign;
+          s_fixed32_d.sign_portion <= s_binary32_d.sign;
+
+          // 2. Deal with int portion overflow and we need to fill it with 1s case.
+          // todo
+        end
+        default: begin
+        end
+        endcase
     end // if (s_stage2_en) begin
   end // else begin
 end // always_ff
@@ -424,7 +513,6 @@ assign o_metadata.float_type_b  = s_float_type_b;
 assign o_metadata.float_type_c  = s_float_type_c;
 assign o_metadata.float_type_d  = s_float_type_d;
 
-// Passthrough (temp)
 assign o_fixed = (s_current_sp == SINGLE_MODE)  ? s_fixed128                                            :
                  (s_current_sp == TWO_SP_MODE)  ? {s_fixed64_a, s_fixed64_b}                            :
                  (s_current_sp == FOUR_SP_MODE) ? {s_fixed32_a, s_fixed32_b, s_fixed32_c, s_fixed32_d}  :

@@ -63,7 +63,7 @@
     s_i_float[127] = '1;
     s_i_float[126:112] = 15'h7FFF;
     s_i_float[111:0] = 'd5; // non 0
-    $display(">>>>> s_i_float=0x%x", s_i_float);
+    // $display(">>>>> s_i_float=0x%x", s_i_float);
     #1;
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, NAN)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, NA)
