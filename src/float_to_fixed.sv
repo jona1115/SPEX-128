@@ -587,7 +587,7 @@ always_ff @( posedge i_clk ) begin : stage2_convert
         default: begin
 
         end
-      endcase
+      endcase // case (s_current_sp)
     end // if (s_stage2_en) begin
   end // else begin
 end // always_ff
@@ -622,7 +622,7 @@ always_ff @( posedge i_clk ) begin : stage3_finalize
         end
         default: begin
         end
-        endcase
+      endcase // case (s_current_sp)
     end // if (s_stage2_en) begin
   end // else begin
 end // always_ff
@@ -646,6 +646,6 @@ assign o_fixed = (s_current_sp == SINGLE_MODE)  ? s_fixed128                    
 assign o_sanity_identifier      = 4'b0000;
 
 assign o_error = s_o_error;
-assign o_debug = s_o_debug; 
+assign o_debug = s_o_debug;
 
 endmodule // module float_to_fixed #()
