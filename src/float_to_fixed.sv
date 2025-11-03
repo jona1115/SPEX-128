@@ -607,24 +607,11 @@ always_ff @( posedge i_clk ) begin : stage3_finalize
         SINGLE_MODE: begin
           // 1. Assigning sign bit.
           s_fixed128.sign_portion <= s_binary128.sign;
-
-          // 2. Deal with int portion overflow and we need to fill it with 1s case.
-          if (s_shift_amount_a > 9) begin
-            s_fixed128.int_portion <= '1;
-          end
         end
         TWO_SP_MODE: begin
           // 1. Assigning sign bit.
           s_fixed64_a.sign_portion <= s_binary64_a.sign;
           s_fixed64_b.sign_portion <= s_binary64_b.sign;
-
-          // 2. Deal with int portion overflow and we need to fill it with 1s case.
-          if (s_shift_amount_a > 9) begin
-            s_fixed64_a.int_portion <= '1;
-          end
-          if (s_shift_amount_b > 9) begin
-            s_fixed64_b.int_portion <= '1;
-          end
         end
         FOUR_SP_MODE: begin
           // 1. Assigning sign bit.
@@ -632,20 +619,6 @@ always_ff @( posedge i_clk ) begin : stage3_finalize
           s_fixed32_b.sign_portion <= s_binary32_b.sign;
           s_fixed32_c.sign_portion <= s_binary32_c.sign;
           s_fixed32_d.sign_portion <= s_binary32_d.sign;
-
-          // 2. Deal with int portion overflow and we need to fill it with 1s case.
-          if (s_shift_amount_a > 9) begin
-            s_fixed32_a.int_portion <= '1;
-          end
-          if (s_shift_amount_b > 9) begin
-            s_fixed32_b.int_portion <= '1;
-          end
-          if (s_shift_amount_c > 9) begin
-            s_fixed32_c.int_portion <= '1;
-          end
-          if (s_shift_amount_d > 9) begin
-            s_fixed32_d.int_portion <= '1;
-          end
         end
         default: begin
         end
