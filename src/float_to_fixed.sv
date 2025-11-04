@@ -5,6 +5,8 @@ import binary128_pkg::*;
 import binary64_pkg::*;
 import binary32_pkg::*;
 import fixed128_pkg::*;
+import fixed64_pkg::*;
+import fixed32_pkg::*;
 
 module float_to_fixed #(
   parameter int NUM_BITS_128  = 128,
@@ -67,20 +69,20 @@ float_flag_t s_float_type_c;
 float_flag_t s_float_type_d;
 // For internal output
 fixed128_t s_fixed128;
-fixed128_t s_fixed64_a;
-fixed128_t s_fixed64_b;
-fixed128_t s_fixed32_a;
-fixed128_t s_fixed32_b;
-fixed128_t s_fixed32_c;
-fixed128_t s_fixed32_d;
+fixed64_t s_fixed64_a;
+fixed64_t s_fixed64_b;
+fixed32_t s_fixed32_a;
+fixed32_t s_fixed32_b;
+fixed32_t s_fixed32_c;
+fixed32_t s_fixed32_d;
 // For temporary internal output
 fixed128_t s_fixed128_temp;
-fixed128_t s_fixed64_a_temp;
-fixed128_t s_fixed64_b_temp;
-fixed128_t s_fixed32_a_temp;
-fixed128_t s_fixed32_b_temp;
-fixed128_t s_fixed32_c_temp;
-fixed128_t s_fixed32_d_temp;
+fixed64_t s_fixed64_a_temp;
+fixed64_t s_fixed64_b_temp;
+fixed32_t s_fixed32_a_temp;
+fixed32_t s_fixed32_b_temp;
+fixed32_t s_fixed32_c_temp;
+fixed32_t s_fixed32_d_temp;
 // Mantissa extended
 logic [112:0] s_binary128_mantissa_extended;
 logic [52:0]  s_binary64_a_mantissa_extended;
@@ -157,7 +159,7 @@ always_ff @( posedge i_clk ) begin : defaulter
 end
 
 /**
- * Determine what the output float types are based on s_current_sp
+ * Decoder to determine what the output float types are based on s_current_sp
  */
 always_comb begin : float_type_determiner
   case (s_current_sp)
@@ -260,6 +262,11 @@ always_ff @( posedge i_clk ) begin : float_to_fixed_FSM
   end
 end
 
+/**
+ * 
+ * State transition control
+ * 
+ */
 logic s_stage1_en, s_stage2_en, s_stage3_en;
 always_comb begin : stage_en_control
   // Defaults
@@ -359,8 +366,8 @@ always_ff @( posedge i_clk ) begin : stage1_get_shift_amount
 
     // Map extended mantissa(s) of input to fixed temporarily
     s_fixed128_temp[117:5] <= s_binary128_mantissa_extended;
-    s_fixed64_a_temp[53:1] <= s_binary64_a_mantissa_extended; // should be good not tested yet
-    s_fixed64_b_temp[53:1] <= s_binary64_b_mantissa_extended; // should be good not tested yet
+    s_fixed64_a_temp[53:1] <= s_binary64_a_mantissa_extended;
+    s_fixed64_b_temp[53:1] <= s_binary64_b_mantissa_extended;
     s_fixed32_a_temp[21:0] <= s_binary32_a_mantissa_extended[23:2]; // should be good not tested yet
     s_fixed32_b_temp[21:0] <= s_binary32_b_mantissa_extended[23:2]; // should be good not tested yet
     s_fixed32_c_temp[21:0] <= s_binary32_c_mantissa_extended[23:2]; // should be good not tested yet
@@ -594,9 +601,7 @@ end // always_ff
 
 /**
  * Stage 3
- * In this stage we will deal with:
- * 1. Assigning sign bit.
- * 2. Deal with int portion overflow and we need to fill it with 1s case.
+ * In this stage we will deal with assigning sign bit.
  */
 always_ff @( posedge i_clk ) begin : stage3_finalize
   if (!i_reset) begin
@@ -605,16 +610,16 @@ always_ff @( posedge i_clk ) begin : stage3_finalize
     if (s_stage3_en) begin
       case (s_current_sp)
         SINGLE_MODE: begin
-          // 1. Assigning sign bit.
+          // Assign sign bit
           s_fixed128.sign_portion <= s_binary128.sign;
         end
         TWO_SP_MODE: begin
-          // 1. Assigning sign bit.
+          // Assign sign bit
           s_fixed64_a.sign_portion <= s_binary64_a.sign;
           s_fixed64_b.sign_portion <= s_binary64_b.sign;
         end
         FOUR_SP_MODE: begin
-          // 1. Assigning sign bit.
+          // Assign sign bit
           s_fixed32_a.sign_portion <= s_binary32_a.sign;
           s_fixed32_b.sign_portion <= s_binary32_b.sign;
           s_fixed32_c.sign_portion <= s_binary32_c.sign;
@@ -637,6 +642,27 @@ assign o_metadata.float_type_b  = s_float_type_b;
 assign o_metadata.float_type_c  = s_float_type_c;
 assign o_metadata.float_type_d  = s_float_type_d;
 
+// assign o_fixed = (s_current_sp == SINGLE_MODE)  ? {s_binary128.sign,
+//                                                    s_fixed128.int_portion,
+//                                                    s_fixed128.frac_portion}   :
+//                  (s_current_sp == TWO_SP_MODE)  ? {s_binary64_a.sign,
+//                                                    s_fixed64_a.int_portion,
+//                                                    s_fixed64_a.frac_portion,
+//                                                    s_binary64_b.sign,
+//                                                    s_fixed64_b.int_portion,
+//                                                    s_fixed64_b.frac_portion}  :
+//                  (s_current_sp == FOUR_SP_MODE) ? {s_binary32_a.sign,
+//                                                    s_fixed32_a.int_portion,
+//                                                    s_fixed32_a.frac_portion,
+//                                                    s_binary32_b.sign,
+//                                                    s_fixed32_b.int_portion,
+//                                                    s_fixed32_b.frac_portion,
+//                                                    s_binary32_c.sign,
+//                                                    s_fixed32_c.int_portion,
+//                                                    s_fixed32_c.frac_portion,
+//                                                    s_binary32_d.sign,
+//                                                    s_fixed32_d.int_portion,
+//                                                    s_fixed32_d.frac_portion}  :
 assign o_fixed = (s_current_sp == SINGLE_MODE)  ? s_fixed128                                            :
                  (s_current_sp == TWO_SP_MODE)  ? {s_fixed64_a, s_fixed64_b}                            :
                  (s_current_sp == FOUR_SP_MODE) ? {s_fixed32_a, s_fixed32_b, s_fixed32_c, s_fixed32_d}  :
