@@ -6,9 +6,12 @@
 +*
 transcript
 **/work/
+wavedrom.svh
+modelsim.ini
+**/waves/
 
-# My script generate files:
-# filelist.f
+# My script generate files (because it is system based aka it uses absolute paths):
+filelist.f
 
 # But keep .git*
 !.git*

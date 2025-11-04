@@ -6,8 +6,7 @@
  ********************************************************************
  * 
  * Description:
- * Contains enum for the operation types: SINGLE (1xbinary128), TWO (
- * 2xbinary64), and FOUR (4xbinary32) subword parallel (SP) modes.
+ * Contains struct for 128bit Qs10.117 fixed point format
  * 
  ********************************************************************
  * 
@@ -18,13 +17,12 @@
  * 
  *******************************************************************/
 
-package sp_mode_pkg;
+package fixed128_pkg;
 
-    typedef enum logic [1:0] {
-        SINGLE_MODE     = 2'b00, // This is for 1x binary128
-        TWO_SP_MODE     = 2'b01, // This is for 2x binary64
-        FOUR_SP_MODE    = 2'b10, // This is for 4x binary32
-        INVALID_SP_MODE = 2'b11  // This is for all my... nvm, its for non of the above
-    } sp_mode_t;
+    typedef struct packed {
+        logic           sign_portion;
+        logic [9:0]     int_portion;
+        logic [116:0]   frac_portion;
+    } fixed128_t;
 
-endpackage
+endpackage : fixed128_pkg

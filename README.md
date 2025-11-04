@@ -1,9 +1,24 @@
-# SPEX-128
-
 # After cloning
 1. This repo uses submodules, run this after cloning: `git submodule update --init --recursive`
 2. Install required tools, see section: [Installation of Tools](https://github.com/jona1115/SPEX-128?tab=readme-ov-file#installation-of-tools)
-3. Source the setup file, everytime, before doing anything: `source setup.sh`
+3. ⚠️ Source the setup file, everytime, before doing anything: `source setup.sh`
+
+# Shortcuts
+Below are easy, copy-pastable commands to do stuff. They, in theory, should "just work".
+1. Run svunit test using Modelsim/Questasim:
+    ```sh
+    cd tests/svunit/float_to_fixed      # You can go into any test folders
+    ./svunit_run.sh -s modelsim --ci    # Run -h for more info, --ci flag is more cleaner imo
+    ```
+2. Run svunit test (simulator questasim or modelsim) and open questa/modelsim waveform viewer:
+    ```sh
+    cd tests/svunit/float_to_fixed      # You can go into any test folders
+    ../sim_and_wave.sh                  # Run -h flag for more info
+    # You could also generate and open modelsim in oneline:
+    ../sim_and_wave.sh && vsim -view ./waves/svunit.wlf &
+    # And even include the do file cli:
+    ../sim_and_wave.sh && vsim -view ./waves/svunit.wlf -do "./dos/wave.do" &
+    ```
 
 # Creating/running SVUnit Tests
 ```sh
@@ -21,7 +36,8 @@ create_unit_test.pl name_of_module_you_wanna_test.sv
 runSVUnit -s verilator -f path/to/filelist.f # If you want to run svunit manually
 # --- OR ---
 ./svunit_run.sh -s <simulator> # This script is just cool, use it instead of manually 
-                               # for <simulator>, use questasim, verilator doesn't work
+                               # for <simulator>, use questasim, or modelsim, DO NOT use 
+                               # verilator (at least v5.040), it doesn't work
 ```
 ### Test Driven Development (TDD)
 I want to dedicate this section to describing my testing/developing philosophy. I use TDD, it works, and in my opinion, creates a positive feedback loop of self-documenting, and self-testing code. Not to mention easier to CI. So when you are reading the code, maybe take time to also look over the test. This is because the code is derived by the tests, not the other way around.
@@ -61,3 +77,6 @@ autoconf         # Create ./configure script
 make -j `nproc`  # Build Verilator itself (if error, try just 'make')
 sudo make install
 ```
+
+## Modelsim
+Follow [this link](https://gist.github.com/Razer6/cafc172b5cffae189b4ecda06cf6c64f).

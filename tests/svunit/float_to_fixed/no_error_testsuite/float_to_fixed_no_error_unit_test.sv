@@ -1,6 +1,13 @@
 `include "svunit_defines.svh"
 
-module sp_mode_unit_test;
+/**
+ * 
+ * This test checks for:
+ * 1. Latency of the module (should be 2 cycles)
+ * 2. Result of the module
+ * 
+ */
+module float_to_fixed_no_error_unit_test;
 
 `define NUM_BITS_128 128
 `define NUM_BITS_64 64
@@ -73,14 +80,25 @@ module sp_mode_unit_test;
   // Setup for running the Unit Tests
   //===================================
   task setup();
+    // For testing latency
+    logic [127:0] prev_out;
+  
     svunit_ut.setup();
     /* Place Setup Code Here */
-    s_i_clk = '0;
     s_i_float = '0;
-    // s_i_ctrl = '0;
-    s_i_ctrl = 4'd2;
+    s_i_ctrl = '0;
+
+    s_i_reset = 1'b0;                 // assert sync reset
+    repeat (2) @(posedge s_i_clk);    // hold for > one posedge
+    s_i_reset = 1'b1;                 // deassert
+    @(posedge s_i_clk);               // let it stablize
   endtask
 
+// Toggle clock
+initial begin
+  s_i_clk = 1'b0;
+  forever #1 s_i_clk = ~s_i_clk; // 2 unit period
+end
 
   //===================================
   // Here we deconstruct anything we 
@@ -91,7 +109,6 @@ module sp_mode_unit_test;
     /* Place Teardown Code Here */
 
   endtask
-
 
   //===================================
   // All tests are defined between the
@@ -108,7 +125,15 @@ module sp_mode_unit_test;
   //===================================
   `SVUNIT_TESTS_BEGIN
 
-    `include "cases/sp_mode.svh"
+    `SVTEST(no_error_anytimestep_0)
+      // This test is basically: ALWAYS !error (\square\neg error)
+      for (int i = 0; i < 100; ++i) begin
+        // $display(">>>>> i==%d: s_o_error: %x", i, s_o_error);
+        // $display(">>>>> i==%d: s_o_fixed: %x", i, s_o_fixed);
+        `FAIL_UNLESS_EQUAL(s_o_error, '0)
+        #1;
+      end
+    `SVTEST_END
 
   `SVUNIT_TESTS_END
 

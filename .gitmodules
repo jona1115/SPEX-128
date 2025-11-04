@@ -1,3 +1,6 @@
 [submodule "tools/svunit"]
 	path = tools/svunit
 	url = git@github.com:svunit/svunit.git
+[submodule "tools/arithmetic128"]
+	path = tools/arithmetic128
+	url = git@github.com:jona1115/arithmetic128.git
