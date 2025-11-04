@@ -1,3 +1,23 @@
+/********************************************************************
+ * 
+ * Originator   : Jonathan Tan
+ * Date         : 11/04/2025
+ * 
+ ********************************************************************
+ * 
+ * Description:
+ * Contains enum for the operation types: SINGLE (1xbinary128), TWO (
+ * 2xbinary64), and FOUR (4xbinary32) subword parallel (SP) modes.
+ * 
+ ********************************************************************
+ * 
+ * Modification history:
+ *       Ver   |  Who       |  Date	       |  Changes
+ *     ------- + ---------- + ------------ + --------------------------
+ *       1.00  |  Jonathan  |  11/04/2025  |  Birth of this file
+ * 
+ *******************************************************************/
+
 package sp_mode_pkg;
 
     typedef enum logic [1:0] {

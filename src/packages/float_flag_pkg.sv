@@ -1,3 +1,23 @@
+/********************************************************************
+ * 
+ * Originator   : Jonathan Tan
+ * Date         : 11/04/2025
+ * 
+ ********************************************************************
+ * 
+ * Description:
+ * Contains enum for different float "flag". IEEE-754 defines some
+ * subnormal formats, we define them here as a enum.
+ * 
+ ********************************************************************
+ * 
+ * Modification history:
+ *       Ver   |  Who       |  Date	       |  Changes
+ *     ------- + ---------- + ------------ + --------------------------
+ *       1.00  |  Jonathan  |  11/04/2025  |  Birth of this file
+ * 
+ *******************************************************************/
+
 package float_flag_pkg;
 
   typedef enum logic [3:0] {

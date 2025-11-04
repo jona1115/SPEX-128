@@ -1,3 +1,24 @@
+/********************************************************************
+ * 
+ * Originator   : Jonathan Tan
+ * Date         : 11/04/2025
+ * 
+ ********************************************************************
+ * 
+ * Description:
+ * Contains module to convert a subword parallel (SP) float(s) into
+ * fixed Qs10.n format, where s is the sign, and n is the number of 
+ * bits for the fractional portion of the fixed point format.
+ * 
+ ********************************************************************
+ * 
+ * Modification history:
+ *       Ver   |  Who       |  Date	       |  Changes
+ *     ------- + ---------- + ------------ + --------------------------
+ *       1.00  |  Jonathan  |  11/04/2025  |  Birth of this file
+ * 
+ *******************************************************************/
+
 import float_flag_pkg::*;
 import sp_mode_pkg::*;
 import float_metadata_pkg::*;
@@ -13,7 +34,7 @@ module float_to_fixed #(
   parameter int NUM_BITS_64   = 64,
   parameter int NUM_BITS_32   = 32,
   
-  parameter int FIXED128_SHIFT_AMOUNT_INT_PORTION_OVERFLOW  = 9, // 9 because there is 10 int portion bits and with the implicit 1, we can only afford to shift right by 10-1
+  parameter int FIXED128_SHIFT_AMOUNT_INT_PORTION_OVERFLOW  = 9,  // 9 because there is 10 int portion bits and with the implicit 1, we can only afford to shift right by 10-1
   parameter int FIXED64_SHIFT_AMOUNT_INT_PORTION_OVERFLOW   = 9,  // 9 because there is 10 int portion bits and with the implicit 1, we can only afford to shift right by 10-1
   parameter int FIXED32_SHIFT_AMOUNT_INT_PORTION_OVERFLOW   = 9,  // 9 because there is 10 int portion bits and with the implicit 1, we can only afford to shift right by 10-1
 
@@ -396,14 +417,12 @@ always_ff @( posedge i_clk ) begin : stage2_convert
           if (s_shift_amount_a >= 0 && s_shift_amount_a <= 9) begin
             // Case a:
             s_fixed128 <= s_fixed128_temp << s_shift_amount_a; // Infer barrel shifter
-            // $display(">>>>> SINGLE_MODE: Hi i am in case a");
           end
           else if (s_shift_amount_a < 0) begin
             // Case b: (s_shift_amount_a >= -4 && s_shift_amount_a < 0)
             // Case d: (s_shift_amount_a < -4)
             // This else if statement combines both
             s_fixed128 <= s_fixed128_temp >> -s_shift_amount_a; // Infer barrel shifter, the "-" take the twos complement
-            // $display(">>>>> SINGLE_MODE: Hi i am in case b (or d)");
           end
           else if (s_shift_amount_a > 9) begin
             // Case c:
@@ -411,7 +430,6 @@ always_ff @( posedge i_clk ) begin : stage2_convert
             // is an overflow in the overall value, so fill everything with 1s. (well, except
             // the sign bit but that will be dealt with in stage 3).
             s_fixed128 <= '1;
-            // $display(">>>>> SINGLE_MODE: Hi i am in case c");
           end
           else begin
             // Should never be the case
@@ -425,14 +443,12 @@ always_ff @( posedge i_clk ) begin : stage2_convert
           if (s_shift_amount_a >= 0 && s_shift_amount_a <= 9) begin
             // Case a:
             s_fixed64_a <= s_fixed64_a_temp << s_shift_amount_a; // Infer barrel shifter
-            // $display(">>>>> TWO_SP_MODE: Hi i am in case a");
           end
           else if (s_shift_amount_a < 0) begin
             // Case b: (s_shift_amount_a >= -4 && s_shift_amount_a < 0)
             // Case d: (s_shift_amount_a < -4)
             // This else if statement combines both
             s_fixed64_a <= s_fixed64_a_temp >> -s_shift_amount_a; // Infer barrel shifter, the "-" take the twos complement
-            // $display(">>>>> TWO_SP_MODE: Hi i am in case b (or d)");
           end
           else if (s_shift_amount_a > 9) begin
             // Case c:
@@ -440,7 +456,6 @@ always_ff @( posedge i_clk ) begin : stage2_convert
             // is an overflow in the overall value, so fill everything with 1s. (well, except
             // the sign bit but that will be dealt with in stage 3).
             s_fixed64_a <= '1;
-            // $display(">>>>> TWO_SP_MODE: Hi i am in case c");
           end
           else begin
             // Should never be the case
@@ -453,14 +468,12 @@ always_ff @( posedge i_clk ) begin : stage2_convert
           if (s_shift_amount_b >= 0 && s_shift_amount_b <= 9) begin
             // Case a:
             s_fixed64_b <= s_fixed64_b_temp << s_shift_amount_b; // Infer barrel shifter
-            // $display(">>>>> TWO_SP_MODE: Hi i am in case a");
           end
           else if (s_shift_amount_b < 0) begin
             // Case b: (s_shift_amount_b >= -4 && s_shift_amount_b < 0)
             // Case d: (s_shift_amount_b < -4)
             // This else if statement combines both
             s_fixed64_b <= s_fixed64_b_temp >> -s_shift_amount_b; // Infer barrel shifter, the "-" take the twos complement
-            // $display(">>>>> TWO_SP_MODE: Hi i am in case b (or d)");
           end
           else if (s_shift_amount_b > 9) begin
             // Case c:
@@ -468,7 +481,6 @@ always_ff @( posedge i_clk ) begin : stage2_convert
             // is an overflow in the overall value, so fill everything with 1s. (well, except
             // the sign bit but that will be dealt with in stage 3).
             s_fixed64_b <= '1;
-            // $display(">>>>> TWO_SP_MODE: Hi i am in case c");
           end
           else begin
             // Should never be the case
@@ -482,14 +494,12 @@ always_ff @( posedge i_clk ) begin : stage2_convert
           if (s_shift_amount_a >= 0 && s_shift_amount_a <= 9) begin
             // Case a:
             s_fixed32_a <= s_fixed32_a_temp << s_shift_amount_a; // Infer barrel shifter
-            // $display(">>>>> FOUR_SP_MODE: Hi i am in case a");
           end
           else if (s_shift_amount_a < 0) begin
             // Case b: (s_shift_amount_a >= -4 && s_shift_amount_a < 0)
             // Case d: (s_shift_amount_a < -4)
             // This else if statement combines both
             s_fixed32_a <= s_fixed32_a_temp >> -s_shift_amount_a; // Infer barrel shifter, the "-" take the twos complement
-            // $display(">>>>> FOUR_SP_MODE: Hi i am in case b (or d)");
           end
           else if (s_shift_amount_a > 9) begin
             // Case c:
@@ -497,7 +507,6 @@ always_ff @( posedge i_clk ) begin : stage2_convert
             // is an overflow in the overall value, so fill everything with 1s. (well, except
             // the sign bit but that will be dealt with in stage 3).
             s_fixed32_a <= '1;
-            // $display(">>>>> FOUR_SP_MODE: Hi i am in case c");
           end
           else begin
             // Should never be the case
@@ -510,14 +519,12 @@ always_ff @( posedge i_clk ) begin : stage2_convert
           if (s_shift_amount_b >= 0 && s_shift_amount_b <= 9) begin
             // Case a:
             s_fixed32_b <= s_fixed32_b_temp << s_shift_amount_b; // Infer barrel shifter
-            // $display(">>>>> FOUR_SP_MODE: Hi i am in case a");
           end
           else if (s_shift_amount_b < 0) begin
             // Case b: (s_shift_amount_b >= -4 && s_shift_amount_b < 0)
             // Case d: (s_shift_amount_b < -4)
             // This else if statement combines both
             s_fixed32_b <= s_fixed32_b_temp >> -s_shift_amount_b; // Infer barrel shifter, the "-" take the twos complement
-            // $display(">>>>> FOUR_SP_MODE: Hi i am in case b (or d)");
           end
           else if (s_shift_amount_b > 9) begin
             // Case c:
@@ -525,7 +532,6 @@ always_ff @( posedge i_clk ) begin : stage2_convert
             // is an overflow in the overall value, so fill everything with 1s. (well, except
             // the sign bit but that will be dealt with in stage 3).
             s_fixed32_b <= '1;
-            // $display(">>>>> FOUR_SP_MODE: Hi i am in case c");
           end
           else begin
             // Should never be the case
@@ -538,14 +544,12 @@ always_ff @( posedge i_clk ) begin : stage2_convert
           if (s_shift_amount_c >= 0 && s_shift_amount_c <= 9) begin
             // Case a:
             s_fixed32_c <= s_fixed32_c_temp << s_shift_amount_c; // Infer barrel shifter
-            // $display(">>>>> FOUR_SP_MODE: Hi i am in case a");
           end
           else if (s_shift_amount_c < 0) begin
             // Case b: (s_shift_amount_c >= -4 && s_shift_amount_c < 0)
             // Case d: (s_shift_amount_c < -4)
             // This else if statement combines both
             s_fixed32_c <= s_fixed32_c_temp >> -s_shift_amount_c; // Infer barrel shifter, the "-" take the twos complement
-            // $display(">>>>> FOUR_SP_MODE: Hi i am in case b (or d)");
           end
           else if (s_shift_amount_c > 9) begin
             // Case c:
@@ -553,7 +557,6 @@ always_ff @( posedge i_clk ) begin : stage2_convert
             // is an overflow in the overall value, so fill everything with 1s. (well, except
             // the sign bit but that will be dealt with in stage 3).
             s_fixed32_c <= '1;
-            // $display(">>>>> FOUR_SP_MODE: Hi i am in case c");
           end
           else begin
             // Should never be the case
@@ -566,14 +569,12 @@ always_ff @( posedge i_clk ) begin : stage2_convert
           if (s_shift_amount_d >= 0 && s_shift_amount_d <= 9) begin
             // Case a:
             s_fixed32_d <= s_fixed32_d_temp << s_shift_amount_d; // Infer barrel shifter
-            // $display(">>>>> FOUR_SP_MODE: Hi i am in case a");
           end
           else if (s_shift_amount_d < 0) begin
             // Case b: (s_shift_amount_d >= -4 && s_shift_amount_d < 0)
             // Case d: (s_shift_amount_d < -4)
             // This else if statement combines both
             s_fixed32_d <= s_fixed32_d_temp >> -s_shift_amount_d; // Infer barrel shifter, the "-" take the twos complement
-            // $display(">>>>> FOUR_SP_MODE: Hi i am in case b (or d)");
           end
           else if (s_shift_amount_d > 9) begin
             // Case c:
@@ -581,7 +582,6 @@ always_ff @( posedge i_clk ) begin : stage2_convert
             // is an overflow in the overall value, so fill everything with 1s. (well, except
             // the sign bit but that will be dealt with in stage 3).
             s_fixed32_d <= '1;
-            // $display(">>>>> FOUR_SP_MODE: Hi i am in case c");
           end
           else begin
             // Should never be the case
