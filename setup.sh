@@ -35,6 +35,7 @@ popd >/dev/null
 
 echo "Setting up tests/svunit/filelist.f..."
 ./scripts/gen_filelist.sh
+echo "Mannually reordering of the file in filelist.f..."
 ./scripts/reorder_filelist.sh tests/svunit/filelist.f
 
 echo "Done"
