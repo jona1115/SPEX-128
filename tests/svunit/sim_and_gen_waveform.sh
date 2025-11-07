@@ -73,38 +73,6 @@ filesize() {
   fi
 }
 
-wait_for_wlf_stable() {
-  local f="$1" timeout="$2" stable_window="$3"
-  local start_t now_t
-  start_t=$(date +%s)
-
-  # Wait for file to appear
-  while [[ ! -f "$f" ]]; do
-    now_t=$(date +%s)
-    (( now_t - start_t >= timeout )) && return 1
-    sleep 0.2
-  done
-
-  # Wait for size to stabilize
-  local last_sz=-1 stable_start_t=
-  while :; do
-    local cur_sz
-    cur_sz=$(filesize "$f" 2>/dev/null || echo -1)
-    now_t=$(date +%s)
-
-    if [[ "$cur_sz" == "$last_sz" && "$cur_sz" -ge 0 ]]; then
-      [[ -z "$stable_start_t" ]] && stable_start_t="$now_t"
-      (( now_t - stable_start_t >= stable_window )) && return 0
-    else
-      stable_start_t=""
-      last_sz="$cur_sz"
-    fi
-
-    (( now_t - start_t >= timeout )) && return 2
-    sleep 0.2
-  done
-}
-
 # Build the args to forward to svunit_run.sh (do NOT forward -h/--help)
 SVARGS=()
 for a in "$@"; do
@@ -137,22 +105,12 @@ fi
 echo "==> Generate ModelSim wave artifacts"
 "$GEN_WAVE_SH" || die "generate_modelsim_wave.sh failed"
 
-# echo "==> Waiting for WLF to be ready: $WLF_PATH"
-# if ! wait_for_wlf_stable "$WLF_PATH" "$WLF_TIMEOUT_SEC" "$WLF_STABLE_WINDOW_SEC"; then
-#   echo "WLF not stable within timeout (${WLF_TIMEOUT_SEC}s). Attempting to open anyway."
-# fi
-
 command -v vsim >/dev/null 2>&1 || die "vsim not found in PATH"
 if [[ -z "${DISPLAY:-}" ]]; then
   echo "Warning: \$DISPLAY is not set; vsim GUI may fail."
 fi
 
-# echo "==> Opening ModelSim waveform"
-# sleep 2 # I (jonathan) have no idea why you need to wait
-# echo "==> Note: If modelsim fail to open, run: vsim -view ./waves/svunit.wlf"
 echo "==> Next step, to view waveform, run: vsim -view ./waves/svunit.wlf"
-# # Launch in background; 'disown' avoids job-control messages if sourced
-# vsim -view "$WLF_PATH" & disown || true
 
 # Return overall status = SVUnit's status (viewer already launched)
 if (( _is_sourced )); then

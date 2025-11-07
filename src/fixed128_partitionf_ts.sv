@@ -45,14 +45,17 @@ module fixed128_partitionf_ts #(
   input   logic                                   i_clk,
   input   logic                                   i_reset, // Synchronous
 
-  input   logic [3:0]                             i_ctrl,
+  // Metadata stuff
+  input   float_metadata_t                        i_metadata,
+  output  float_metadata_t                        o_metadata,
 
+  // Data
   input   logic [64:0]                            i_f,
-  output  logic [127:0]                           o_exp_f,
+  output  binary128_t                             o_exp_f,
 
   // Handshake
   input   logic                                   i_valid,
-  // output  logic                                   o_ready, need?
+  // output  logic                                   o_ready, todo need?
 
   // Module identifier
   output  logic [3:0]                             o_sanity_identifier,
@@ -69,7 +72,8 @@ module fixed128_partitionf_ts #(
 //=====================================================================================
 // Final assignment
 //=====================================================================================
-assign o_exp_f = {1'b0, 15'h3FFF/*16383*/, 52'b0, i_f[64:5]};
+assign o_metadata = i_metadata;
+assign o_exp_f = binary128_t'({1'b0, 15'h3FFF/*16383*/, 52'b0, i_f[64:5]});
 assign o_sanity_identifier = 4'b0000;
 assign o_error = '0;
 assign o_debug = '0;
