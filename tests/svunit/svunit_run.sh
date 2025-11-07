@@ -13,20 +13,59 @@ set -u -o pipefail
 
 usage() {
   cat <<'EOF'
-Usage: $0 [-v|--verbose] [--ci] [-s|--simulator <questa|verilator|vcs|...] [-h|--help]
-Runs:  runSVUnit -s verilator -f ../filelist.f
+Usage: svunit_run.sh [general flags] [filelist flags]
+
+General flags:
+  -s, --simulator <questa|modelsim|verilator|vcs|...>
+  -v, --verbose                 Print full raw output
+  --ci                          CI-friendly output (also auto-enabled if GITHUB_ACTIONS=true)
+  -h, --help                    Show this help and exit
+
+Filelist flags (per-folder generation):
+  --all                         Include all non-package *.sv under <src>
+  --also <name|path>            Additionally include a module file (repeatable). Accepts a bare
+                                module name (resolved as <src>/<name>.sv) or a path (absolute or relative).
+  --module <name>               Override module name (defaults to basename of the current test folder)
+  --src <dir>                   Override source root (default: <repo_root>/src)
+  --top <basename.sv>           Force the top-module basename (default: <module>.sv)
 
 Behavior:
-- Default: concise summary (tests + suites + Verilator report)
-- -v/--verbose: print full raw output
-- --ci or GITHUB_ACTIONS=true: one-line summary + failing tests only + GH annotations + step summary
+- Must be run *from a test folder* (e.g., tests/svunit/<module>).
+- Auto-generates ./filelist.f for the current test folder:
+    • Packages first (src/packages/*.sv, *.svh)
+    • float_metadata_pkg.sv(h) placed last within the packages block
+    • Selected top module placed as the final line overall
+- Invokes: runSVUnit -s <simulator> -f ./filelist.f
+- Default simulator: verilator (if -s/--simulator not provided)
 - On build error (non-zero exit or '%Error:'), prints full raw log
-- Writes full raw log to ./run.log
+- Always writes full raw log to ./run.log
+- In CI mode: prints concise summary + failing tests + GitHub annotations/step summary
 
 Exit code:
 - Mirrors runSVUnit unless tests fail; then returns 1 even if runSVUnit returned 0.
+
+Examples:
+  # Default: packages + only this folder's module; top=<folder>.sv
+  ../svunit_run.sh -s modelsim
+
+  # Include a few additional modules by name or path
+  ../svunit_run.sh --also float_to_fixed --also src/fixed128_partitionf_ts.sv -s modelsim
+
+  # System/top build: include all non-package sources; top inferred from folder name
+  (cd tests/svunit/SPEX128_top && ../svunit_run.sh --all -s modelsim)
+
+  # Explicitly set top if folder name differs
+  ../svunit_run.sh --all --top SPEX128_top.sv -s modelsim
 EOF
 }
+
+
+# ---- Filelist generator flags (new) ----
+GEN_ALL=0
+declare -a GEN_ALSO=()
+GEN_MODULE_OVERRIDE=""
+GEN_SRC_OVERRIDE=""
+TOP_OVERRIDE=""
 
 VERBOSE=0
 CI_MODE=0
@@ -44,6 +83,37 @@ while [[ $# -gt 0 ]]; do
       fi
       ;;
     -h|--help) usage; exit 0 ;;
+        --all)
+      GEN_ALL=1; shift
+      ;;
+    --also)
+      if (( $# >= 2 )) && [[ ${2} != -* ]]; then
+        GEN_ALSO+=("$2"); shift 2
+      else
+        echo "Error: --also requires a module name or path"; exit 2
+      fi
+      ;;
+    --module)
+      if (( $# >= 2 )) && [[ ${2} != -* ]]; then
+        GEN_MODULE_OVERRIDE="$2"; shift 2
+      else
+        echo "Error: --module requires a value"; exit 2
+      fi
+      ;;
+    --src)
+      if (( $# >= 2 )) && [[ ${2} != -* ]]; then
+        GEN_SRC_OVERRIDE="$2"; shift 2
+      else
+        echo "Error: --src requires a directory"; exit 2
+      fi
+      ;;
+    --top)
+      if (( $# >= 2 )) && [[ ${2} != -* ]]; then
+        TOP_OVERRIDE="$2"; shift 2
+      else
+        echo "Error: --top requires a basename like foo.sv"; exit 2
+      fi
+      ;;
     *) echo "Unknown arg: $1"; usage; exit 2 ;;
   esac
 done
@@ -53,8 +123,32 @@ if [[ ${GITHUB_ACTIONS:-} == "true" ]]; then
   CI_MODE=1
 fi
 
+# Default simulator if none provided
+SIMULATOR="${SIMULATOR:-verilator}"
+
+# --- Per-folder filelist bootstrap ---
+THIS_DIR="$(cd "$(dirname "$0")" && pwd -P)"    # .../tests/svunit
+MOD_DIR="$(pwd -P)"                             # test folder you cd'ed into
+MODULE_DIRNAME="$(basename "$MOD_DIR")"
+MODULE="${GEN_MODULE_OVERRIDE:-$MODULE_DIRNAME}"
+FILELIST="$MOD_DIR/filelist.f"
+TOP_BASENAME="${TOP_OVERRIDE:-${MODULE}.sv}"
+
+# Build generator flags array
+GEN_FLAGS=()
+(( GEN_ALL )) && GEN_FLAGS+=(--all)
+[[ -n "$GEN_MODULE_OVERRIDE" ]] && GEN_FLAGS+=(--module "$GEN_MODULE_OVERRIDE")
+[[ -n "$GEN_SRC_OVERRIDE"    ]] && GEN_FLAGS+=(--src "$GEN_SRC_OVERRIDE")
+for a in "${GEN_ALSO[@]}"; do GEN_FLAGS+=(--also "$a"); done
+
+# Generate and reorder
+"${THIS_DIR}/gen_filelist.sh" --module "$MODULE" "${GEN_FLAGS[@]}" --out "$FILELIST"
+"${THIS_DIR}/reorder_filelist.sh" --top "$TOP_BASENAME" "$FILELIST"
+# --- End bootstrap ---
+
+
 # Command to run (as requested)
-CMD=(runSVUnit -s "$SIMULATOR" -f ../filelist.f)
+CMD=(runSVUnit -s "$SIMULATOR" -f "$FILELIST")
 
 # Print the running command BEFORE doing anything
 echo "Running: ${CMD[*]}"
