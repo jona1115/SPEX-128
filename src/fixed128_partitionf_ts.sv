@@ -1,12 +1,12 @@
 /********************************************************************
  * 
  * Originator   : Jonathan Tan
- * Date         : 11/?/2025
+ * Date         : 11/6/2025
  * 
  ********************************************************************
  * 
  * Description:
- * This a module to deal with the f partition of fixed 128 taylor
+ * This a module to deal with the f partition of fixed128 taylor
  * approximation. The high level idea is
  *                      output = 1 + f
  * But in reality, it is just a remapping operation of mapping 
@@ -14,12 +14,15 @@
  * and forcing the sign of the binary64 to 0 and the exponent of
  * it to 1023.
  * 
+ * What is the partitions? See the graph in:
+ * https://github.com/jona1115/SPEX-128/issues/14
+ * 
  ********************************************************************
  * 
  * Modification history:
  *       Ver   |  Who       |  Date	       |  Changes
  *     ------- + ---------- + ------------ + -----------------------
- *       1.00  |  Jonathan  |  11/?/2025   |  Birth of this file
+ *       1.00  |  Jonathan  |  11/6/2025   |  Birth of this file
  * 
  *******************************************************************/
 
