@@ -96,7 +96,7 @@ end
   endtask
 
 
-  // ---------- Helpers & ground truth ---------- ChatGPTed
+  // ---------- Helpers & ground truth ----------
   // Below code is either partially written by, or written with the aid of ChatGPT
   localparam string LUT_FILE = my_fixed128_partitiond.INIT_FILE; // follow DUT param
   binary128_t gt_mem [0:8191];
@@ -107,11 +107,14 @@ end
   end
 
   task automatic drive(input logic [12:0] d, input bit v);
-    s_i_d     <= d;
-    s_i_valid <= v;
+    s_i_d     = d;
+    s_i_valid = v;
   endtask
 
-  task automatic tick; @(posedge s_i_clk); endtask
+  task automatic tick;
+    @(posedge s_i_clk);
+    @(posedge s_i_clk);
+  endtask
 
   task automatic expect_now_valid_and_value(input logic [12:0] d, input string tag = "");
     `FAIL_IF_LOG(s_o_valid !== 1'b1,
