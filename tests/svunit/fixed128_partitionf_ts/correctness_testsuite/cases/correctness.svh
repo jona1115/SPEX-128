@@ -19,7 +19,7 @@
   binary128_t exp;
 
   // ---- Body ----
-  s_i_valid = 1'b1;
+  // s_i_valid = 1'b1;
 
   // Check all boundaries
   foreach (edge_cases[idx]) begin
@@ -41,7 +41,7 @@
   int         k;
 
   // ---- Body ----
-  s_i_valid = 1'b1;
+  // s_i_valid = 1'b1;
 
   // Random 100 samples
   for (k = 0; k < 100; k++) begin

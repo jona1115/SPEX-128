@@ -22,13 +22,13 @@ module fixed128_partitionf_correctness_unit_test;
   svunit_testcase svunit_ut;
 
   // DUT IO
-  logic                                   s_i_clk;
-  logic                                   s_i_reset;
-  float_metadata_t                        s_i_metadata;
-  float_metadata_t                        s_o_metadata;
+  // logic                                   s_i_clk;
+  // logic                                   s_i_reset;
+  // float_metadata_t                        s_i_metadata;
+  // float_metadata_t                        s_o_metadata;
   logic [64:0]                            s_i_f;
   binary128_t                             s_o_exp_f;
-  logic                                   s_i_valid;
+  // logic                                   s_i_valid;
   logic [3:0]                             s_o_sanity_identifier;
   logic [`ERROR_SIGNAL_NUM_BITS-1:0]      s_o_error;
   logic [`DEBUG_SIGNAL_NUM_BITS-1:0]      s_o_debug;
@@ -44,13 +44,13 @@ module fixed128_partitionf_correctness_unit_test;
     .ERROR_SIGNAL_NUM_BITS(`ERROR_SIGNAL_NUM_BITS),
     .DEBUG_SIGNAL_NUM_BITS(`DEBUG_SIGNAL_NUM_BITS)
   ) my_fixed128_partitionf_ts(
-    .i_clk(s_i_clk),
-    .i_reset(s_i_reset),
-    .i_metadata(s_i_metadata),
-    .o_metadata(s_o_metadata),
+    // .i_clk(s_i_clk),
+    // .i_reset(s_i_reset),
+    // .i_metadata(s_i_metadata),
+    // .o_metadata(s_o_metadata),
     .i_f(s_i_f),
     .o_exp_f(s_o_exp_f),
-    .i_valid(s_i_valid),
+    // .i_valid(s_i_valid),
     .o_sanity_identifier(s_o_sanity_identifier),
     .o_error(s_o_error),
     .o_debug(s_o_debug)
@@ -71,11 +71,10 @@ module fixed128_partitionf_correctness_unit_test;
   task setup();
     svunit_ut.setup();
     /* Place Setup Code Here */
-    s_i_clk       = '0;
+    // s_i_clk       = '0;
     s_i_f         = '0;
-    s_i_metadata  = '0;
-    s_i_f         = '0;
-    s_i_valid     = '0;
+    // s_i_metadata  = '0;
+    // s_i_valid     = '0;
 
     #1;
   endtask
