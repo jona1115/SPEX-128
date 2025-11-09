@@ -6,8 +6,8 @@
  ********************************************************************
  * 
  * Description:
- * This a module to deal with the d partition of fixed128 taylor
- * approximation.
+ * This a module to deal with the d partition of fixed128 look-up-
+ * table (LUT).
  * 
  * What is the partitions? See the graph in:
  * https://github.com/jona1115/SPEX-128/issues/14
