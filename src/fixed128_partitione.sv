@@ -1,12 +1,12 @@
 /********************************************************************
  * 
  * Originator   : Jonathan Tan
- * Date         : 11/7/2025
+ * Date         : 11/8/2025
  * 
  ********************************************************************
  * 
  * Description:
- * This a module to deal with the d partition of fixed128 taylor
+ * This a module to deal with the e partition of fixed128 taylor
  * approximation.
  * 
  * What is the partitions? See the graph in:
@@ -17,7 +17,7 @@
  * Modification history:
  *       Ver   |  Who       |  Date	       |  Changes
  *     ------- + ---------- + ------------ + -----------------------
- *       1.00  |  Jonathan  |  11/7/2025   |  Birth of this file
+ *       1.00  |  Jonathan  |  11/8/2025   |  Birth of this file
  * 
  *******************************************************************/
 
