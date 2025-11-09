@@ -88,7 +88,7 @@ always_ff @( posedge i_clk ) begin : LUT
     s_o_exp_e <= '0;
   end
   else begin
-    if (i_valid) begin
+    if (i_valid) begin // The hope is that this will infer a en signal into the BRAM
       s_o_exp_e <= mem[i_e];
     end // if (i_valid) begin
   end // else begin
