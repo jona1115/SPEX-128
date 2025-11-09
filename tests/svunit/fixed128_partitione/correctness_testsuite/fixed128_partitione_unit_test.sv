@@ -113,7 +113,7 @@ end
 
   task automatic tick;
     @(posedge s_i_clk);
-    @(posedge s_i_clk);
+    @(negedge s_i_clk); // Wait a bit
   endtask
 
   task automatic expect_now_valid_and_value(input logic [12:0] e, input string tag = "");
