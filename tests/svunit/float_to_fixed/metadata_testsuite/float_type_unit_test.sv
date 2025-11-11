@@ -26,7 +26,7 @@ module float_type_unit_test;
 
   // DUT IO
   logic                                   s_i_clk;
-  logic                                   s_i_reset; // Synchronous
+  logic                                   s_i_rst_n; // Synchronous
   logic [`NUM_BITS_128-1:0]                s_i_float;
   logic [3:0]                             s_i_ctrl;
   logic [127:0]                           s_o_fixed;
@@ -50,7 +50,7 @@ module float_type_unit_test;
     .DEBUG_SIGNAL_NUM_BITS(`DEBUG_SIGNAL_NUM_BITS)
   ) my_float_to_fixed(
     .i_clk(s_i_clk),
-    .i_reset(s_i_reset),
+    .i_rst_n(s_i_rst_n),
     .i_float(s_i_float),
     .i_ctrl(s_i_ctrl),
     .o_fixed(s_o_fixed),

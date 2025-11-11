@@ -33,7 +33,7 @@ module float_to_fixed_no_error_unit_test;
 
   // DUT IO
   logic                                   s_i_clk;
-  logic                                   s_i_reset; // Synchronous
+  logic                                   s_i_rst_n; // Synchronous
   logic [`NUM_BITS_128-1:0]                s_i_float;
   logic [3:0]                             s_i_ctrl;
   logic [127:0]                           s_o_fixed;
@@ -57,7 +57,7 @@ module float_to_fixed_no_error_unit_test;
     .DEBUG_SIGNAL_NUM_BITS(`DEBUG_SIGNAL_NUM_BITS)
   ) my_float_to_fixed(
     .i_clk(s_i_clk),
-    .i_reset(s_i_reset),
+    .i_rst_n(s_i_rst_n),
     .i_float(s_i_float),
     .i_ctrl(s_i_ctrl),
     .o_fixed(s_o_fixed),
@@ -88,9 +88,9 @@ module float_to_fixed_no_error_unit_test;
     s_i_float = '0;
     s_i_ctrl = '0;
 
-    s_i_reset = 1'b0;                 // assert sync reset
+    s_i_rst_n = 1'b0;                 // assert sync reset
     repeat (2) @(posedge s_i_clk);    // hold for > one posedge
-    s_i_reset = 1'b1;                 // deassert
+    s_i_rst_n = 1'b1;                 // deassert
     @(posedge s_i_clk);               // let it stablize
   endtask
 

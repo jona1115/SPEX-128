@@ -23,7 +23,7 @@ module fixed128_partitionf_correctness_unit_test;
 
   // DUT IO
   // logic                                   s_i_clk;
-  // logic                                   s_i_reset;
+  // logic                                   s_i_rst_n;
   // float_metadata_t                        s_i_metadata;
   // float_metadata_t                        s_o_metadata;
   logic [64:0]                            s_i_f;
@@ -45,7 +45,7 @@ module fixed128_partitionf_correctness_unit_test;
     .DEBUG_SIGNAL_NUM_BITS(`DEBUG_SIGNAL_NUM_BITS)
   ) my_fixed128_partitionf_ts(
     // .i_clk(s_i_clk),
-    // .i_reset(s_i_reset),
+    // .i_rst_n(s_i_rst_n),
     // .i_metadata(s_i_metadata),
     // .o_metadata(s_o_metadata),
     .i_f(s_i_f),

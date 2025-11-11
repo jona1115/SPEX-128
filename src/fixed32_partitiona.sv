@@ -44,7 +44,7 @@ module fixed32_partitiona #(
   parameter int DEBUG_SIGNAL_NUM_BITS = 32
 ) (
   input   logic                                   i_clk,
-  input   logic                                   i_reset, // Synchronous
+  input   logic                                   i_rst_n, // Synchronous
 
   // Metadata stuff
   // input   float_metadata_t                        i_metadata,
@@ -87,7 +87,7 @@ binary32_t s_o_exp_a;
 initial $readmemh(INIT_POS_FILE, mempos);
 initial $readmemh(INIT_NEG_FILE, memneg);
 always_ff @( posedge i_clk ) begin : LUTs
-  if (!i_reset) begin
+  if (!i_rst_n) begin
     s_o_exp_a <= '0;
   end
   else begin
@@ -108,7 +108,7 @@ end // always_ff
  * Register for the valid bit
  */
 always_ff @( posedge i_clk ) begin : valid_bit_register
-  if (!i_reset) begin
+  if (!i_rst_n) begin
     s_o_valid <= '0;
   end
   else begin

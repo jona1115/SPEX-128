@@ -72,11 +72,11 @@
 
   drive(a, 1'b1); tick(); expect_now_valid_and_value(a, "pre_reset");
 
-  s_i_reset = 1'b0;  drive('0, 1'b0); tick(); // sync reset tick
+  s_i_rst_n = 1'b0;  drive('0, 1'b0); tick(); // sync reset tick
   `FAIL_IF_LOG(s_o_valid !== 1'b0, ">>>>> o_valid not 0 on sync reset")
   `FAIL_IF_LOG(s_o_exp_c !== '0,   ">>>>> o_exp_a not 0 on sync reset")
 
-  s_i_reset = 1'b1;  tick(); // recover like setup()
+  s_i_rst_n = 1'b1;  tick(); // recover like setup()
 
   drive(d2, 1'b1); tick(); expect_now_valid_and_value(d2, "post_reset");
   drive('0, 1'b0); tick();

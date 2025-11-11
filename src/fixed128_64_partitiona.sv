@@ -46,7 +46,7 @@ module fixed128_64_partitiona #(
   parameter int DEBUG_SIGNAL_NUM_BITS = 32
 ) (
   input   logic                                   i_clk,
-  input   logic                                   i_reset, // Synchronous
+  input   logic                                   i_rst_n, // Synchronous
 
   // Metadata stuff
   input   var float_metadata_t                    i_metadata,
@@ -97,7 +97,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0]   s_o_debug;
 
 // Default stuff out
 always_ff @( posedge i_clk ) begin : defaulter
-  if (!i_reset) begin
+  if (!i_rst_n) begin
     s_o_error <= '0;
     s_o_debug <= '0;
   end
@@ -115,7 +115,7 @@ initial $readmemh(INIT_128a_NEG_FILE, memneg128);
 initial $readmemh(INIT_64a_POS_FILE, mempos64);
 initial $readmemh(INIT_64a_NEG_FILE, memneg64);
 always_ff @( posedge i_clk ) begin : LUTs
-  if (!i_reset) begin
+  if (!i_rst_n) begin
     s_o_exp_a128  <= '0;
     s_o_exp_a64a  <= '0;
     s_o_exp_a64b  <= '0;
@@ -179,7 +179,7 @@ end // always_ff
  * Register for the valid bits, and metadata
  */
 always_ff @( posedge i_clk ) begin : valid_bit_register
-  if (!i_reset) begin
+  if (!i_rst_n) begin
     s_o_valid64a  <= '0;
     s_o_valid64b  <= '0;
     s_o_valid128  <= '0;

@@ -46,7 +46,7 @@ module fixed128_partitionf_ts #(
   parameter int DEBUG_SIGNAL_NUM_BITS = 32
 ) (
   // input   logic                                   i_clk,
-  // input   logic                                   i_reset, // Synchronous
+  // input   logic                                   i_rst_n, // Synchronous
 
   // Metadata stuff
   // input   float_metadata_t                        i_metadata,
