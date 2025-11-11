@@ -24,7 +24,7 @@ module fixed32_partitionb_unit_test;
   // DUT IO
   logic                                   s_i_clk;
   logic                                   s_i_reset;
-  logic [10:0]                            s_i_b;
+  logic [9:0]                             s_i_b;
   binary32_t                              s_o_exp_b;
   logic                                   s_i_valid;
   logic                                   s_o_valid;
