@@ -130,7 +130,7 @@ assign s_current_sp =
 // // Check that INVALID_SP_MODE should never be passed into this module; commented because cant do this ouside a always block or need to use property, but todo we still want to perform this check
 // assert(s_current_sp != INVALID_SP_MODE && i_valid == 1'b1) else begin
 //   s_o_error[2] <= 1'b1;
-//   $fatal("INVALID_SP_MODE detected"); // This is for simulator not synthesis
+  $fatal(1, "INVALID_SP_MODE detected"); // This is for simulator not synthesis
 // end
 
 // Generate a bunch of helper signals as decoders
@@ -379,7 +379,7 @@ always_ff @( posedge i_clk ) begin : stage1_get_shift_amount
         default: begin
           assert (0) else begin
               s_o_error[1] <= 1'b1;
-              $fatal("Entered illegal branch"); // This is for simulator not synthesis
+              // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
         end
       endcase // case (s_current_sp)
@@ -435,7 +435,7 @@ always_ff @( posedge i_clk ) begin : stage2_convert
             // Should never be the case
             assert (0) else begin
               s_o_error[0] <= 1'b1;
-              $fatal("Entered illegal branch"); // This is for simulator not synthesis
+              // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
           end
         end
@@ -461,7 +461,7 @@ always_ff @( posedge i_clk ) begin : stage2_convert
             // Should never be the case
             assert (0) else begin
               s_o_error[0] <= 1'b1;
-              $fatal("Entered illegal branch"); // This is for simulator not synthesis
+              // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
           end
 
@@ -486,7 +486,7 @@ always_ff @( posedge i_clk ) begin : stage2_convert
             // Should never be the case
             assert (0) else begin
               s_o_error[0] <= 1'b1;
-              $fatal("Entered illegal branch"); // This is for simulator not synthesis
+              // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
           end
         end
@@ -512,7 +512,7 @@ always_ff @( posedge i_clk ) begin : stage2_convert
             // Should never be the case
             assert (0) else begin
               s_o_error[0] <= 1'b1;
-              $fatal("Entered illegal branch"); // This is for simulator not synthesis
+              // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
           end
 
@@ -537,7 +537,7 @@ always_ff @( posedge i_clk ) begin : stage2_convert
             // Should never be the case
             assert (0) else begin
               s_o_error[0] <= 1'b1;
-              $fatal("Entered illegal branch"); // This is for simulator not synthesis
+              // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
           end
 
@@ -562,7 +562,7 @@ always_ff @( posedge i_clk ) begin : stage2_convert
             // Should never be the case
             assert (0) else begin
               s_o_error[0] <= 1'b1;
-              $fatal("Entered illegal branch"); // This is for simulator not synthesis
+              // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
           end
 
@@ -587,7 +587,7 @@ always_ff @( posedge i_clk ) begin : stage2_convert
             // Should never be the case
             assert (0) else begin
               s_o_error[0] <= 1'b1;
-              $fatal("Entered illegal branch"); // This is for simulator not synthesis
+              // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
           end
         end

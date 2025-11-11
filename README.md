@@ -7,8 +7,15 @@
 Below are easy, copy-pastable commands to do stuff. They, in theory, should "just work".
 1. Run svunit test using Modelsim/Questasim:
     ```sh
-    cd tests/svunit/float_to_fixed      # You can go into any test folders
-    ./svunit_run.sh -s modelsim --ci    # Run -h for more info, --ci flag is more cleaner imo
+    cd tests/svunit/float_to_fixed      # You can go into any test folders, important!
+    ../svunit_run.sh -s modelsim --ci   # Run -h for more info, --ci flag is more cleaner imo
+                                        # By default, the script will use the current test folder
+                                        # name as the DUT module, so folder name has to be the
+                                        # same as module name!
+    # Advanced:
+    # To compile additional module, use --also flag, you can "--also" more than once
+    cd tests/svunit/float_to_fixed      # Again, where you run the script is very important
+    ../svunit_run.sh -s modelsim --also fixed128_partitionf_ts --also xxx
     ```
 2. Run svunit test (simulator questasim or modelsim) and open questa/modelsim waveform viewer:
     ```sh
@@ -80,3 +87,8 @@ sudo make install
 
 ## Modelsim
 Follow [this link](https://gist.github.com/Razer6/cafc172b5cffae189b4ecda06cf6c64f).
+
+# A note on AI use
+1. 99% of bash scripts are AI-generated. I don't bash like that, and I don't care (at least at this time) about learning to bash.
+2. Some code is debugged with the help of AI, but only a super minority of the code is written by AI.
+3. Code written by AI is cited in comments, using language like: "ChatGPT generated", "vibe coded", etc.

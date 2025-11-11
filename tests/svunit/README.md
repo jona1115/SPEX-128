@@ -9,6 +9,11 @@ The way I set my project up:
 4. The main template will `include` `.svh` files in the `cases` folder in its body.
 5. The actual test code are located in the `.svh` files.
 
+# Scripts
+I have set up scripts that you can run to make your life much easier. Two main ones are:
+1. [`svunit_run.sh`](https://github.com/jona1115/SPEX-128/blob/13-write-level-2-module/tests/svunit/svunit_run.sh) - For running svunit tests, it also does a lot with generating filelist, use the `-h` flag to se more
+2. [`sim_and_gen_waveform.sh`](https://github.com/jona1115/SPEX-128/blob/13-write-level-2-module/tests/svunit/sim_and_gen_waveform.sh) - For running svunit_run.sh + generating waveforms that can be viewed in modelsim/questasim.
+
 # SVUnit Tips:
 Macros you can use to do tests
 ```sv

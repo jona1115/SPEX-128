@@ -34,6 +34,8 @@ patterns=(
   'modelsim.ini'
   'work'
   'obj_dir'
+  'transcript'
+  'filelist.f'
 )
 
 # Collect unique matches safely (globs that don't match yield nothing)
