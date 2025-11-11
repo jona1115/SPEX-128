@@ -23,7 +23,7 @@ module fixed32_partitionb_unit_test;
 
   // DUT IO
   logic                                   s_i_clk;
-  logic                                   s_i_reset;
+  logic                                   s_i_rst_n;
   logic [9:0]                             s_i_b;
   binary32_t                              s_o_exp_b;
   logic                                   s_i_valid;
@@ -44,7 +44,7 @@ module fixed32_partitionb_unit_test;
     .DEBUG_SIGNAL_NUM_BITS(`DEBUG_SIGNAL_NUM_BITS)
   ) my_fixed32_partitionb(
     .i_clk(s_i_clk),
-    .i_reset(s_i_reset),
+    .i_rst_n(s_i_rst_n),
     .i_b(s_i_b),
     .o_exp_b(s_o_exp_b),
     .i_valid(s_i_valid),
@@ -73,9 +73,9 @@ module fixed32_partitionb_unit_test;
     s_i_b = '0;
     s_i_valid = '0;
 
-    s_i_reset   = 1'b0;                 // assert sync reset
+    s_i_rst_n   = 1'b0;                 // assert sync reset
     repeat (2) @(posedge s_i_clk);      // hold for > one posedge
-    s_i_reset   = 1'b1;                 // deassert
+    s_i_rst_n   = 1'b1;                 // deassert
     @(posedge s_i_clk);                 // let it stablize
   endtask
 

@@ -43,7 +43,7 @@ module fixed128_partitiond #(
   parameter int DEBUG_SIGNAL_NUM_BITS = 32
 ) (
   input   logic                                   i_clk,
-  input   logic                                   i_reset, // Synchronous
+  input   logic                                   i_rst_n, // Synchronous
 
   // Metadata stuff
   // input   float_metadata_t                        i_metadata,
@@ -84,7 +84,7 @@ binary128_t s_o_exp_d;
 (* rom_style = "block" *) binary128_t mem [0:8191]; // Infer a BRAM
 initial $readmemh(INIT_FILE, mem);
 always_ff @( posedge i_clk ) begin : LUT
-  if (!i_reset) begin
+  if (!i_rst_n) begin
     s_o_exp_d <= '0;
   end
   else begin
@@ -98,7 +98,7 @@ end // always_ff
  * Register for the valid bit
  */
 always_ff @( posedge i_clk ) begin : valid_bit_register
-  if (!i_reset) begin
+  if (!i_rst_n) begin
     s_o_valid <= '0;
   end
   else begin

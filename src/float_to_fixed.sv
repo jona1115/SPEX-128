@@ -43,7 +43,7 @@ module float_to_fixed #(
   parameter int DEBUG_SIGNAL_NUM_BITS = 32
 ) (
   input   logic                                   i_clk,
-  input   logic                                   i_reset, // Synchronous
+  input   logic                                   i_rst_n, // Synchronous
 
   input   logic [NUM_BITS_128-1:0]                i_float,
   input   logic [3:0]                             i_ctrl,
@@ -169,7 +169,7 @@ assign s_binary32_d_mantissa_extended = {1'b1, s_binary32_d.mantissa};
 
 // Default stuff out
 always_ff @( posedge i_clk ) begin : defaulter
-  if (!i_reset) begin
+  if (!i_rst_n) begin
     s_o_error <= '0;
     s_o_debug <= '0;
   end
@@ -275,7 +275,7 @@ end
  */
 state_t s_curr_state, s_next_state;
 always_ff @( posedge i_clk ) begin : float_to_fixed_FSM
-  if (!i_reset) begin
+  if (!i_rst_n) begin
     s_curr_state <= S0_IDLE;
   end
   else begin
@@ -345,7 +345,7 @@ sh_t s_shift_amount_a, s_shift_amount_b, s_shift_amount_c, s_shift_amount_d; // 
                                                                              // number? No, but for now, 
                                                                              // this is easiest to implement.
 always_ff @( posedge i_clk ) begin : stage1_get_shift_amount
-  if (!i_reset) begin
+  if (!i_rst_n) begin
     s_shift_amount_a <= '0;
     s_shift_amount_b <= '0;
     s_shift_amount_c <= '0;
@@ -400,7 +400,7 @@ end // always_ff
  * Stage 2
  */
 always_ff @( posedge i_clk ) begin : stage2_convert
-  if (!i_reset) begin
+  if (!i_rst_n) begin
     s_fixed128  <= '0;
     s_fixed64_a <= '0;
     s_fixed64_b <= '0;
@@ -604,7 +604,7 @@ end // always_ff
  * In this stage we will deal with assigning sign bit.
  */
 always_ff @( posedge i_clk ) begin : stage3_finalize
-  if (!i_reset) begin
+  if (!i_rst_n) begin
   end
   else begin
     if (s_stage3_en) begin

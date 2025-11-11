@@ -34,7 +34,7 @@
 //   parameter int DEBUG_SIGNAL_NUM_BITS = 32
 // ) (
 //   input   logic                                   i_clk,
-//   input   logic                                   i_reset, // Synchronous
+//   input   logic                                   i_rst_n, // Synchronous
 
 //   input   logic [NUM_BITS_128-1:0]                i_x,
 //   input   logic [3:0]                             i_ctrl,
@@ -72,7 +72,7 @@
   
 // ) my_float_to_fixed (
 //   .i_clk(i_clk),
-//   .i_reset(i_reset),
+//   .i_rst_n(i_rst_n),
 //   .i_float(i_x),
 //   .i_ctrl(i_ctrl),
 //   .o_fixed(s_level1_out),

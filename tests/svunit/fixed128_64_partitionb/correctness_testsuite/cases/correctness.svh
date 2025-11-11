@@ -11,7 +11,7 @@
  *    set, then s_o_exp_a64a <= gt_mem64[i_a]; s_o_exp_a64b <= gt_mem64[i_a2]]. If 
  *    either/both i_valid64a or i_valid64b is 0, then s_o_exp_a64a and s_o_exp_a64b will 
  *    be whatever it was before.
- * 6. On reset (ie `!i_reset`, because i_reset is active low), all outputs will be set 
+ * 6. On reset (ie `!i_rst_n`, because i_rst_n is active low), all outputs will be set 
  *    to all 0.
  * 7. If i_metadata sp mode is FOUR_SP_MODE, o_error[1] should be a 1 in the next tick.
  * 8. If i_metadata sp mode is anything other than the three modes stated above, 
@@ -35,7 +35,7 @@
   tick();
 
   // Assert synchronous active-low reset
-  s_i_reset = 1'b0;
+  s_i_rst_n = 1'b0;
   tick();
 
   `FAIL_IF_LOG(s_o_valid128 !== '0 || s_o_valid64a !== '0 || s_o_valid64b !== '0,
@@ -47,7 +47,7 @@
   `FAIL_IF_LOG(s_o_debug     !== '0, "o_debug not cleared on reset")
 
   // Deassert reset
-  s_i_reset = 1'b1;
+  s_i_rst_n = 1'b1;
   tick();
 `SVTEST_END
 
