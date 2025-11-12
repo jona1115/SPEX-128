@@ -28,6 +28,7 @@ import binary32_pkg::*;
 import fixed128_pkg::*;
 import fixed64_pkg::*;
 import fixed32_pkg::*;
+import unbiasing_pkg::*;
 
 module float_to_fixed #(
   parameter int NUM_BITS_128  = 128,
@@ -130,7 +131,7 @@ assign s_current_sp =
 // // Check that INVALID_SP_MODE should never be passed into this module; commented because cant do this ouside a always block or need to use property, but todo we still want to perform this check
 // assert(s_current_sp != INVALID_SP_MODE && i_valid == 1'b1) else begin
 //   s_o_error[2] <= 1'b1;
-  $fatal(1, "INVALID_SP_MODE detected"); // This is for simulator not synthesis
+//  $fatal(1, "INVALID_SP_MODE detected"); // This is for simulator not synthesis
 // end
 
 // Generate a bunch of helper signals as decoders
@@ -324,18 +325,6 @@ end
 /**
  * Stage 1 block
  */
-typedef logic signed [15:0] sh_t; // we use 16 bits so we can properly represent -ve shift amount 
-                                  // for single_mode
-function automatic sh_t unbias_q128 (input logic [14:0] exp);
-  return (exp == 15'd0) ? sh_t'(-16'sd16382) // IEEE-754: for subnormal (exp==0), unbiased exponent is 1 - bias
-                        : sh_t'($signed({1'b0, exp}) - 16'sd16383);
-endfunction
-function automatic sh_t unbias_q64  (input logic [10:0] exp);
-  return (exp == 11'd0) ? sh_t'(-16'sd1022) : sh_t'($signed({5'b0, exp}) - 16'sd1023);
-endfunction
-function automatic sh_t unbias_q32  (input logic  [7:0] exp);
-  return (exp ==  8'd0) ? sh_t'( -16'sd126) : sh_t'($signed({8'b0, exp}) - 16'sd127);
-endfunction
 sh_t s_shift_amount_a, s_shift_amount_b, s_shift_amount_c, s_shift_amount_d; // Why 15:0? Because in the 
                                                                              // worse case, we want to 
                                                                              // accomodate shifting 16383 
