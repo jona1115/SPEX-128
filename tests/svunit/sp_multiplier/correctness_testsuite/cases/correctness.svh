@@ -526,3 +526,159 @@ localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
 // -------------------------------------------------------------------------
 // SINGLE SP MODE Edge cases test
 // -------------------------------------------------------------------------
+`SVTEST(single_mode_overflow_to_posinf)
+  // max finite * 2.0 -> +INF
+  drive_meta(SINGLE_MODE, NORMAL, NA, NA, NA);
+  s_i_in_anikin = F128_MAX_FINITE_POS;
+  s_i_in_force  = F128_TWO;
+
+  s_i_valid128_anikin = 1; s_i_valid128_force = 1;
+  @(posedge s_i_clk); clear_valids();
+
+  wait_n_ticks(4); `FAIL_UNLESS(!s_o_valid128_jedi) // no early valid
+  wait_n_ticks(1);
+
+  `FAIL_UNLESS(s_o_valid128_jedi)
+  `FAIL_UNLESS(is_inf128(s_o_out_jedi) && (s_o_out_jedi[127] == 1'b0)) // +INF
+  `FAIL_UNLESS(s_o_metadata.sp_mode == SINGLE_MODE)
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+`SVTEST(single_mode_overflow_to_neginf)
+  // (-max finite) * 2.0 -> -INF
+  drive_meta(SINGLE_MODE, NORMAL, NA, NA, NA);
+  s_i_in_anikin = F128_MAX_FINITE_NEG;
+  s_i_in_force  = F128_TWO;
+
+  s_i_valid128_anikin = 1; s_i_valid128_force = 1;
+  @(posedge s_i_clk); clear_valids();
+
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(s_o_valid128_jedi)
+  `FAIL_UNLESS(is_inf128(s_o_out_jedi) && (s_o_out_jedi[127] == 1'b1)) // -INF
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+`SVTEST(single_mode_underflow_to_subnormal)
+  // min normal * 0.5 -> subnormal (non-zero, exp==0)
+  drive_meta(SINGLE_MODE, NORMAL, NA, NA, NA);
+  s_i_in_anikin = F128_MIN_NORMAL;
+  s_i_in_force  = F128_HALF;
+
+  s_i_valid128_anikin = 1; s_i_valid128_force = 1;
+  @(posedge s_i_clk); clear_valids();
+
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(s_o_valid128_jedi)
+  `FAIL_UNLESS(is_subnormal128(s_o_out_jedi))
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+`SVTEST(single_mode_underflow_to_zero)
+  // min normal * 2^-200 -> rounds to 0 (magnitude < min subnormal)
+  drive_meta(SINGLE_MODE, NORMAL, NA, NA, NA);
+  s_i_in_anikin = F128_MIN_NORMAL;
+  s_i_in_force  = F128_2_NEG_200;
+
+  s_i_valid128_anikin = 1; s_i_valid128_force = 1;
+  @(posedge s_i_clk); clear_valids();
+
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(s_o_valid128_jedi)
+  `FAIL_UNLESS(s_o_out_jedi == 128'b0)
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+`SVTEST(single_mode_denormal_operand_treated_as_zero)
+  // Treat denormal as zero => result zero regardless of partner
+  drive_meta(SINGLE_MODE, POS_DENORMAL, NA, NA, NA);
+  s_i_in_anikin = F128_DENORM_MIN; // actual subnormal bits
+  s_i_in_force  = F128_TWO;
+
+  s_i_valid128_anikin = 1; s_i_valid128_force = 1;
+  @(posedge s_i_clk); clear_valids();
+
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(s_o_valid128_jedi)
+  `FAIL_UNLESS(s_o_out_jedi == 128'b0)
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+`SVTEST(single_mode_rounding_near_one_ulps)
+  // (1+ulp)*(1-ulp) is extremely close to 1.0; exact result depends on quad rounding.
+  // Fill EXP_NEAR_ONE with libquadmath result of (F128_ONE_UP * F128_ONE_DOWN).
+  localparam logic [127:0] EXP_NEAR_ONE /* TODO: fill from libquadmath */ = 128'h0000_0000_0000_0000_0000_0000_0000_0000;
+
+  drive_meta(SINGLE_MODE, NORMAL, NA, NA, NA);
+  s_i_in_anikin = F128_ONE_UP;
+  s_i_in_force  = F128_ONE_DOWN;
+
+  s_i_valid128_anikin = 1; s_i_valid128_force = 1;
+  @(posedge s_i_clk); clear_valids();
+
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(s_o_valid128_jedi)
+  `FAIL_UNLESS(s_o_out_jedi == EXP_NEAR_ONE) // TODO
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+`SVTEST(single_mode_rounding_boundary_carry)
+  // (1+ulp) * (1+ulp) should land just above 1.0; in quad it’s close to 1 + 2*ulp + ulp^2.
+  // Fill EXP_BOUNDARY with libquadmath result of (F128_ONE_UP * F128_ONE_UP).
+  localparam logic [127:0] EXP_BOUNDARY /* TODO: fill from libquadmath */ = 128'h0000_0000_0000_0000_0000_0000_0000_0000;
+
+  drive_meta(SINGLE_MODE, NORMAL, NA, NA, NA);
+  s_i_in_anikin = F128_ONE_UP;
+  s_i_in_force  = F128_ONE_UP;
+
+  s_i_valid128_anikin = 1; s_i_valid128_force = 1;
+  @(posedge s_i_clk); clear_valids();
+
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(s_o_valid128_jedi)
+  `FAIL_UNLESS(s_o_out_jedi == EXP_BOUNDARY) // TODO
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+`SVTEST(single_mode_sign_check_only)
+  // (-max finite) * (0.5) -> negative finite (not INF/NaN). We only assert sign is negative.
+  drive_meta(SINGLE_MODE, NORMAL, NA, NA, NA);
+  s_i_in_anikin = F128_MAX_FINITE_NEG;
+  s_i_in_force  = F128_HALF;
+
+  s_i_valid128_anikin = 1; s_i_valid128_force = 1;
+  @(posedge s_i_clk); clear_valids();
+
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(s_o_valid128_jedi)
+  `FAIL_UNLESS(s_o_out_jedi[127] == 1'b1)       // negative sign
+  `FAIL_UNLESS(!is_inf128(s_o_out_jedi))        // not INF
+  `FAIL_UNLESS(s_o_out_jedi[126 -: 15] != {15{1'b1}} || s_o_out_jedi[111:0] != '0) // not NaN INF combo
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+`SVTEST(single_mode_partial_valids_with_edge_operands)
+  logic [127:0] prev = s_o_out_jedi;
+  
+  drive_meta(SINGLE_MODE, NORMAL, NA, NA, NA);
+
+  // Would overflow if accepted, but we drop it by clearing one valid
+  s_i_in_anikin = F128_MAX_FINITE_POS;
+  s_i_in_force  = F128_TWO;
+
+  s_i_valid128_anikin = 1; s_i_valid128_force = 0; // force not valid
+  @(posedge s_i_clk); clear_valids();
+
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(!s_o_valid128_jedi)
+  `FAIL_UNLESS(s_o_out_jedi === prev) // unchanged
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END

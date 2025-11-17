@@ -261,6 +261,40 @@ module sp_multiplier_unit_test;
     void'($fclose(fd));
   endtask
 
+  // ====== binary128 helpers/consts (add near your other helpers) ======
+  localparam int unsigned F128_EXP_BIAS   = 16383;
+  localparam logic [14:0] F128_EXP_ONE    = 15'h3FFF;
+  localparam logic [14:0] F128_EXP_TWO    = 15'h4000;
+  localparam logic [14:0] F128_EXP_HALF   = 15'h3FFE;
+  localparam logic [14:0] F128_EXP_MIN_N  = 15'h0001; // min normal
+  localparam logic [14:0] F128_EXP_MAX_F  = 15'h7FFE; // max finite exponent
+  localparam logic [14:0] F128_EXP_INF    = 15'h7FFF;
+
+  localparam logic [111:0] F128_MANT_ZERO = 112'd0;
+  localparam logic [111:0] F128_MANT_ALL1 = {112{1'b1}};
+  localparam logic [111:0] F128_MANT_LSB1 = 112'd1;
+
+  // Common values
+  localparam logic [127:0] F128_ONE            = pack128_bits(1'b0, F128_EXP_ONE,   F128_MANT_ZERO);
+  localparam logic [127:0] F128_ONE_UP         = pack128_bits(1'b0, F128_EXP_ONE,   F128_MANT_LSB1);     // nextUp(1.0)
+  localparam logic [127:0] F128_ONE_DOWN       = pack128_bits(1'b0, F128_EXP_HALF,  F128_MANT_ALL1);     // nextDown(1.0)
+  localparam logic [127:0] F128_TWO            = pack128_bits(1'b0, F128_EXP_TWO,   F128_MANT_ZERO);
+  localparam logic [127:0] F128_HALF           = pack128_bits(1'b0, F128_EXP_HALF,  F128_MANT_ZERO);
+  localparam logic [127:0] F128_MIN_NORMAL     = pack128_bits(1'b0, F128_EXP_MIN_N, F128_MANT_ZERO);
+  localparam logic [127:0] F128_MAX_FINITE_POS = pack128_bits(1'b0, F128_EXP_MAX_F, F128_MANT_ALL1);
+  localparam logic [127:0] F128_MAX_FINITE_NEG = pack128_bits(1'b1, F128_EXP_MAX_F, F128_MANT_ALL1);
+  // Tiny 2^-200 (exact power-of-two)
+  localparam logic [127:0] F128_2_NEG_200      = pack128_bits(1'b0, 15'(F128_EXP_BIAS-200), F128_MANT_ZERO);
+  // Smallest positive subnormal (used as a denormal operand example)
+  localparam logic [127:0] F128_DENORM_MIN     = pack128_bits(1'b0, 15'd0, F128_MANT_LSB1);
+
+  // Structural predicates
+  function automatic bit is_inf128(logic [127:0] x);
+    return (x[126 -: 15] == {15{1'b1}}) && (x[111:0] == '0);
+  endfunction
+  function automatic bit is_subnormal128(logic [127:0] x);
+    return (x[126 -: 15] == 15'd0) && (x[111:0] != 0);
+  endfunction
 
   //===================================
   // All tests are defined between the
