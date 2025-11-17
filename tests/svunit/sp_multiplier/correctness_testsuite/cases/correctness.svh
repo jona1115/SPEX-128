@@ -1,0 +1,311 @@
+/* This is the specification of DUT I gave ChatGPT:
+ * 1. When i_metadata.sp_mode is SINGLE_MODE: o_out_jedi = (in_128_anikin * in_128_force) 
+ *    in 5 clock cycles (ticks) if i_valid128_anikin and i_valid128_force are 1'b1. If any of the 
+ *    valid bit is cleared, in 5 ticks, no new output will be generated for that lane.
+ * 2. When i_metadata.sp_mode is TWO_SP_MODE mode: o_out_jedi = {(in_64a_anikin * in_64a_force), 
+ *    (in_64b_anikin * in_64b_force)} in 5 clock cycles (ticks) if i_valid64a_anikin, i_valid64a_force, 
+ *    i_valid64b_anikin, and i_valid64b_force are 1'b1. If any of the valid bit is cleared, in 5 ticks,
+ *    no new output will be generated for that lane.
+ * 3. When i_metadata.sp_mode is FOUR_SP_MODE mode: o_out_jedi = {(in_32a_anikin * in_32a_force), 
+ *    (in_32b_anikin * in_32b_force), (in_32c_anikin * in_32c_force), (in_32d_anikin * in_32d_force)} 
+ *    in 5 clock cycles (ticks) if , i_valid32a_anikin, i_valid32a_force, i_valid32b_anikin, 
+ *    i_valid32b_force, i_valid32c_anikin, i_valid32c_force, i_valid32d_anikin, and i_valid32d_force are 
+ *    1'b1. If any of the valid bit is cleared, in 5 ticks, no new output will be generated for that lane.
+ * 4. Dealing with special types: As per IEEE-754, there are subnormal types in floats. In either 
+ *    of the three modes, if any of the lanes is a 0, the output is a zero too after 5 ticks; if any 
+ *    of the lanes is a POS_INF, output of that lane is POS_INF too after 5 ticks; if any of the lanes is 
+ *    a NEG_INF, output of that lane is NEG_INF too after 5 ticks; if any of the lanes is a NaN, output of 
+ *    that lane is NaN too after 5 ticks; however, if any of the lanes is POS or NEG denormal, the DUT 
+ *    treats it as zero.
+ * 5. o_valid128_jedi will be set after 5 ticks iff i_valid128_anikin and i_valid128_force are set.
+ * 6. o_valid64a_jedi will be set after 5 ticks iff i_valid64a_anikin and i_valid64a_force are set; 
+ *    o_valid64b_jedi will be set after 5 ticks iff i_valid64b_anikin and i_valid64b_force are set, 
+ * 7. o_valid32a_jedi will be set after 5 ticks iff i_valid32a_anikin and i_valid32a_force are set; 
+ *    o_valid32b_jedi will be set after 5 ticks iff i_valid32b_anikin and i_valid32b_force are set; 
+ *    o_valid32c_jedi will be set after 5 ticks iff i_valid32c_anikin and i_valid32c_force are set; 
+ *    o_valid32d_jedi will be set after 5 ticks iff i_valid32d_anikin and i_valid32d_force are set.
+ * 8. o_metadata.sp_mode should be the same as i_metadata.sp_mode after 5 ticks.
+ * 9. Any bits of o_error should never be set, having any bits set means an assertion error has 
+ *    happened.
+ * 10. o_debug should not be tested.
+*/
+
+// This is what ChatGPT gave me:
+
+// -------------------------------------------------------------------------
+// Sanity / Spec 9/10: idle behavior and error stays 0
+// -------------------------------------------------------------------------
+`SVTEST(noop_when_valids_low)
+  logic [127:0] prev = s_o_out_jedi;
+
+  drive_meta(SINGLE_MODE, NORMAL, NA, NA, NA);
+  s_i_in_anikin = F128_POS_INF;
+  s_i_in_force  = F128_NEG_INF;
+  clear_valids();
+
+  wait_n_ticks(6);
+
+  `FAIL_UNLESS(s_o_out_jedi === prev)
+  `FAIL_UNLESS(!s_o_valid128_jedi)
+  `FAIL_UNLESS(!s_o_valid64a_jedi && !s_o_valid64b_jedi)
+  `FAIL_UNLESS(!s_o_valid32a_jedi && !s_o_valid32b_jedi && !s_o_valid32c_jedi && !s_o_valid32d_jedi)
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+// -------------------------------------------------------------------------
+// Spec 1/4/5/8: SINGLE_MODE zero; valid after exactly 5 ticks; per-lane gating
+// -------------------------------------------------------------------------
+`SVTEST(single_mode_zero_and_latency_5)
+  drive_meta(SINGLE_MODE, ZERO, NA, NA, NA);
+
+  s_i_in_anikin = F128_ZERO;
+  s_i_in_force  = F128_POS_INF;
+
+  // Pulse valids one cycle
+  s_i_valid128_anikin = 1;
+  s_i_valid128_force  = 1;
+  @(posedge s_i_clk);
+  clear_valids();
+
+  // Check latency precisely: first 4 ticks no valid, at 5th tick valid
+  wait_n_ticks(4);
+  `FAIL_UNLESS(!s_o_valid128_jedi)
+  wait_n_ticks(1);
+  `FAIL_UNLESS(s_o_valid128_jedi)
+  `FAIL_UNLESS(s_o_metadata.sp_mode == SINGLE_MODE)
+  `FAIL_UNLESS(s_o_out_jedi == 128'b0)
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+// -------------------------------------------------------------------------
+// Spec 1 per-lane gating: one valid low -> no new output and no valid
+// -------------------------------------------------------------------------
+`SVTEST(single_mode_partial_valids_no_update)
+  logic [127:0] prev = s_o_out_jedi;
+
+  drive_meta(SINGLE_MODE, NORMAL, NA, NA, NA);
+  s_i_in_anikin = F128_POS_INF;
+  s_i_in_force  = F128_POS_INF;
+
+  // Only anikin valid, force not valid
+  s_i_valid128_anikin = 1;
+  s_i_valid128_force  = 0;
+  @(posedge s_i_clk); clear_valids();
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(!s_o_valid128_jedi)
+  `FAIL_UNLESS(s_o_out_jedi === prev)
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+// -------------------------------------------------------------------------
+// Spec 1/4: SINGLE_MODE INF/NaN propagation (structural checks)
+// -------------------------------------------------------------------------
+`SVTEST(single_mode_inf_nan_special_cases)
+  // +INF case
+  drive_meta(SINGLE_MODE, POS_INF, NA, NA, NA);
+  s_i_in_anikin = F128_POS_INF; s_i_in_force = F128_ZERO;
+  s_i_valid128_anikin = 1; s_i_valid128_force = 1; @(posedge s_i_clk); clear_valids();
+  wait_n_ticks(5);
+  `FAIL_UNLESS(s_o_valid128_jedi)
+  `FAIL_UNLESS( (s_o_out_jedi[126 -: 15] == {15{1'b1}}) && (s_o_out_jedi[111:0] == '0) )
+
+  // -INF case
+  drive_meta(SINGLE_MODE, NEG_INF, NA, NA, NA);
+  s_i_in_anikin = F128_NEG_INF; s_i_in_force = F128_ZERO;
+  s_i_valid128_anikin = 1; s_i_valid128_force = 1; @(posedge s_i_clk); clear_valids();
+  wait_n_ticks(5);
+  `FAIL_UNLESS(s_o_valid128_jedi)
+  `FAIL_UNLESS( (s_o_out_jedi[127] == 1'b1) && (s_o_out_jedi[126 -: 15] == {15{1'b1}}) && (s_o_out_jedi[111:0] == '0) )
+
+  // NaN case
+  drive_meta(SINGLE_MODE, NAN, NA, NA, NA);
+  s_i_in_anikin = F128_QNAN; s_i_in_force = F128_ZERO;
+  s_i_valid128_anikin = 1; s_i_valid128_force = 1; @(posedge s_i_clk); clear_valids();
+  wait_n_ticks(5);
+  `FAIL_UNLESS(s_o_valid128_jedi)
+  `FAIL_UNLESS( (s_o_out_jedi[126 -: 15] == {15{1'b1}}) && (s_o_out_jedi[111:0] != '0) )
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+// -------------------------------------------------------------------------
+// Spec 2/6/8/9: TWO_SP_MODE exact numeric; per-lane valids; 5-tick latency
+// -------------------------------------------------------------------------
+`SVTEST(two_sp_mode_basic_multiply)
+  logic [127:0] expect64 = pack_2x64( 6.0, 0.125 );
+
+  drive_meta(TWO_SP_MODE, NORMAL, NORMAL, NA, NA);
+
+  // Lane A: 2.0*3.0=6.0 ; Lane B: 0.5*0.25=0.125
+  s_i_in_anikin = pack_2x64( 2.0, 0.5 );
+  s_i_in_force  = pack_2x64( 3.0, 0.25 );
+
+  s_i_valid64a_anikin = 1; s_i_valid64a_force = 1;
+  s_i_valid64b_anikin = 1; s_i_valid64b_force = 1;
+  @(posedge s_i_clk); clear_valids();
+
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(s_o_valid64a_jedi && s_o_valid64b_jedi)
+  `FAIL_UNLESS(top64(s_o_out_jedi) == top64(expect64))
+  `FAIL_UNLESS(bot64(s_o_out_jedi) == bot64(expect64))
+  `FAIL_UNLESS(s_o_metadata.sp_mode == TWO_SP_MODE)
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+// -------------------------------------------------------------------------
+// Spec 2/6: TWO_SP_MODE per-lane gating — only lane A valid -> only A updates
+// -------------------------------------------------------------------------
+`SVTEST(two_sp_mode_partial_valids)
+  logic [127:0] prev = s_o_out_jedi;
+
+  drive_meta(TWO_SP_MODE, NORMAL, NORMAL, NA, NA);
+
+  s_i_in_anikin = pack_2x64(2.0,  0.5);
+  s_i_in_force  = pack_2x64(3.0,  0.25);
+  s_i_valid64a_anikin = 1; s_i_valid64a_force = 1;  // lane A ok
+  s_i_valid64b_anikin = 1; s_i_valid64b_force = 0;  // lane B missing
+  @(posedge s_i_clk); clear_valids();
+
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(s_o_valid64a_jedi && !s_o_valid64b_jedi)
+  `FAIL_UNLESS(top64(s_o_out_jedi) == r2b64(6.0))
+  `FAIL_UNLESS(bot64(s_o_out_jedi) === bot64(prev))
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+// -------------------------------------------------------------------------
+// Spec 3/7/8/9: FOUR_SP_MODE exact numeric; per-lane valids; 5-tick latency
+// -------------------------------------------------------------------------
+`SVTEST(four_sp_mode_basic_multiply)
+  logic [127:0] expect32 = pack_4x32(
+    shortreal'(6.0), shortreal'(0.125), shortreal'(4.0), shortreal'(1.0)
+  );
+
+  drive_meta(FOUR_SP_MODE, NORMAL, NORMAL, NORMAL, NORMAL);
+
+  s_i_in_anikin = pack_4x32(shortreal'(2.0), shortreal'(0.5), shortreal'(1.0), shortreal'(8.0));
+  s_i_in_force  = pack_4x32(shortreal'(3.0), shortreal'(0.25), shortreal'(4.0), shortreal'(0.125));
+
+  s_i_valid32a_anikin = 1; s_i_valid32a_force = 1;
+  s_i_valid32b_anikin = 1; s_i_valid32b_force = 1;
+  s_i_valid32c_anikin = 1; s_i_valid32c_force = 1;
+  s_i_valid32d_anikin = 1; s_i_valid32d_force = 1;
+  @(posedge s_i_clk); clear_valids();
+
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(s_o_valid32a_jedi && s_o_valid32b_jedi && s_o_valid32c_jedi && s_o_valid32d_jedi)
+  `FAIL_UNLESS(lane32_a(s_o_out_jedi) == lane32_a(expect32))
+  `FAIL_UNLESS(lane32_b(s_o_out_jedi) == lane32_b(expect32))
+  `FAIL_UNLESS(lane32_c(s_o_out_jedi) == lane32_c(expect32))
+  `FAIL_UNLESS(lane32_d(s_o_out_jedi) == lane32_d(expect32))
+  `FAIL_UNLESS(s_o_metadata.sp_mode == FOUR_SP_MODE)
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+// -------------------------------------------------------------------------
+// Spec 3/4/7: FOUR_SP_MODE special types and denormals -> 0
+// -------------------------------------------------------------------------
+`SVTEST(four_sp_mode_special_cases_and_denormals)
+  logic [31:0] oa = lane32_a(s_o_out_jedi);
+  logic [31:0] ob = lane32_b(s_o_out_jedi);
+  logic [31:0] oc = lane32_c(s_o_out_jedi);
+  logic [31:0] od = lane32_d(s_o_out_jedi);
+
+  drive_meta(FOUR_SP_MODE, POS_DENORMAL, POS_INF, NEG_INF, NAN);
+
+  s_i_in_anikin = pack_4x32(shortreal'(1.0e-44), shortreal'(1.0), shortreal'(-1.0), shortreal'(0.0));
+  s_i_in_force  = pack_4x32(shortreal'(2.0),     shortreal'(2.0), shortreal'(2.0), shortreal'(1.0));
+
+  s_i_valid32a_anikin = 1; s_i_valid32a_force = 1;
+  s_i_valid32b_anikin = 1; s_i_valid32b_force = 1;
+  s_i_valid32c_anikin = 1; s_i_valid32c_force = 1;
+  s_i_valid32d_anikin = 1; s_i_valid32d_force = 1;
+  @(posedge s_i_clk); clear_valids();
+
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(s_o_valid32a_jedi && s_o_valid32b_jedi && s_o_valid32c_jedi && s_o_valid32d_jedi)
+
+  `FAIL_UNLESS(oa == F32_ZERO)
+  `FAIL_UNLESS(ob == F32_POS_INF)
+  `FAIL_UNLESS(oc == F32_NEG_INF)
+  `FAIL_UNLESS(is_nan32(od))
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+// -------------------------------------------------------------------------
+// Spec 3/7: FOUR_SP_MODE per-lane gating — only a,b valid
+// -------------------------------------------------------------------------
+`SVTEST(four_sp_mode_partial_valids)
+  logic [127:0] prev = s_o_out_jedi;
+
+  drive_meta(FOUR_SP_MODE, NORMAL, NORMAL, NORMAL, NORMAL);
+
+  s_i_in_anikin = pack_4x32(shortreal'(2.0), shortreal'(2.0), shortreal'(2.0), shortreal'(2.0));
+  s_i_in_force  = pack_4x32(shortreal'(3.0), shortreal'(4.0), shortreal'(5.0), shortreal'(6.0));
+  s_i_valid32a_anikin = 1; s_i_valid32a_force = 1;
+  s_i_valid32b_anikin = 1; s_i_valid32b_force = 1;
+  s_i_valid32c_anikin = 1; s_i_valid32c_force = 0; // c,d not fully valid
+  s_i_valid32d_anikin = 1; s_i_valid32d_force = 0;
+  @(posedge s_i_clk); clear_valids();
+
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(s_o_valid32a_jedi && s_o_valid32b_jedi && !s_o_valid32c_jedi && !s_o_valid32d_jedi)
+  `FAIL_UNLESS(lane32_a(s_o_out_jedi) == sr2b32(shortreal'(6.0)))
+  `FAIL_UNLESS(lane32_b(s_o_out_jedi) == sr2b32(shortreal'(8.0)))
+  `FAIL_UNLESS(lane32_c(s_o_out_jedi) === lane32_c(prev))
+  `FAIL_UNLESS(lane32_d(s_o_out_jedi) === lane32_d(prev))
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+// -------------------------------------------------------------------------
+// Spec 8/9: Metadata passthrough and error==0 sweep
+// -------------------------------------------------------------------------
+`SVTEST(metadata_passthrough_and_error_zero)
+  drive_meta(SINGLE_MODE, NA, NA, NA, NA); wait_n_ticks(5); `FAIL_UNLESS(s_o_metadata.sp_mode == SINGLE_MODE)
+  drive_meta(TWO_SP_MODE, NA, NA, NA, NA); wait_n_ticks(5); `FAIL_UNLESS(s_o_metadata.sp_mode == TWO_SP_MODE)
+  drive_meta(FOUR_SP_MODE, NA, NA, NA, NA); wait_n_ticks(5); `FAIL_UNLESS(s_o_metadata.sp_mode == FOUR_SP_MODE)
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+// -------------------------------------------------------------------------
+// NEW: Spec 1 numeric checks for SINGLE_MODE using 128-bit LUT hex files.
+// anikin_128b.hex[i] * force_128b.hex[i] == jedi_128b.hex[i]
+// -------------------------------------------------------------------------
+`SVTEST(single_mode_numeric_from_hex_vectors)
+  logic [127:0] qA[$], qB[$], qC[$];
+
+  read_hex128_to_queue(HEX_A_128, qA);
+  read_hex128_to_queue(HEX_B_128, qB);
+  read_hex128_to_queue(HEX_C_128, qC);
+
+  `FAIL_UNLESS(qA.size() > 0)
+  `FAIL_UNLESS(qA.size() == qB.size())
+  `FAIL_UNLESS(qA.size() == qC.size())
+
+  drive_meta(SINGLE_MODE, NORMAL, NA, NA, NA);
+
+  // For each vector, pulse valids for exactly one cycle, wait 5, and compare.
+  foreach (qA[i]) begin
+    // Optional: ensure no spurious early o_valid
+    wait_n_ticks(1);
+    `FAIL_UNLESS(!s_o_valid128_jedi)
+
+    s_i_in_anikin = qA[i];
+    s_i_in_force  = qB[i];
+    s_i_valid128_anikin = 1;
+    s_i_valid128_force  = 1;
+    @(posedge s_i_clk);
+    clear_valids();
+
+    wait_n_ticks(5);
+
+    `FAIL_UNLESS(s_o_valid128_jedi)
+    `FAIL_UNLESS(s_o_out_jedi == qC[i])
+    `FAIL_UNLESS(s_o_error == '0)
+  end
+`SVTEST_END

@@ -305,7 +305,7 @@ always_comb begin : stage_en_control
     end
     S5: begin
       s_S5_en = 1'b1;
-      s_next_state = S6;
+      s_next_state = S0_IDLE; // s5 is the last stage
     end
     S6: begin
       s_S6_en = 1'b1;
@@ -349,7 +349,7 @@ always_ff @( posedge i_clk ) begin : stage1a_sign_stuff
     if (s_S1_en) begin
       assert (s_S0_metadata_anikin.sp_mode === s_S0_metadata_force.sp_mode) else begin
         s_o_error[5] <= 1'b1;
-        $fatal(1, "Bad things had happened, (s_S0_metadata_anikin.sp_mode === s_S0_metadata_force.sp_mode) is false.");
+        // $fatal(1, "Bad things had happened, (s_S0_metadata_anikin.sp_mode === s_S0_metadata_force.sp_mode) is false.");
       end
 
       case (s_S0_metadata_anikin.sp_mode)
@@ -396,7 +396,7 @@ always_ff @( posedge i_clk ) begin : stage1b_sign_stuff
     if (s_S1_en) begin
       assert (s_S0_metadata_anikin.sp_mode === s_S0_metadata_force.sp_mode) else begin
         s_o_error[6] <= 1'b1;
-        $fatal(1, "Bad things had happened, (s_S0_metadata_anikin.sp_mode === s_S0_metadata_force.sp_mode) is false.");
+        // $fatal(1, "Bad things had happened, (s_S0_metadata_anikin.sp_mode === s_S0_metadata_force.sp_mode) is false.");
       end
       
       case (s_S0_metadata_anikin.sp_mode)
@@ -545,7 +545,7 @@ always_ff @( posedge i_clk ) begin : stage2a_extended_mantissa_mult
     if (s_S2_en) begin
       assert (s_S1_metadata_anikin.sp_mode === s_S1_metadata_force.sp_mode) else begin
         s_o_error[7] <= 1'b1;
-        $fatal(1, "Bad things had happened, (s_S1_metadata_anikin.sp_mode === s_S1_metadata_force.sp_mode) is false.");
+        // $fatal(1, "Bad things had happened, (s_S1_metadata_anikin.sp_mode === s_S1_metadata_force.sp_mode) is false.");
       end
       
       case (s_S1_metadata_anikin.sp_mode)
@@ -653,12 +653,13 @@ end // always_ff @( posedge i_clk )
  *            if b_112 == 1, P_norm = 1.b_1b_2b_3...b_112 + 1
  *            if b_112 == 0, P_norm = 1.b_1b_2b_3...b_112
  * 
- * todo next stage:
+ * Stage 4 will be:
  * After rounding, we need to check that the rounding didn't cause overflow (ie we 
  * get a 10.0000.... after we increment by 1)
  * if that is the case (overflow), we increment the exponent by 1 again and shift
  * P_norm right by 1 so that it goes back to being 1.000000....
  * 
+ * This is called RN-even: Round to nearest, ties to even
  */
 /**
  * 3a: Normalization
@@ -717,7 +718,7 @@ always_ff @( posedge i_clk ) begin : stage3a_ex_man_normalization
     if (s_S3_en) begin
       assert (s_S2_metadata_anikin.sp_mode === s_S2_metadata_force.sp_mode) else begin
         s_o_error[8] <= 1'b1;
-        $fatal(1, "Bad things had happened, (s_S2_metadata_anikin.sp_mode === s_S2_metadata_force.sp_mode) is false.");
+        // $fatal(1, "Bad things had happened, (s_S2_metadata_anikin.sp_mode === s_S2_metadata_force.sp_mode) is false.");
       end
       
       case (s_S2_metadata_anikin.sp_mode)
@@ -987,7 +988,7 @@ always_ff @( posedge i_clk ) begin : stage4a_renormalize
     if (s_S4_en) begin
       assert (s_S3_metadata_anikin.sp_mode === s_S3_metadata_force.sp_mode) else begin
         s_o_error[9] <= 1'b1;
-        $fatal(1, "Bad things had happened, (s_S3_metadata_anikin.sp_mode === s_S3_metadata_force.sp_mode) is false.");
+        // $fatal(1, "Bad things had happened, (s_S3_metadata_anikin.sp_mode === s_S3_metadata_force.sp_mode) is false.");
       end
 
       case (s_S3_metadata_anikin.sp_mode)
@@ -1175,7 +1176,7 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
     if (s_S5_en) begin
       assert (s_S4_metadata_anikin.sp_mode === s_S4_metadata_force.sp_mode) else begin
         s_o_error[9] <= 1'b1;
-        $fatal(1, "Bad things had happened, (s_S4_metadata_anikin.sp_mode === s_S4_metadata_force.sp_mode) is false.");
+        // $fatal(1, "Bad things had happened, (s_S4_metadata_anikin.sp_mode === s_S4_metadata_force.sp_mode) is false.");
       end
       case (s_S4_metadata_anikin.sp_mode)
         SINGLE_MODE: begin
@@ -1216,7 +1217,7 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             assert (s_S4_128_potential_result[112] === 1'b1) else begin
               // Make sure implicit 1 is there, this HAS to be true
               s_o_error[12] <= 1'b1;
-              $fatal(1, "Implicit 1 missing, this is bad");
+              // $fatal(1, "Implicit 1 missing, this is bad");
             end
             
             s_S5_128_jedi.sign      <= s_S4_128_jedi.sign;
@@ -1263,7 +1264,7 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             assert (s_S4_64a_potential_result[52] === 1'b1) else begin
               // Make sure implicit 1 is there, this HAS to be true
               s_o_error[13] <= 1'b1;
-              $fatal(1, "Implicit 1 missing, this is bad");
+              // $fatal(1, "Implicit 1 missing, this is bad");
             end
             
             s_S5_64a_jedi.sign      <= s_S4_64a_jedi.sign;
@@ -1308,7 +1309,7 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             assert (s_S4_64b_potential_result[52] === 1'b1) else begin
               // Make sure implicit 1 is there, this HAS to be true
               s_o_error[13] <= 1'b1;
-              $fatal(1, "Implicit 1 missing, this is bad");
+              // $fatal(1, "Implicit 1 missing, this is bad");
             end
             
             s_S5_64b_jedi.sign      <= s_S4_64b_jedi.sign;
@@ -1355,7 +1356,7 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             assert (s_S4_32a_potential_result[52] === 1'b1) else begin
               // Make sure implicit 1 is there, this HAS to be true
               s_o_error[13] <= 1'b1;
-              $fatal(1, "Implicit 1 missing, this is bad");
+              // $fatal(1, "Implicit 1 missing, this is bad");
             end
             
             s_S5_32a_jedi.sign      <= s_S4_32a_jedi.sign;
@@ -1401,7 +1402,7 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             assert (s_S4_32b_potential_result[52] === 1'b1) else begin
               // Make sure implicit 1 is there, this HAS to be true
               s_o_error[13] <= 1'b1;
-              $fatal(1, "Implicit 1 missing, this is bad");
+              // $fatal(1, "Implicit 1 missing, this is bad");
             end
             
             s_S5_32b_jedi.sign      <= s_S4_32b_jedi.sign;
@@ -1447,7 +1448,7 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             assert (s_S4_32c_potential_result[52] === 1'b1) else begin
               // Make sure implicit 1 is there, this HAS to be true
               s_o_error[13] <= 1'b1;
-              $fatal(1, "Implicit 1 missing, this is bad");
+              // $fatal(1, "Implicit 1 missing, this is bad");
             end
             
             s_S5_32c_jedi.sign      <= s_S4_32c_jedi.sign;
@@ -1493,7 +1494,7 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             assert (s_S4_32d_potential_result[52] === 1'b1) else begin
               // Make sure implicit 1 is there, this HAS to be true
               s_o_error[13] <= 1'b1;
-              $fatal(1, "Implicit 1 missing, this is bad");
+              // $fatal(1, "Implicit 1 missing, this is bad");
             end
             
             s_S5_32d_jedi.sign      <= s_S4_32d_jedi.sign;
