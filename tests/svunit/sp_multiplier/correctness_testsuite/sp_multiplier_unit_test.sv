@@ -164,7 +164,7 @@ module sp_multiplier_unit_test;
   // Helpers
   // ----------------------------------
   task automatic wait_n_ticks(int n);
-    repeat (n) @(posedge s_i_clk);
+    repeat (n) @(posedge s_i_clk) @(negedge s_i_clk);
   endtask
 
   task automatic clear_valids();
@@ -194,8 +194,25 @@ module sp_multiplier_unit_test;
     s_i_metadata.float_type_d = fd;
   endtask
 
+  // 64-bit lane golden multiply (bit-exact to IEEE-754 double)
+  function automatic logic [63:0] mul64_bits(logic [63:0] a_bits, logic [63:0] b_bits);
+    real a = $bitstoreal(a_bits);
+    real b = $bitstoreal(b_bits);
+    real p = a * b;
+    $display(">>>>> a (%f) * b (%f) = p (%f)", a, b, p);
+    return $realtobits(p);
+  endfunction
+
+  // 32-bit lane golden multiply (bit-exact to IEEE-754 single)
+  function automatic logic [31:0] mul32_bits(logic [31:0] a_bits, logic [31:0] b_bits);
+    shortreal a = $bitstoshortreal(a_bits);
+    shortreal b = $bitstoshortreal(b_bits);
+    shortreal p = a * b;
+    return $shortrealtobits(p);
+  endfunction
+
   // 64-bit helpers
-  function automatic logic [63:0] r2b64(real r);      return $realtobits(r); endfunction
+  function automatic logic [63:0] r2b64(real r); return $realtobits(r); endfunction
   function automatic real         b2r64(logic [63:0] b); return $bitstoreal(b); endfunction
   function automatic logic [127:0] pack_2x64(real a_top, real a_bot);
     return { r2b64(a_top), r2b64(a_bot) };

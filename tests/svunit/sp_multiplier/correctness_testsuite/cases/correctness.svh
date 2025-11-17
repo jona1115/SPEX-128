@@ -43,13 +43,13 @@
   s_i_in_force  = F128_NEG_INF;
   clear_valids();
 
-  wait_n_ticks(6);
+  wait_n_ticks(5);
 
   `FAIL_UNLESS(s_o_out_jedi === prev)
   `FAIL_UNLESS(!s_o_valid128_jedi)
   `FAIL_UNLESS(!s_o_valid64a_jedi && !s_o_valid64b_jedi)
   `FAIL_UNLESS(!s_o_valid32a_jedi && !s_o_valid32b_jedi && !s_o_valid32c_jedi && !s_o_valid32d_jedi)
-  `FAIL_UNLESS(s_o_error == '0)
+  `FAIL_UNLESS(s_o_error === '0)
 `SVTEST_END
 
 // -------------------------------------------------------------------------
@@ -74,7 +74,7 @@
   `FAIL_UNLESS(s_o_valid128_jedi)
   `FAIL_UNLESS(s_o_metadata.sp_mode == SINGLE_MODE)
   `FAIL_UNLESS(s_o_out_jedi == 128'b0)
-  `FAIL_UNLESS(s_o_error == '0)
+  `FAIL_UNLESS(s_o_error === '0)
 `SVTEST_END
 
 // -------------------------------------------------------------------------
@@ -95,7 +95,7 @@
 
   `FAIL_UNLESS(!s_o_valid128_jedi)
   `FAIL_UNLESS(s_o_out_jedi === prev)
-  `FAIL_UNLESS(s_o_error == '0)
+  `FAIL_UNLESS(s_o_error === '0)
 `SVTEST_END
 
 // -------------------------------------------------------------------------
@@ -104,41 +104,62 @@
 `SVTEST(single_mode_inf_nan_special_cases)
   // +INF case
   drive_meta(SINGLE_MODE, POS_INF, NA, NA, NA);
-  s_i_in_anikin = F128_POS_INF; s_i_in_force = F128_ZERO;
-  s_i_valid128_anikin = 1; s_i_valid128_force = 1; @(posedge s_i_clk); clear_valids();
+  s_i_in_anikin = F128_POS_INF;
+  s_i_in_force = F128_ZERO;
+  s_i_valid128_anikin = 1;
+  s_i_valid128_force = 1;
+  
+  @(posedge s_i_clk);
+  clear_valids();
+  
   wait_n_ticks(5);
   `FAIL_UNLESS(s_o_valid128_jedi)
   `FAIL_UNLESS( (s_o_out_jedi[126 -: 15] == {15{1'b1}}) && (s_o_out_jedi[111:0] == '0) )
 
   // -INF case
   drive_meta(SINGLE_MODE, NEG_INF, NA, NA, NA);
-  s_i_in_anikin = F128_NEG_INF; s_i_in_force = F128_ZERO;
-  s_i_valid128_anikin = 1; s_i_valid128_force = 1; @(posedge s_i_clk); clear_valids();
+  s_i_in_anikin = F128_NEG_INF;
+  s_i_in_force = F128_ZERO;
+  s_i_valid128_anikin = 1;
+  s_i_valid128_force = 1;
+  
+  @(posedge s_i_clk);
+  clear_valids();
+  
   wait_n_ticks(5);
   `FAIL_UNLESS(s_o_valid128_jedi)
   `FAIL_UNLESS( (s_o_out_jedi[127] == 1'b1) && (s_o_out_jedi[126 -: 15] == {15{1'b1}}) && (s_o_out_jedi[111:0] == '0) )
 
   // NaN case
   drive_meta(SINGLE_MODE, NAN, NA, NA, NA);
-  s_i_in_anikin = F128_QNAN; s_i_in_force = F128_ZERO;
-  s_i_valid128_anikin = 1; s_i_valid128_force = 1; @(posedge s_i_clk); clear_valids();
+  s_i_in_anikin = F128_QNAN;
+  s_i_in_force = F128_ZERO;
+  s_i_valid128_anikin = 1;
+  s_i_valid128_force = 1;
+  
+  @(posedge s_i_clk);
+  clear_valids();
+  
   wait_n_ticks(5);
   `FAIL_UNLESS(s_o_valid128_jedi)
   `FAIL_UNLESS( (s_o_out_jedi[126 -: 15] == {15{1'b1}}) && (s_o_out_jedi[111:0] != '0) )
-  `FAIL_UNLESS(s_o_error == '0)
+  `FAIL_UNLESS(s_o_error === '0)
 `SVTEST_END
 
 // -------------------------------------------------------------------------
 // Spec 2/6/8/9: TWO_SP_MODE exact numeric; per-lane valids; 5-tick latency
 // -------------------------------------------------------------------------
 `SVTEST(two_sp_mode_basic_multiply)
-  logic [127:0] expect64 = pack_2x64( 6.0, 0.125 );
+  // Choose any operands you like; bits shown here for clarity
+  logic [63:0] a_top = $realtobits(2.0);
+  logic [63:0] a_bot = $realtobits(0.5);
+  logic [63:0] b_top = $realtobits(3.0);
+  logic [63:0] b_bot = $realtobits(0.25);
 
   drive_meta(TWO_SP_MODE, NORMAL, NORMAL, NA, NA);
 
-  // Lane A: 2.0*3.0=6.0 ; Lane B: 0.5*0.25=0.125
-  s_i_in_anikin = pack_2x64( 2.0, 0.5 );
-  s_i_in_force  = pack_2x64( 3.0, 0.25 );
+  s_i_in_anikin = {a_top, a_bot};
+  s_i_in_force  = {b_top, b_bot};
 
   s_i_valid64a_anikin = 1; s_i_valid64a_force = 1;
   s_i_valid64b_anikin = 1; s_i_valid64b_force = 1;
@@ -147,8 +168,8 @@
   wait_n_ticks(5);
 
   `FAIL_UNLESS(s_o_valid64a_jedi && s_o_valid64b_jedi)
-  `FAIL_UNLESS(top64(s_o_out_jedi) == top64(expect64))
-  `FAIL_UNLESS(bot64(s_o_out_jedi) == bot64(expect64))
+  `FAIL_UNLESS(top64(s_o_out_jedi) == mul64_bits(a_top, b_top))
+  `FAIL_UNLESS(bot64(s_o_out_jedi) == mul64_bits(a_bot, b_bot))
   `FAIL_UNLESS(s_o_metadata.sp_mode == TWO_SP_MODE)
   `FAIL_UNLESS(s_o_error == '0)
 `SVTEST_END
@@ -172,21 +193,27 @@
   `FAIL_UNLESS(s_o_valid64a_jedi && !s_o_valid64b_jedi)
   `FAIL_UNLESS(top64(s_o_out_jedi) == r2b64(6.0))
   `FAIL_UNLESS(bot64(s_o_out_jedi) === bot64(prev))
-  `FAIL_UNLESS(s_o_error == '0)
+  `FAIL_UNLESS(s_o_error === '0)
 `SVTEST_END
 
 // -------------------------------------------------------------------------
 // Spec 3/7/8/9: FOUR_SP_MODE exact numeric; per-lane valids; 5-tick latency
 // -------------------------------------------------------------------------
 `SVTEST(four_sp_mode_basic_multiply)
-  logic [127:0] expect32 = pack_4x32(
-    shortreal'(6.0), shortreal'(0.125), shortreal'(4.0), shortreal'(1.0)
-  );
+  logic [31:0] aa = $shortrealtobits(shortreal'(2.0));
+  logic [31:0] ab = $shortrealtobits(shortreal'(0.5));
+  logic [31:0] ac = $shortrealtobits(shortreal'(1.0));
+  logic [31:0] ad = $shortrealtobits(shortreal'(8.0));
+
+  logic [31:0] fa = $shortrealtobits(shortreal'(3.0));
+  logic [31:0] fb = $shortrealtobits(shortreal'(0.25));
+  logic [31:0] fc = $shortrealtobits(shortreal'(4.0));
+  logic [31:0] fd = $shortrealtobits(shortreal'(0.125));
 
   drive_meta(FOUR_SP_MODE, NORMAL, NORMAL, NORMAL, NORMAL);
 
-  s_i_in_anikin = pack_4x32(shortreal'(2.0), shortreal'(0.5), shortreal'(1.0), shortreal'(8.0));
-  s_i_in_force  = pack_4x32(shortreal'(3.0), shortreal'(0.25), shortreal'(4.0), shortreal'(0.125));
+  s_i_in_anikin = {aa, ab, ac, ad};
+  s_i_in_force  = {fa, fb, fc, fd};
 
   s_i_valid32a_anikin = 1; s_i_valid32a_force = 1;
   s_i_valid32b_anikin = 1; s_i_valid32b_force = 1;
@@ -197,10 +224,10 @@
   wait_n_ticks(5);
 
   `FAIL_UNLESS(s_o_valid32a_jedi && s_o_valid32b_jedi && s_o_valid32c_jedi && s_o_valid32d_jedi)
-  `FAIL_UNLESS(lane32_a(s_o_out_jedi) == lane32_a(expect32))
-  `FAIL_UNLESS(lane32_b(s_o_out_jedi) == lane32_b(expect32))
-  `FAIL_UNLESS(lane32_c(s_o_out_jedi) == lane32_c(expect32))
-  `FAIL_UNLESS(lane32_d(s_o_out_jedi) == lane32_d(expect32))
+  `FAIL_UNLESS(lane32_a(s_o_out_jedi) == mul32_bits(aa, fa))
+  `FAIL_UNLESS(lane32_b(s_o_out_jedi) == mul32_bits(ab, fb))
+  `FAIL_UNLESS(lane32_c(s_o_out_jedi) == mul32_bits(ac, fc))
+  `FAIL_UNLESS(lane32_d(s_o_out_jedi) == mul32_bits(ad, fd))
   `FAIL_UNLESS(s_o_metadata.sp_mode == FOUR_SP_MODE)
   `FAIL_UNLESS(s_o_error == '0)
 `SVTEST_END
@@ -233,7 +260,7 @@
   `FAIL_UNLESS(ob == F32_POS_INF)
   `FAIL_UNLESS(oc == F32_NEG_INF)
   `FAIL_UNLESS(is_nan32(od))
-  `FAIL_UNLESS(s_o_error == '0)
+  `FAIL_UNLESS(s_o_error === '0)
 `SVTEST_END
 
 // -------------------------------------------------------------------------
@@ -259,7 +286,7 @@
   `FAIL_UNLESS(lane32_b(s_o_out_jedi) == sr2b32(shortreal'(8.0)))
   `FAIL_UNLESS(lane32_c(s_o_out_jedi) === lane32_c(prev))
   `FAIL_UNLESS(lane32_d(s_o_out_jedi) === lane32_d(prev))
-  `FAIL_UNLESS(s_o_error == '0)
+  `FAIL_UNLESS(s_o_error === '0)
 `SVTEST_END
 
 // -------------------------------------------------------------------------
@@ -269,11 +296,11 @@
   drive_meta(SINGLE_MODE, NA, NA, NA, NA); wait_n_ticks(5); `FAIL_UNLESS(s_o_metadata.sp_mode == SINGLE_MODE)
   drive_meta(TWO_SP_MODE, NA, NA, NA, NA); wait_n_ticks(5); `FAIL_UNLESS(s_o_metadata.sp_mode == TWO_SP_MODE)
   drive_meta(FOUR_SP_MODE, NA, NA, NA, NA); wait_n_ticks(5); `FAIL_UNLESS(s_o_metadata.sp_mode == FOUR_SP_MODE)
-  `FAIL_UNLESS(s_o_error == '0)
+  `FAIL_UNLESS(s_o_error === '0)
 `SVTEST_END
 
 // -------------------------------------------------------------------------
-// NEW: Spec 1 numeric checks for SINGLE_MODE using 128-bit LUT hex files.
+// Spec 1 numeric checks for SINGLE_MODE using 128-bit LUT hex files.
 // anikin_128b.hex[i] * force_128b.hex[i] == jedi_128b.hex[i]
 // -------------------------------------------------------------------------
 `SVTEST(single_mode_numeric_from_hex_vectors)
@@ -306,6 +333,196 @@
 
     `FAIL_UNLESS(s_o_valid128_jedi)
     `FAIL_UNLESS(s_o_out_jedi == qC[i])
-    `FAIL_UNLESS(s_o_error == '0)
+    `FAIL_UNLESS(s_o_error === '0)
   end
 `SVTEST_END
+
+// -------------------------------------------------------------------------
+// TWO/FOUR SP MODE Edge cases test
+// -------------------------------------------------------------------------
+// ---- 64-bit (double) bit patterns
+localparam logic [63:0] DBL_MAX      = 64'h7FEF_FFFF_FFFF_FFFF;
+localparam logic [63:0] DBL_MIN_N    = 64'h0010_0000_0000_0000; // min normal
+localparam logic [63:0] DBL_TWO      = 64'h4000_0000_0000_0000;
+localparam logic [63:0] DBL_HALF     = 64'h3FE0_0000_0000_0000;
+localparam logic [63:0] DBL_ONE      = 64'h3FF0_0000_0000_0000;
+localparam logic [63:0] DBL_ONE_UP   = 64'h3FF0_0000_0000_0001; // nextafter(1.0,+)
+localparam logic [63:0] DBL_ONE_DOWN = 64'h3FEF_FFFF_FFFF_FFFF; // nextafter(1.0,-)
+
+// ---- 32-bit (float) bit patterns
+localparam logic [31:0] FLT_MAX      = 32'h7F7F_FFFF;
+localparam logic [31:0] FLT_MIN_N    = 32'h0080_0000; // min normal
+localparam logic [31:0] FLT_TWO      = 32'h4000_0000;
+localparam logic [31:0] FLT_HALF     = 32'h3F00_0000;
+localparam logic [31:0] FLT_ONE      = 32'h3F80_0000;
+localparam logic [31:0] FLT_ONE_UP   = 32'h3F80_0001;
+localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
+
+`SVTEST(two_sp_mode_edge_overflow_underflow_and_signs)
+  // Lane A: DBL_MAX * 2 -> +INF (overflow)
+  // Lane B: MIN_NORMAL * 0.5 -> subnormal (underflow to subnormal)
+  logic [63:0] a_top = DBL_MAX;
+  logic [63:0] b_top = DBL_TWO;
+  logic [63:0] a_bot = DBL_MIN_N;
+  logic [63:0] b_bot = DBL_HALF;
+
+  drive_meta(TWO_SP_MODE, NORMAL, NORMAL, NA, NA);
+
+  s_i_in_anikin = {a_top, a_bot};
+  s_i_in_force  = {b_top, b_bot};
+
+  s_i_valid64a_anikin = 1; s_i_valid64a_force = 1;
+  s_i_valid64b_anikin = 1; s_i_valid64b_force = 1;
+  @(posedge s_i_clk); clear_valids();
+
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(s_o_valid64a_jedi && s_o_valid64b_jedi)
+  `FAIL_UNLESS(top64(s_o_out_jedi) == mul64_bits(a_top, b_top)) // expect +INF
+  `FAIL_UNLESS(bot64(s_o_out_jedi) == mul64_bits(a_bot, b_bot)) // expect subnormal
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+`SVTEST(two_sp_mode_edge_signs)
+  // A: (-2.0) * (3.0) -> -6.0
+  // B: (-5.0) * (-0.25) -> +1.25
+  logic [63:0] a_top = $realtobits(-2.0);
+  logic [63:0] b_top = $realtobits( 3.0);
+  logic [63:0] a_bot = $realtobits(-5.0);
+  logic [63:0] b_bot = $realtobits(-0.25);
+
+  drive_meta(TWO_SP_MODE, NORMAL, NORMAL, NA, NA);
+
+  s_i_in_anikin = {a_top, a_bot};
+  s_i_in_force  = {b_top, b_bot};
+
+  s_i_valid64a_anikin = 1; s_i_valid64a_force = 1;
+  s_i_valid64b_anikin = 1; s_i_valid64b_force = 1;
+  @(posedge s_i_clk); clear_valids();
+
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(s_o_valid64a_jedi && s_o_valid64b_jedi)
+  `FAIL_UNLESS(top64(s_o_out_jedi) == mul64_bits(a_top, b_top))
+  `FAIL_UNLESS(bot64(s_o_out_jedi) == mul64_bits(a_bot, b_bot))
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+`SVTEST(two_sp_mode_rounding_ulps)
+  // A: (1+ulp) * (1-ulp) ~ 1 - ulp^2 (very close to 1)
+  // B: 1.0 * (1+ulp) -> nextUp(1.0)
+  logic [63:0] a_top = DBL_ONE_UP;
+  logic [63:0] b_top = DBL_ONE_DOWN;
+  logic [63:0] a_bot = DBL_ONE;
+  logic [63:0] b_bot = DBL_ONE_UP;
+
+  drive_meta(TWO_SP_MODE, NORMAL, NORMAL, NA, NA);
+
+  s_i_in_anikin = {a_top, a_bot};
+  s_i_in_force  = {b_top, b_bot};
+
+  s_i_valid64a_anikin = 1; s_i_valid64a_force = 1;
+  s_i_valid64b_anikin = 1; s_i_valid64b_force = 1;
+  @(posedge s_i_clk); clear_valids();
+
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(s_o_valid64a_jedi && s_o_valid64b_jedi)
+  `FAIL_UNLESS(top64(s_o_out_jedi) == mul64_bits(a_top, b_top))
+  `FAIL_UNLESS(bot64(s_o_out_jedi) == mul64_bits(a_bot, b_bot))
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+`SVTEST(four_sp_mode_edge_overflow_underflow_and_signs)
+  // a: FLT_MAX * 2 -> +INF (overflow)
+  // b: MIN_NORMAL * 0.5 -> subnormal
+  // c: (-3.0) * (2.5) -> -7.5
+  // d: 2^-10 * 2^10 -> 1.0  (exact)
+  logic [31:0] aa = FLT_MAX;
+  logic [31:0] fa = FLT_TWO;
+
+  logic [31:0] ab = FLT_MIN_N;
+  logic [31:0] fb = FLT_HALF;
+
+  logic [31:0] ac = $shortrealtobits(shortreal'(-3.0));
+  logic [31:0] fc = $shortrealtobits(shortreal'( 2.5));
+
+  // 2^-10 and 2^10 in float
+  logic [31:0] ad = $shortrealtobits(shortreal'($pow(2.0, -10.0)));
+  logic [31:0] fd = $shortrealtobits(shortreal'($pow(2.0,  10.0)));
+
+  drive_meta(FOUR_SP_MODE, NORMAL, NORMAL, NORMAL, NORMAL);
+
+  s_i_in_anikin = {aa, ab, ac, ad};
+  s_i_in_force  = {fa, fb, fc, fd};
+
+  s_i_valid32a_anikin = 1; s_i_valid32a_force = 1;
+  s_i_valid32b_anikin = 1; s_i_valid32b_force = 1;
+  s_i_valid32c_anikin = 1; s_i_valid32c_force = 1;
+  s_i_valid32d_anikin = 1; s_i_valid32d_force = 1;
+  @(posedge s_i_clk); clear_valids();
+
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(s_o_valid32a_jedi && s_o_valid32b_jedi && s_o_valid32c_jedi && s_o_valid32d_jedi)
+  `FAIL_UNLESS(lane32_a(s_o_out_jedi) == mul32_bits(aa, fa)) // +INF
+  `FAIL_UNLESS(lane32_b(s_o_out_jedi) == mul32_bits(ab, fb)) // subnormal
+  `FAIL_UNLESS(lane32_c(s_o_out_jedi) == mul32_bits(ac, fc)) // negative
+  `FAIL_UNLESS(lane32_d(s_o_out_jedi) == mul32_bits(ad, fd)) // 1.0
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+`SVTEST(four_sp_mode_rounding_ulps)
+  // a: (1+ulp)*(1-ulp), b: 1*nextUp(1), c: nextDown(1)*1, d: (1+ulp)^2
+  logic [31:0] aa = FLT_ONE_UP,   fa = FLT_ONE_DOWN;
+  logic [31:0] ab = FLT_ONE,      fb = FLT_ONE_UP;
+  logic [31:0] ac = FLT_ONE_DOWN, fc = FLT_ONE;
+  logic [31:0] ad = FLT_ONE_UP,   fd = FLT_ONE_UP;
+
+  drive_meta(FOUR_SP_MODE, NORMAL, NORMAL, NORMAL, NORMAL);
+
+  s_i_in_anikin = {aa, ab, ac, ad};
+  s_i_in_force  = {fa, fb, fc, fd};
+
+  s_i_valid32a_anikin = 1; s_i_valid32a_force = 1;
+  s_i_valid32b_anikin = 1; s_i_valid32b_force = 1;
+  s_i_valid32c_anikin = 1; s_i_valid32c_force = 1;
+  s_i_valid32d_anikin = 1; s_i_valid32d_force = 1;
+  @(posedge s_i_clk); clear_valids();
+
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(s_o_valid32a_jedi && s_o_valid32b_jedi && s_o_valid32c_jedi && s_o_valid32d_jedi)
+  `FAIL_UNLESS(lane32_a(s_o_out_jedi) == mul32_bits(aa, fa))
+  `FAIL_UNLESS(lane32_b(s_o_out_jedi) == mul32_bits(ab, fb))
+  `FAIL_UNLESS(lane32_c(s_o_out_jedi) == mul32_bits(ac, fc))
+  `FAIL_UNLESS(lane32_d(s_o_out_jedi) == mul32_bits(ad, fd))
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+`SVTEST(two_sp_mode_edge_partial_valids_independent)
+  logic [127:0] prev = s_o_out_jedi;
+  // Only lane B valid; lane A overflow vector held back
+  logic [63:0] a_top = DBL_MAX, b_top = DBL_TWO;   // would overflow
+  logic [63:0] a_bot = DBL_MIN_N, b_bot = DBL_HALF; // underflow to subnormal
+
+  drive_meta(TWO_SP_MODE, NORMAL, NORMAL, NA, NA);
+
+  s_i_in_anikin = {a_top, a_bot};
+  s_i_in_force  = {b_top, b_bot};
+
+  s_i_valid64a_anikin = 0; s_i_valid64a_force = 0; // A not valid
+  s_i_valid64b_anikin = 1; s_i_valid64b_force = 1; // B valid
+  @(posedge s_i_clk); clear_valids();
+
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(!s_o_valid64a_jedi && s_o_valid64b_jedi)
+  `FAIL_UNLESS(top64(s_o_out_jedi) === top64(prev))                  // A holds
+  `FAIL_UNLESS(bot64(s_o_out_jedi) == mul64_bits(a_bot, b_bot))      // B updates
+  `FAIL_UNLESS(s_o_error == '0)
+`SVTEST_END
+
+// -------------------------------------------------------------------------
+// SINGLE SP MODE Edge cases test
+// -------------------------------------------------------------------------
