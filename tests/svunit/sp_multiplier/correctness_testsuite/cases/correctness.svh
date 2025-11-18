@@ -1,3 +1,28 @@
+// Handwritten tests:
+`SVTEST(handwritten_sanity_correctness_test_0)
+  logic [127:0] expected = 128'h4000c000000000000000000000000000; // 3.5
+
+  s_i_in_anikin = 128'h3ffe0000000000000000000000000000; // 0.5
+  s_i_in_force  = 128'h4001c000000000000000000000000000; // 7.0
+
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(s_o_out_jedi === expected)
+`SVTEST_END
+
+`SVTEST(handwritten_sanity_correctness_test_1)
+  logic [127:0] expected = 128'hc0076ee894ea7ad6392654fa263a57be; // -366.90852227686830087000000000000000737
+
+  s_i_in_anikin = 128'hbff7316088898481372ac2290d730dc7; // -0.0046596844999999999999999999999999997928
+  s_i_in_force  = 128'h400f339510c28a7e9e96838f970c4b93; // 78741.065468460000000000000000000002343
+
+  wait_n_ticks(5);
+
+  `FAIL_UNLESS(s_o_out_jedi === expected)
+`SVTEST_END
+
+
+
 /* This is the specification of DUT I gave ChatGPT:
  * 1. When i_metadata.sp_mode is SINGLE_MODE: o_out_jedi = (in_128_anikin * in_128_force) 
  *    in 5 clock cycles (ticks) if i_valid128_anikin and i_valid128_force are 1'b1. If any of the 
@@ -666,7 +691,7 @@ localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
 
 `SVTEST(single_mode_partial_valids_with_edge_operands)
   logic [127:0] prev = s_o_out_jedi;
-  
+
   drive_meta(SINGLE_MODE, NORMAL, NA, NA, NA);
 
   // Would overflow if accepted, but we drop it by clearing one valid
