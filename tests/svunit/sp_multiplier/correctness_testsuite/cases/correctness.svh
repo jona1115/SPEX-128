@@ -5,7 +5,14 @@
   s_i_in_anikin = 128'h3ffe0000000000000000000000000000; // 0.5
   s_i_in_force  = 128'h4001c000000000000000000000000000; // 7.0
 
-  wait_n_ticks(5);
+  drive_meta(SINGLE_MODE, NORMAL, NA, NA, NA);
+
+  s_i_valid128_anikin = '1;
+  s_i_valid128_force  = '1;
+  wait_n_ticks(1);
+  s_i_valid128_anikin = '0;
+  s_i_valid128_force  = '0;
+  wait_n_ticks(4);
 
   `FAIL_UNLESS(s_o_out_jedi === expected)
 `SVTEST_END
@@ -16,7 +23,12 @@
   s_i_in_anikin = 128'hbff7316088898481372ac2290d730dc7; // -0.0046596844999999999999999999999999997928
   s_i_in_force  = 128'h400f339510c28a7e9e96838f970c4b93; // 78741.065468460000000000000000000002343
 
-  wait_n_ticks(5);
+  s_i_valid128_anikin = '1;
+  s_i_valid128_force  = '1;
+  wait_n_ticks(1);
+  s_i_valid128_anikin = '0;
+  s_i_valid128_force  = '0;
+  wait_n_ticks(4);
 
   `FAIL_UNLESS(s_o_out_jedi === expected)
 `SVTEST_END
