@@ -754,18 +754,22 @@ always_ff @( posedge i_clk ) begin : stage3a_ex_man_normalization
 
         TWO_SP_MODE: begin
           if (s_S3_64a_mult_out_full_G === 1'b0) begin
-            s_S3_64a_potential_result <= s_S2_64a_mult_out_full[105:53];
+            s_S3_64a_potential_result <= (`CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105]) ?
+                                           s_S2_64a_mult_out_full[105:53] : s_S2_64a_mult_out_full[104:52]);
           end
           else begin // s_S3_64a_mult_out_full_G === 1'b1
             if (s_S3_64a_mult_out_full_R === 1'b1 || s_S3_64a_mult_out_full_S === 1'b1) begin
-              s_S3_64a_potential_result <= s_S2_64a_mult_out_full[105:53] + 1'b1; // todo this syntax might be wrong
+              s_S3_64a_potential_result <= (`CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105]) ?
+                                             s_S2_64a_mult_out_full[105:53] : s_S2_64a_mult_out_full[104:52]) + 1'b1;
             end
             else if (s_S3_64a_mult_out_full_R === 1'b0 && s_S3_64a_mult_out_full_S === 1'b0) begin
               if (s_S2_64a_mult_out_full[113] === 1'b1) begin
-                s_S3_64a_potential_result <= s_S2_64a_mult_out_full[105:53] + 1'b1; // todo this syntax might be wrong
+                s_S3_64a_potential_result <= (`CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105]) ?
+                                               s_S2_64a_mult_out_full[105:53] : s_S2_64a_mult_out_full[104:52]) + 1'b1;
               end
               else begin // s_S2_64a_mult_out_full[113] === 1'b0
-                s_S3_64a_potential_result <= s_S2_64a_mult_out_full[105:53];
+                s_S3_64a_potential_result <= (`CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105]) ?
+                                               s_S2_64a_mult_out_full[105:53] : s_S2_64a_mult_out_full[104:52]);
               end
             end // R==0 && S==0
             else begin
@@ -774,18 +778,22 @@ always_ff @( posedge i_clk ) begin : stage3a_ex_man_normalization
           end // s_S3_64a_mult_out_full_G === 1'b1
 
           if (s_S3_64b_mult_out_full_G === 1'b0) begin
-            s_S3_64b_potential_result <= s_S2_64b_mult_out_full[105:53];
+            s_S3_64b_potential_result <= (`CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105]) ?
+                                           s_S2_64b_mult_out_full[105:53] : s_S2_64b_mult_out_full[104:52]);
           end
           else begin // s_S3_64b_mult_out_full_G === 1'b1
             if (s_S3_64b_mult_out_full_R === 1'b1 || s_S3_64b_mult_out_full_S === 1'b1) begin
-              s_S3_64b_potential_result <= s_S2_64b_mult_out_full[105:53] + 1'b1; // todo this syntax might be wrong
+              s_S3_64b_potential_result <= (`CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105]) ?
+                                             s_S2_64b_mult_out_full[105:53] : s_S2_64b_mult_out_full[104:52]) + 1'b1;
             end
             else if (s_S3_64b_mult_out_full_R === 1'b0 && s_S3_64b_mult_out_full_S === 1'b0) begin
               if (s_S2_64b_mult_out_full[113] === 1'b1) begin
-                s_S3_64b_potential_result <= s_S2_64b_mult_out_full[105:53] + 1'b1; // todo this syntax might be wrong
+                s_S3_64b_potential_result <= (`CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105]) ?
+                                               s_S2_64b_mult_out_full[105:53] : s_S2_64b_mult_out_full[104:52]) + 1'b1;
               end
               else begin // s_S2_64b_mult_out_full[113] === 1'b0
-                s_S3_64b_potential_result <= s_S2_64b_mult_out_full[105:53];
+                s_S3_64b_potential_result <= (`CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105]) ?
+                                               s_S2_64b_mult_out_full[105:53] : s_S2_64b_mult_out_full[104:52]);
               end
             end // R==0 && S==0
             else begin
@@ -796,18 +804,22 @@ always_ff @( posedge i_clk ) begin : stage3a_ex_man_normalization
 
         FOUR_SP_MODE: begin
           if (s_S3_32a_mult_out_full_G === 1'b0) begin
-            s_S3_32a_potential_result <= s_S2_32a_mult_out_full[47:24];
+            s_S3_32a_potential_result <= (`CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47]) ?
+                                           s_S2_32a_mult_out_full[47:24] : s_S2_32a_mult_out_full[46:23]);
           end
           else begin // s_S3_32a_mult_out_full_G === 1'b1
             if (s_S3_32a_mult_out_full_R === 1'b1 || s_S3_32a_mult_out_full_S === 1'b1) begin
-              s_S3_32a_potential_result <= s_S2_32a_mult_out_full[47:24] + 1'b1; // todo this syntax might be wrong
+              s_S3_32a_potential_result <= (`CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47]) ?
+                                             s_S2_32a_mult_out_full[47:24] : s_S2_32a_mult_out_full[46:23]) + 1'b1;
             end
             else if (s_S3_32a_mult_out_full_R === 1'b0 && s_S3_32a_mult_out_full_S === 1'b0) begin
               if (s_S2_32a_mult_out_full[113] === 1'b1) begin
-                s_S3_32a_potential_result <= s_S2_32a_mult_out_full[47:24] + 1'b1; // todo this syntax might be wrong
+                s_S3_32a_potential_result <= (`CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47]) ?
+                                               s_S2_32a_mult_out_full[47:24] : s_S2_32a_mult_out_full[46:23]) + 1'b1;
               end
               else begin // s_S2_32a_mult_out_full[113] === 1'b0
-                s_S3_32a_potential_result <= s_S2_32a_mult_out_full[47:24];
+                s_S3_32a_potential_result <= (`CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47]) ?
+                                               s_S2_32a_mult_out_full[47:24] : s_S2_32a_mult_out_full[46:23]);
               end
             end // R==0 && S==0
             else begin
@@ -816,18 +828,22 @@ always_ff @( posedge i_clk ) begin : stage3a_ex_man_normalization
           end // s_S3_32a_mult_out_full_G === 1'b1
 
           if (s_S3_32b_mult_out_full_G === 1'b0) begin
-            s_S3_32b_potential_result <= s_S2_32b_mult_out_full[47:24];
+            s_S3_32b_potential_result <= (`CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47]) ?
+                                           s_S2_32b_mult_out_full[47:24] : s_S2_32b_mult_out_full[46:23]);
           end
           else begin // s_S3_32b_mult_out_full_G === 1'b1
             if (s_S3_32b_mult_out_full_R === 1'b1 || s_S3_32b_mult_out_full_S === 1'b1) begin
-              s_S3_32b_potential_result <= s_S2_32b_mult_out_full[47:24] + 1'b1; // todo this syntax might be wrong
+              s_S3_32b_potential_result <= (`CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47]) ?
+                                             s_S2_32b_mult_out_full[47:24] : s_S2_32b_mult_out_full[46:23]) + 1'b1;
             end
             else if (s_S3_32b_mult_out_full_R === 1'b0 && s_S3_32b_mult_out_full_S === 1'b0) begin
               if (s_S2_32b_mult_out_full[113] === 1'b1) begin
-                s_S3_32b_potential_result <= s_S2_32b_mult_out_full[47:24] + 1'b1; // todo this syntax might be wrong
+                s_S3_32b_potential_result <= (`CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47]) ?
+                                               s_S2_32b_mult_out_full[47:24] : s_S2_32b_mult_out_full[46:23]) + 1'b1;
               end
               else begin // s_S2_32b_mult_out_full[113] === 1'b0
-                s_S3_32b_potential_result <= s_S2_32b_mult_out_full[47:24];
+                s_S3_32b_potential_result <= (`CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47]) ?
+                                               s_S2_32b_mult_out_full[47:24] : s_S2_32b_mult_out_full[46:23]);
               end
             end // R==0 && S==0
             else begin
@@ -836,18 +852,22 @@ always_ff @( posedge i_clk ) begin : stage3a_ex_man_normalization
           end // s_S3_32b_mult_out_full_G === 1'b1
 
           if (s_S3_32c_mult_out_full_G === 1'b0) begin
-            s_S3_32c_potential_result <= s_S2_32c_mult_out_full[47:24];
+            s_S3_32c_potential_result <= (`CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47]) ?
+                                           s_S2_32c_mult_out_full[47:24] : s_S2_32c_mult_out_full[46:23]);
           end
           else begin // s_S3_32c_mult_out_full_G === 1'b1
             if (s_S3_32c_mult_out_full_R === 1'b1 || s_S3_32c_mult_out_full_S === 1'b1) begin
-              s_S3_32c_potential_result <= s_S2_32c_mult_out_full[47:24] + 1'b1; // todo this syntax might be wrong
+              s_S3_32c_potential_result <= (`CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47]) ?
+                                             s_S2_32c_mult_out_full[47:24] : s_S2_32c_mult_out_full[46:23]) + 1'b1;
             end
             else if (s_S3_32c_mult_out_full_R === 1'b0 && s_S3_32c_mult_out_full_S === 1'b0) begin
               if (s_S2_32c_mult_out_full[113] === 1'b1) begin
-                s_S3_32c_potential_result <= s_S2_32c_mult_out_full[47:24] + 1'b1; // todo this syntax might be wrong
+                s_S3_32c_potential_result <= (`CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47]) ?
+                                               s_S2_32c_mult_out_full[47:24] : s_S2_32c_mult_out_full[46:23]) + 1'b1;
               end
               else begin // s_S2_32c_mult_out_full[113] === 1'b0
-                s_S3_32c_potential_result <= s_S2_32c_mult_out_full[47:24];
+                s_S3_32c_potential_result <= (`CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47]) ?
+                                               s_S2_32c_mult_out_full[47:24] : s_S2_32c_mult_out_full[46:23]);
               end
             end // R==0 && S==0
             else begin
@@ -856,21 +876,26 @@ always_ff @( posedge i_clk ) begin : stage3a_ex_man_normalization
           end // s_S3_32c_mult_out_full_G === 1'b1
 
           if (s_S3_32d_mult_out_full_G === 1'b0) begin
-            s_S3_32d_potential_result <= s_S2_32d_mult_out_full[47:24];
+            s_S3_32d_potential_result <= (`CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47]) ?
+                                           s_S2_32d_mult_out_full[47:24] : s_S2_32d_mult_out_full[46:23]);
           end
           else begin // s_S3_32d_mult_out_full_G === 1'b1
             if (s_S3_32d_mult_out_full_R === 1'b1 || s_S3_32d_mult_out_full_S === 1'b1) begin
-              s_S3_32d_potential_result <= s_S2_32d_mult_out_full[47:24] + 1'b1; // todo this syntax might be wrong
+              s_S3_32d_potential_result <= (`CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47]) ?
+                                             s_S2_32d_mult_out_full[47:24] : s_S2_32d_mult_out_full[46:23]) + 1'b1;
             end
             else if (s_S3_32d_mult_out_full_R === 1'b0 && s_S3_32d_mult_out_full_S === 1'b0) begin
               if (s_S2_32d_mult_out_full[113] === 1'b1) begin
-                s_S3_32d_potential_result <= s_S2_32d_mult_out_full[47:24] + 1'b1; // todo this syntax might be wrong
+                s_S3_32d_potential_result <= (`CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47]) ?
+                                               s_S2_32d_mult_out_full[47:24] : s_S2_32d_mult_out_full[46:23]) + 1'b1;
               end
               else begin // s_S2_32d_mult_out_full[113] === 1'b0
-                s_S3_32d_potential_result <= s_S2_32d_mult_out_full[47:24];
+                s_S3_32d_potential_result <= (`CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47]) ?
+                                               s_S2_32d_mult_out_full[47:24] : s_S2_32d_mult_out_full[46:23]);
               end
             end // R==0 && S==0
             else begin
+              // this shouldnt logically happen, right?
             end // else
           end // s_S3_32d_mult_out_full_G === 1'b1
         end // FOUR_SP_MODE
@@ -1390,7 +1415,7 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
           end
           else begin
             // NORMAL Types
-            assert (s_S4_32a_potential_result[52] === 1'b1) else begin
+            assert (s_S4_32a_potential_result[23] === 1'b1) else begin
               // Make sure implicit 1 is there, this HAS to be true
               s_o_error[15] <= 1'b1;
               // $fatal(1, "Implicit 1 missing, this is bad");
@@ -1436,7 +1461,7 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
           end
           else begin
             // NORMAL Types
-            assert (s_S4_32b_potential_result[52] === 1'b1) else begin
+            assert (s_S4_32b_potential_result[23] === 1'b1) else begin
               // Make sure implicit 1 is there, this HAS to be true
               s_o_error[16] <= 1'b1;
               // $fatal(1, "Implicit 1 missing, this is bad");
@@ -1482,7 +1507,7 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
           end
           else begin
             // NORMAL Types
-            assert (s_S4_32c_potential_result[52] === 1'b1) else begin
+            assert (s_S4_32c_potential_result[23] === 1'b1) else begin
               // Make sure implicit 1 is there, this HAS to be true
               s_o_error[17] <= 1'b1;
               // $fatal(1, "Implicit 1 missing, this is bad");
@@ -1528,7 +1553,7 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
           end
           else begin
             // NORMAL Types
-            assert (s_S4_32d_potential_result[52] === 1'b1) else begin
+            assert (s_S4_32d_potential_result[23] === 1'b1) else begin
               // Make sure implicit 1 is there, this HAS to be true
               s_o_error[18] <= 1'b1;
               // $fatal(1, "Implicit 1 missing, this is bad");
