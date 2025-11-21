@@ -199,7 +199,7 @@ module sp_multiplier_unit_test;
     real a = $bitstoreal(a_bits);
     real b = $bitstoreal(b_bits);
     real p = a * b;
-    $display(">>>>> a (%f) * b (%f) = p (%f)", a, b, p);
+    // $display(">>>>> a (%f) * b (%f) = p (%f)", a, b, p);
     return $realtobits(p);
   endfunction
 
@@ -295,6 +295,10 @@ module sp_multiplier_unit_test;
   function automatic bit is_subnormal128(logic [127:0] x);
     return (x[126 -: 15] == 15'd0) && (x[111:0] != 0);
   endfunction
+
+  `define MAKE_ALL_VALID_SINGLE   s_i_valid128_anikin = 1; s_i_valid128_force = 1;
+  `define MAKE_ALL_VALID_TWO_SP   s_i_valid64a_anikin = 1; s_i_valid64a_force = 1; s_i_valid64b_anikin = 1; s_i_valid64b_force = 1;
+  `define MAKE_ALL_VALID_FOUR_SP  s_i_valid32a_anikin = 1; s_i_valid32a_force = 1; s_i_valid32b_anikin = 1; s_i_valid32b_force = 1; s_i_valid32c_anikin = 1; s_i_valid32c_force = 1; s_i_valid32d_anikin = 1; s_i_valid32d_force = 1;
 
   //===================================
   // All tests are defined between the

@@ -469,13 +469,13 @@ always_ff @( posedge i_clk ) begin : stage1c_signal_passthrough
   else begin
     if (s_S1_en) begin
       // Pass the valid signals through, they are all invalid for now
-      s_S1_valid128_jedi    <= '0;
-      s_S1_valid64a_jedi    <= '0;
-      s_S1_valid64b_jedi    <= '0;
-      s_S1_valid32a_jedi    <= '0;
-      s_S1_valid32b_jedi    <= '0;
-      s_S1_valid32c_jedi    <= '0;
-      s_S1_valid32d_jedi    <= '0;
+      s_S1_valid128_jedi    <= s_S0_valid128_anikin & s_S0_valid128_force;
+      s_S1_valid64a_jedi    <= s_S0_valid64a_anikin & s_S0_valid64a_force;
+      s_S1_valid64b_jedi    <= s_S0_valid64b_anikin & s_S0_valid64b_force;
+      s_S1_valid32a_jedi    <= s_S0_valid32a_anikin & s_S0_valid32a_force;
+      s_S1_valid32b_jedi    <= s_S0_valid32b_anikin & s_S0_valid32b_force;
+      s_S1_valid32c_jedi    <= s_S0_valid32c_anikin & s_S0_valid32c_force;
+      s_S1_valid32d_jedi    <= s_S0_valid32d_anikin & s_S0_valid32d_force;
 
       // Input (anikin and force) pass through
       s_S1_128_anikin       <= s_S0_128_anikin;
@@ -679,27 +679,27 @@ logic s_S3_32d_mult_out_full_G, s_S3_32d_mult_out_full_R, s_S3_32d_mult_out_full
 // G
 assign s_S3_128_mult_out_full_G = `CARRY_IS_A_ONE(s_S2_128_mult_out_full[225])  ? s_S2_128_mult_out_full[112] : s_S2_128_mult_out_full[111];
 assign s_S3_64a_mult_out_full_G = `CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105])  ? s_S2_64a_mult_out_full[52]  : s_S2_64a_mult_out_full[51];
-assign s_S3_64b_mult_out_full_G = `CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105])  ? s_S2_64b_mult_out_full[52]  : s_S2_64a_mult_out_full[51];
+assign s_S3_64b_mult_out_full_G = `CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105])  ? s_S2_64b_mult_out_full[52]  : s_S2_64b_mult_out_full[51];
 assign s_S3_32a_mult_out_full_G = `CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47])   ? s_S2_32a_mult_out_full[23]  : s_S2_32a_mult_out_full[22];
 assign s_S3_32b_mult_out_full_G = `CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47])   ? s_S2_32b_mult_out_full[23]  : s_S2_32b_mult_out_full[22];
 assign s_S3_32c_mult_out_full_G = `CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47])   ? s_S2_32c_mult_out_full[23]  : s_S2_32c_mult_out_full[22];
 assign s_S3_32d_mult_out_full_G = `CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47])   ? s_S2_32d_mult_out_full[23]  : s_S2_32d_mult_out_full[22];
 // R
-assign s_S3_128_mult_out_full_R = `CARRY_IS_A_ONE(s_S2_128_mult_out_full[225])  ? s_S2_128_mult_out_full[111] : s_S2_128_mult_out_full[110];;
+assign s_S3_128_mult_out_full_R = `CARRY_IS_A_ONE(s_S2_128_mult_out_full[225])  ? s_S2_128_mult_out_full[111] : s_S2_128_mult_out_full[110];
 assign s_S3_64a_mult_out_full_R = `CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105])  ? s_S2_64a_mult_out_full[51]  : s_S2_64a_mult_out_full[50];
-assign s_S3_64b_mult_out_full_R = `CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105])  ? s_S2_64b_mult_out_full[51]  : s_S2_64a_mult_out_full[50];
+assign s_S3_64b_mult_out_full_R = `CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105])  ? s_S2_64b_mult_out_full[51]  : s_S2_64b_mult_out_full[50];
 assign s_S3_32a_mult_out_full_R = `CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47])   ? s_S2_32a_mult_out_full[22]  : s_S2_32a_mult_out_full[21];
 assign s_S3_32b_mult_out_full_R = `CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47])   ? s_S2_32b_mult_out_full[22]  : s_S2_32b_mult_out_full[21];
 assign s_S3_32c_mult_out_full_R = `CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47])   ? s_S2_32c_mult_out_full[22]  : s_S2_32c_mult_out_full[21];
 assign s_S3_32d_mult_out_full_R = `CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47])   ? s_S2_32d_mult_out_full[22]  : s_S2_32d_mult_out_full[21];
-// S
-assign s_S3_128_mult_out_full_S = `CARRY_IS_A_ONE(s_S2_128_mult_out_full[225])  ? s_S2_128_mult_out_full[110] : s_S2_128_mult_out_full[109];;
-assign s_S3_64a_mult_out_full_S = `CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105])  ? s_S2_64a_mult_out_full[50]  : s_S2_64a_mult_out_full[49];
-assign s_S3_64b_mult_out_full_S = `CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105])  ? s_S2_64b_mult_out_full[50]  : s_S2_64a_mult_out_full[49];
-assign s_S3_32a_mult_out_full_S = `CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47])   ? s_S2_32a_mult_out_full[21]  : s_S2_32a_mult_out_full[20];
-assign s_S3_32b_mult_out_full_S = `CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47])   ? s_S2_32b_mult_out_full[21]  : s_S2_32b_mult_out_full[20];
-assign s_S3_32c_mult_out_full_S = `CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47])   ? s_S2_32c_mult_out_full[21]  : s_S2_32c_mult_out_full[20];
-assign s_S3_32d_mult_out_full_S = `CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47])   ? s_S2_32d_mult_out_full[21]  : s_S2_32d_mult_out_full[20];
+// S                                                                              // |logic infers an OR tree according to ChatGPT
+assign s_S3_128_mult_out_full_S = `CARRY_IS_A_ONE(s_S2_128_mult_out_full[225])  ? |s_S2_128_mult_out_full[110:0] : |s_S2_128_mult_out_full[109:0];
+assign s_S3_64a_mult_out_full_S = `CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105])  ? |s_S2_64a_mult_out_full[50:0]  : |s_S2_64a_mult_out_full[49:0];
+assign s_S3_64b_mult_out_full_S = `CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105])  ? |s_S2_64b_mult_out_full[50:0]  : |s_S2_64b_mult_out_full[49:0];
+assign s_S3_32a_mult_out_full_S = `CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47])   ? |s_S2_32a_mult_out_full[21:0]  : |s_S2_32a_mult_out_full[20:0];
+assign s_S3_32b_mult_out_full_S = `CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47])   ? |s_S2_32b_mult_out_full[21:0]  : |s_S2_32b_mult_out_full[20:0];
+assign s_S3_32c_mult_out_full_S = `CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47])   ? |s_S2_32c_mult_out_full[21:0]  : |s_S2_32c_mult_out_full[20:0];
+assign s_S3_32d_mult_out_full_S = `CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47])   ? |s_S2_32d_mult_out_full[21:0]  : |s_S2_32d_mult_out_full[20:0];
 // Potential (partial, candidate, etc whatever you want to call it) results
 logic [113:0] s_S3_128_potential_result;
 logic [53:0]  s_S3_64a_potential_result;
@@ -737,11 +737,13 @@ always_ff @( posedge i_clk ) begin : stage3a_ex_man_normalization
                                             s_S2_128_mult_out_full[225:113] : s_S2_128_mult_out_full[224:112]) + 1'b1;
             end
             else if (s_S3_128_mult_out_full_R === 1'b0 && s_S3_128_mult_out_full_S === 1'b0) begin
-              if (s_S2_128_mult_out_full[113] === 1'b1) begin
+              // Even rule
+              if ((`CARRY_IS_A_ONE(s_S2_128_mult_out_full[225]) && s_S2_128_mult_out_full[113] === 1'b1) ||
+                  (!(`CARRY_IS_A_ONE(s_S2_128_mult_out_full[225])) && s_S2_128_mult_out_full[112] === 1'b1)) begin
                 s_S3_128_potential_result <= (`CARRY_IS_A_ONE(s_S2_128_mult_out_full[225]) ? 
                                               s_S2_128_mult_out_full[225:113] : s_S2_128_mult_out_full[224:112]) + 1'b1;
               end
-              else begin // s_S2_128_mult_out_full[113] === 1'b0
+              else begin // s_S2_128_mult_out_full[113/112] === 1'b0
                 s_S3_128_potential_result <= {1'b0, (`CARRY_IS_A_ONE(s_S2_128_mult_out_full[225]) ? 
                                                       s_S2_128_mult_out_full[225:113] : s_S2_128_mult_out_full[224:112])};
               end
@@ -763,11 +765,13 @@ always_ff @( posedge i_clk ) begin : stage3a_ex_man_normalization
                                              s_S2_64a_mult_out_full[105:53] : s_S2_64a_mult_out_full[104:52]) + 1'b1;
             end
             else if (s_S3_64a_mult_out_full_R === 1'b0 && s_S3_64a_mult_out_full_S === 1'b0) begin
-              if (s_S2_64a_mult_out_full[113] === 1'b1) begin
+              // Even rule
+              if ((`CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105]) && s_S2_64a_mult_out_full[53] === 1'b1) ||
+                  (!(`CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105])) && s_S2_64a_mult_out_full[52] === 1'b1)) begin
                 s_S3_64a_potential_result <= (`CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105]) ?
                                                s_S2_64a_mult_out_full[105:53] : s_S2_64a_mult_out_full[104:52]) + 1'b1;
               end
-              else begin // s_S2_64a_mult_out_full[113] === 1'b0
+              else begin // s_S2_64a_mult_out_full[53/52] === 1'b0
                 s_S3_64a_potential_result <= (`CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105]) ?
                                                s_S2_64a_mult_out_full[105:53] : s_S2_64a_mult_out_full[104:52]);
               end
@@ -787,11 +791,13 @@ always_ff @( posedge i_clk ) begin : stage3a_ex_man_normalization
                                              s_S2_64b_mult_out_full[105:53] : s_S2_64b_mult_out_full[104:52]) + 1'b1;
             end
             else if (s_S3_64b_mult_out_full_R === 1'b0 && s_S3_64b_mult_out_full_S === 1'b0) begin
-              if (s_S2_64b_mult_out_full[113] === 1'b1) begin
+              // Even rule
+              if ((`CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105]) && s_S2_64b_mult_out_full[53] === 1'b1) ||
+                  (!(`CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105])) && s_S2_64b_mult_out_full[52] === 1'b1)) begin
                 s_S3_64b_potential_result <= (`CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105]) ?
                                                s_S2_64b_mult_out_full[105:53] : s_S2_64b_mult_out_full[104:52]) + 1'b1;
               end
-              else begin // s_S2_64b_mult_out_full[113] === 1'b0
+              else begin // s_S2_64b_mult_out_full[53/52] === 1'b0
                 s_S3_64b_potential_result <= (`CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105]) ?
                                                s_S2_64b_mult_out_full[105:53] : s_S2_64b_mult_out_full[104:52]);
               end
@@ -813,13 +819,15 @@ always_ff @( posedge i_clk ) begin : stage3a_ex_man_normalization
                                              s_S2_32a_mult_out_full[47:24] : s_S2_32a_mult_out_full[46:23]) + 1'b1;
             end
             else if (s_S3_32a_mult_out_full_R === 1'b0 && s_S3_32a_mult_out_full_S === 1'b0) begin
-              if (s_S2_32a_mult_out_full[113] === 1'b1) begin
+              // Even rule
+              if ((`CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47]) && s_S2_32a_mult_out_full[24] === 1'b1) ||
+                  (!(`CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47])) && s_S2_32a_mult_out_full[23] === 1'b1)) begin
                 s_S3_32a_potential_result <= (`CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47]) ?
-                                               s_S2_32a_mult_out_full[47:24] : s_S2_32a_mult_out_full[46:23]) + 1'b1;
+                                               s_S2_32a_mult_out_full[105:53] : s_S2_32a_mult_out_full[104:52]) + 1'b1;
               end
-              else begin // s_S2_32a_mult_out_full[113] === 1'b0
+              else begin // s_S2_32a_mult_out_full[53/52] === 1'b0
                 s_S3_32a_potential_result <= (`CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47]) ?
-                                               s_S2_32a_mult_out_full[47:24] : s_S2_32a_mult_out_full[46:23]);
+                                               s_S2_32a_mult_out_full[105:53] : s_S2_32a_mult_out_full[104:52]);
               end
             end // R==0 && S==0
             else begin
@@ -837,13 +845,15 @@ always_ff @( posedge i_clk ) begin : stage3a_ex_man_normalization
                                              s_S2_32b_mult_out_full[47:24] : s_S2_32b_mult_out_full[46:23]) + 1'b1;
             end
             else if (s_S3_32b_mult_out_full_R === 1'b0 && s_S3_32b_mult_out_full_S === 1'b0) begin
-              if (s_S2_32b_mult_out_full[113] === 1'b1) begin
+              // Even rule
+              if ((`CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47]) && s_S2_32b_mult_out_full[24] === 1'b1) ||
+                  (!(`CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47])) && s_S2_32b_mult_out_full[23] === 1'b1)) begin
                 s_S3_32b_potential_result <= (`CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47]) ?
-                                               s_S2_32b_mult_out_full[47:24] : s_S2_32b_mult_out_full[46:23]) + 1'b1;
+                                               s_S2_32b_mult_out_full[105:53] : s_S2_32b_mult_out_full[104:52]) + 1'b1;
               end
-              else begin // s_S2_32b_mult_out_full[113] === 1'b0
+              else begin // s_S2_32b_mult_out_full[53/52] === 1'b0
                 s_S3_32b_potential_result <= (`CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47]) ?
-                                               s_S2_32b_mult_out_full[47:24] : s_S2_32b_mult_out_full[46:23]);
+                                               s_S2_32b_mult_out_full[105:53] : s_S2_32b_mult_out_full[104:52]);
               end
             end // R==0 && S==0
             else begin
@@ -861,13 +871,15 @@ always_ff @( posedge i_clk ) begin : stage3a_ex_man_normalization
                                              s_S2_32c_mult_out_full[47:24] : s_S2_32c_mult_out_full[46:23]) + 1'b1;
             end
             else if (s_S3_32c_mult_out_full_R === 1'b0 && s_S3_32c_mult_out_full_S === 1'b0) begin
-              if (s_S2_32c_mult_out_full[113] === 1'b1) begin
+              // Even rule
+              if ((`CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47]) && s_S2_32c_mult_out_full[24] === 1'b1) ||
+                  (!(`CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47])) && s_S2_32c_mult_out_full[23] === 1'b1)) begin
                 s_S3_32c_potential_result <= (`CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47]) ?
-                                               s_S2_32c_mult_out_full[47:24] : s_S2_32c_mult_out_full[46:23]) + 1'b1;
+                                               s_S2_32c_mult_out_full[105:53] : s_S2_32c_mult_out_full[104:52]) + 1'b1;
               end
-              else begin // s_S2_32c_mult_out_full[113] === 1'b0
+              else begin // s_S2_32c_mult_out_full[53/52] === 1'b0
                 s_S3_32c_potential_result <= (`CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47]) ?
-                                               s_S2_32c_mult_out_full[47:24] : s_S2_32c_mult_out_full[46:23]);
+                                               s_S2_32c_mult_out_full[105:53] : s_S2_32c_mult_out_full[104:52]);
               end
             end // R==0 && S==0
             else begin
@@ -885,13 +897,15 @@ always_ff @( posedge i_clk ) begin : stage3a_ex_man_normalization
                                              s_S2_32d_mult_out_full[47:24] : s_S2_32d_mult_out_full[46:23]) + 1'b1;
             end
             else if (s_S3_32d_mult_out_full_R === 1'b0 && s_S3_32d_mult_out_full_S === 1'b0) begin
-              if (s_S2_32d_mult_out_full[113] === 1'b1) begin
+              // Even rule
+              if ((`CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47]) && s_S2_32d_mult_out_full[24] === 1'b1) ||
+                  (!(`CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47])) && s_S2_32d_mult_out_full[23] === 1'b1)) begin
                 s_S3_32d_potential_result <= (`CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47]) ?
-                                               s_S2_32d_mult_out_full[47:24] : s_S2_32d_mult_out_full[46:23]) + 1'b1;
+                                               s_S2_32d_mult_out_full[105:53] : s_S2_32d_mult_out_full[104:52]) + 1'b1;
               end
-              else begin // s_S2_32d_mult_out_full[113] === 1'b0
+              else begin // s_S2_32d_mult_out_full[53/52] === 1'b0
                 s_S3_32d_potential_result <= (`CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47]) ?
-                                               s_S2_32d_mult_out_full[47:24] : s_S2_32d_mult_out_full[46:23]);
+                                               s_S2_32d_mult_out_full[105:53] : s_S2_32d_mult_out_full[104:52]);
               end
             end // R==0 && S==0
             else begin
@@ -1242,29 +1256,32 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
       end
       case (s_S4_metadata_anikin.sp_mode)
         SINGLE_MODE: begin
-          if (s_S4_metadata_anikin.float_type_a === ZERO || s_S4_metadata_force.float_type_a === ZERO) begin
+          if ((s_S4_metadata_anikin.float_type_a === NAN || s_S4_metadata_force.float_type_a === NAN) ||
+                   (s_S4_128_jedi.exp === '1 && s_S4_128_potential_result[111:0] !== '0)) begin
+            // If either is NaN, output will be NaN
+            s_S5_128_jedi.sign      <= s_S4_128_jedi.sign;
+            s_S5_128_jedi.exp       <= '1;
+            s_S5_128_jedi.mantissa  <= 112'hA; // non-0
+          end
+          else if (s_S4_metadata_anikin.float_type_a === ZERO || s_S4_metadata_force.float_type_a === ZERO) begin
             // If either is a zero, output will be a zero
             s_S5_128_jedi.sign      <= s_S4_128_jedi.sign;
             s_S5_128_jedi.exp       <= '0;
             s_S5_128_jedi.mantissa  <= '0;
           end
-          else if (s_S4_metadata_anikin.float_type_a === POS_INF || s_S4_metadata_force.float_type_a === POS_INF) begin
+          else if ((s_S4_metadata_anikin.float_type_a === POS_INF || s_S4_metadata_force.float_type_a === POS_INF) ||
+                   (s_S4_128_jedi.sign === '0 && s_S4_128_jedi.exp === '1 && s_S4_128_potential_result[111:0] === '0)) begin
             // If either is +ve inf, output will be pos inf
             s_S5_128_jedi.sign      <= 1'b0;
             s_S5_128_jedi.exp       <= '1;
             s_S5_128_jedi.mantissa  <= '0;
           end
-          else if (s_S4_metadata_anikin.float_type_a === NEG_INF || s_S4_metadata_force.float_type_a === NEG_INF) begin
+          else if ((s_S4_metadata_anikin.float_type_a === NEG_INF || s_S4_metadata_force.float_type_a === NEG_INF) ||
+                   (s_S4_128_jedi.sign === '1 && s_S4_128_jedi.exp === '1 && s_S4_128_potential_result[111:0] === '0)) begin
             // If either is -ve inf, output will be neg inf
             s_S5_128_jedi.sign      <= 1'b1;
             s_S5_128_jedi.exp       <= '1;
             s_S5_128_jedi.mantissa  <= '0;
-          end
-          else if (s_S4_metadata_anikin.float_type_a === NAN || s_S4_metadata_force.float_type_a === NAN) begin
-            // If either is NaN, output will be NaN
-            s_S5_128_jedi.sign      <= s_S4_128_jedi.sign;
-            s_S5_128_jedi.exp       <= '1;
-            s_S5_128_jedi.mantissa  <= 112'hA; // non-0
           end
           // For now, we treat denormals like ZERO, todo (lowkey low priority) actually implement denormal
           else if ((s_S4_metadata_anikin.float_type_a === POS_DENORMAL || s_S4_metadata_force.float_type_a === POS_DENORMAL) ||
@@ -1295,19 +1312,22 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             s_S5_64a_jedi.exp       <= '0;
             s_S5_64a_jedi.mantissa  <= '0;
           end
-          else if (s_S4_metadata_anikin.float_type_a === POS_INF || s_S4_metadata_force.float_type_a === POS_INF) begin
+          else if ((s_S4_metadata_anikin.float_type_a === POS_INF || s_S4_metadata_force.float_type_a === POS_INF) ||
+                   (s_S4_64a_jedi.sign === '0 && s_S4_64a_jedi.exp === '1 && s_S4_64a_potential_result[51:0] === '0)) begin
             // If either is +ve inf, output will be pos inf
             s_S5_64a_jedi.sign      <= 1'b0;
             s_S5_64a_jedi.exp       <= '1;
             s_S5_64a_jedi.mantissa  <= '0;
           end
-          else if (s_S4_metadata_anikin.float_type_a === NEG_INF || s_S4_metadata_force.float_type_a === NEG_INF) begin
+          else if ((s_S4_metadata_anikin.float_type_a === NEG_INF || s_S4_metadata_force.float_type_a === NEG_INF) ||
+                   (s_S4_64a_jedi.sign === '1 && s_S4_64a_jedi.exp === '1 && s_S4_64a_potential_result[51:0] === '0)) begin
             // If either is -ve inf, output will be neg inf
             s_S5_64a_jedi.sign      <= 1'b1;
             s_S5_64a_jedi.exp       <= '1;
             s_S5_64a_jedi.mantissa  <= '0;
           end
-          else if (s_S4_metadata_anikin.float_type_a === NAN || s_S4_metadata_force.float_type_a === NAN) begin
+          else if ((s_S4_metadata_anikin.float_type_a === NAN || s_S4_metadata_force.float_type_a === NAN) ||
+                   (s_S4_64a_jedi.exp === '1 && s_S4_64a_potential_result[51:0] !== '0)) begin
             // If either is NaN, output will be NaN
             s_S5_64a_jedi.sign      <= s_S4_64a_jedi.sign;
             s_S5_64a_jedi.exp       <= '1;
@@ -1340,19 +1360,22 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             s_S5_64b_jedi.exp       <= '0;
             s_S5_64b_jedi.mantissa  <= '0;
           end
-          else if (s_S4_metadata_anikin.float_type_b === POS_INF || s_S4_metadata_force.float_type_b === POS_INF) begin
+          else if ((s_S4_metadata_anikin.float_type_a === POS_INF || s_S4_metadata_force.float_type_a === POS_INF) ||
+                   (s_S4_64b_jedi.sign === '0 && s_S4_64b_jedi.exp === '1 && s_S4_64b_potential_result[51:0] === '0)) begin
             // If either is +ve inf, output will be pos inf
             s_S5_64b_jedi.sign      <= 1'b0;
             s_S5_64b_jedi.exp       <= '1;
             s_S5_64b_jedi.mantissa  <= '0;
           end
-          else if (s_S4_metadata_anikin.float_type_b === NEG_INF || s_S4_metadata_force.float_type_b === NEG_INF) begin
+          else if ((s_S4_metadata_anikin.float_type_a === NEG_INF || s_S4_metadata_force.float_type_a === NEG_INF) ||
+                   (s_S4_64b_jedi.sign === '1 && s_S4_64b_jedi.exp === '1 && s_S4_64b_potential_result[51:0] === '0)) begin
             // If either is -ve inf, output will be neg inf
             s_S5_64b_jedi.sign      <= 1'b1;
             s_S5_64b_jedi.exp       <= '1;
             s_S5_64b_jedi.mantissa  <= '0;
           end
-          else if (s_S4_metadata_anikin.float_type_b === NAN || s_S4_metadata_force.float_type_b === NAN) begin
+          else if ((s_S4_metadata_anikin.float_type_a === NAN || s_S4_metadata_force.float_type_a === NAN) ||
+                   (s_S4_64b_jedi.exp === '1 && s_S4_64a_potential_result[51:0] !== '0)) begin
             // If either is NaN, output will be NaN
             s_S5_64b_jedi.sign      <= s_S4_64b_jedi.sign;
             s_S5_64b_jedi.exp       <= '1;
@@ -1387,19 +1410,22 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             s_S5_32a_jedi.exp       <= '0;
             s_S5_32a_jedi.mantissa  <= '0;
           end
-          else if (s_S4_metadata_anikin.float_type_a === POS_INF || s_S4_metadata_force.float_type_a === POS_INF) begin
+          else if ((s_S4_metadata_anikin.float_type_a === POS_INF || s_S4_metadata_force.float_type_a === POS_INF) ||
+                   (s_S4_32a_jedi.sign === '0 && s_S4_32a_jedi.exp === '1 && s_S4_32a_potential_result[22:0] === '0)) begin
             // If either is +ve inf, output will be pos inf
             s_S5_32a_jedi.sign      <= 1'b0;
             s_S5_32a_jedi.exp       <= '1;
             s_S5_32a_jedi.mantissa  <= '0;
           end
-          else if (s_S4_metadata_anikin.float_type_a === NEG_INF || s_S4_metadata_force.float_type_a === NEG_INF) begin
+          else if ((s_S4_metadata_anikin.float_type_a === NEG_INF || s_S4_metadata_force.float_type_a === NEG_INF) ||
+                   (s_S4_32a_jedi.sign === '1 && s_S4_32a_jedi.exp === '1 && s_S4_32a_potential_result[22:0] === '0)) begin
             // If either is -ve inf, output will be neg inf
             s_S5_32a_jedi.sign      <= 1'b1;
             s_S5_32a_jedi.exp       <= '1;
             s_S5_32a_jedi.mantissa  <= '0;
           end
-          else if (s_S4_metadata_anikin.float_type_a === NAN || s_S4_metadata_force.float_type_a === NAN) begin
+          else if ((s_S4_metadata_anikin.float_type_a === NAN || s_S4_metadata_force.float_type_a === NAN) ||
+                   (s_S4_32a_jedi.exp === '1 && s_S4_32a_potential_result[22:0] !== '0)) begin
             // If either is NaN, output will be NaN
             s_S5_32a_jedi.sign      <= s_S4_32a_jedi.sign;
             s_S5_32a_jedi.exp       <= '1;
@@ -1433,19 +1459,22 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             s_S5_32b_jedi.exp       <= '0;
             s_S5_32b_jedi.mantissa  <= '0;
           end
-          else if (s_S4_metadata_anikin.float_type_b === POS_INF || s_S4_metadata_force.float_type_b === POS_INF) begin
+          else if ((s_S4_metadata_anikin.float_type_a === POS_INF || s_S4_metadata_force.float_type_a === POS_INF) ||
+                   (s_S4_32b_jedi.sign === '0 && s_S4_32b_jedi.exp === '1 && s_S4_32b_potential_result[22:0] === '0)) begin
             // If either is +ve inf, output will be pos inf
             s_S5_32b_jedi.sign      <= 1'b0;
             s_S5_32b_jedi.exp       <= '1;
             s_S5_32b_jedi.mantissa  <= '0;
           end
-          else if (s_S4_metadata_anikin.float_type_b === NEG_INF || s_S4_metadata_force.float_type_b === NEG_INF) begin
+          else if ((s_S4_metadata_anikin.float_type_a === NEG_INF || s_S4_metadata_force.float_type_a === NEG_INF) ||
+                   (s_S4_32b_jedi.sign === '1 && s_S4_32b_jedi.exp === '1 && s_S4_32b_potential_result[22:0] === '0)) begin
             // If either is -ve inf, output will be neg inf
             s_S5_32b_jedi.sign      <= 1'b1;
             s_S5_32b_jedi.exp       <= '1;
             s_S5_32b_jedi.mantissa  <= '0;
           end
-          else if (s_S4_metadata_anikin.float_type_b === NAN || s_S4_metadata_force.float_type_b === NAN) begin
+          else if ((s_S4_metadata_anikin.float_type_a === NAN || s_S4_metadata_force.float_type_a === NAN) ||
+                   (s_S4_32b_jedi.exp === '1 && s_S4_32a_potential_result[22:0] !== '0)) begin
             // If either is NaN, output will be NaN
             s_S5_32b_jedi.sign      <= s_S4_32b_jedi.sign;
             s_S5_32b_jedi.exp       <= '1;
@@ -1479,19 +1508,22 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             s_S5_32c_jedi.exp       <= '0;
             s_S5_32c_jedi.mantissa  <= '0;
           end
-          else if (s_S4_metadata_anikin.float_type_c === POS_INF || s_S4_metadata_force.float_type_c === POS_INF) begin
+          else if ((s_S4_metadata_anikin.float_type_a === POS_INF || s_S4_metadata_force.float_type_a === POS_INF) ||
+                   (s_S4_32c_jedi.sign === '0 && s_S4_32c_jedi.exp === '1 && s_S4_32c_potential_result[22:0] === '0)) begin
             // If either is +ve inf, output will be pos inf
             s_S5_32c_jedi.sign      <= 1'b0;
             s_S5_32c_jedi.exp       <= '1;
             s_S5_32c_jedi.mantissa  <= '0;
           end
-          else if (s_S4_metadata_anikin.float_type_c === NEG_INF || s_S4_metadata_force.float_type_c === NEG_INF) begin
+          else if ((s_S4_metadata_anikin.float_type_a === NEG_INF || s_S4_metadata_force.float_type_a === NEG_INF) ||
+                   (s_S4_32c_jedi.sign === '1 && s_S4_32c_jedi.exp === '1 && s_S4_32c_potential_result[22:0] === '0)) begin
             // If either is -ve inf, output will be neg inf
             s_S5_32c_jedi.sign      <= 1'b1;
             s_S5_32c_jedi.exp       <= '1;
             s_S5_32c_jedi.mantissa  <= '0;
           end
-          else if (s_S4_metadata_anikin.float_type_c === NAN || s_S4_metadata_force.float_type_c === NAN) begin
+          else if ((s_S4_metadata_anikin.float_type_a === NAN || s_S4_metadata_force.float_type_a === NAN) ||
+                   (s_S4_32c_jedi.exp === '1 && s_S4_32a_potential_result[22:0] !== '0)) begin
             // If either is NaN, output will be NaN
             s_S5_32c_jedi.sign      <= s_S4_32c_jedi.sign;
             s_S5_32c_jedi.exp       <= '1;
@@ -1525,19 +1557,22 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             s_S5_32d_jedi.exp       <= '0;
             s_S5_32d_jedi.mantissa  <= '0;
           end
-          else if (s_S4_metadata_anikin.float_type_d === POS_INF || s_S4_metadata_force.float_type_d === POS_INF) begin
+          else if ((s_S4_metadata_anikin.float_type_a === POS_INF || s_S4_metadata_force.float_type_a === POS_INF) ||
+                   (s_S4_32d_jedi.sign === '0 && s_S4_32d_jedi.exp === '1 && s_S4_32d_potential_result[22:0] === '0)) begin
             // If either is +ve inf, output will be pos inf
             s_S5_32d_jedi.sign      <= 1'b0;
             s_S5_32d_jedi.exp       <= '1;
             s_S5_32d_jedi.mantissa  <= '0;
           end
-          else if (s_S4_metadata_anikin.float_type_d === NEG_INF || s_S4_metadata_force.float_type_d === NEG_INF) begin
+          else if ((s_S4_metadata_anikin.float_type_a === NEG_INF || s_S4_metadata_force.float_type_a === NEG_INF) ||
+                   (s_S4_32d_jedi.sign === '1 && s_S4_32d_jedi.exp === '1 && s_S4_32d_potential_result[22:0] === '0)) begin
             // If either is -ve inf, output will be neg inf
             s_S5_32d_jedi.sign      <= 1'b1;
             s_S5_32d_jedi.exp       <= '1;
             s_S5_32d_jedi.mantissa  <= '0;
           end
-          else if (s_S4_metadata_anikin.float_type_d === NAN || s_S4_metadata_force.float_type_d === NAN) begin
+          else if ((s_S4_metadata_anikin.float_type_a === NAN || s_S4_metadata_force.float_type_a === NAN) ||
+                   (s_S4_32d_jedi.exp === '1 && s_S4_32a_potential_result[22:0] !== '0)) begin
             // If either is NaN, output will be NaN
             s_S5_32d_jedi.sign      <= s_S4_32d_jedi.sign;
             s_S5_32d_jedi.exp       <= '1;
