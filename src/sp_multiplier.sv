@@ -1259,7 +1259,6 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
           if (!(s_S4_metadata_anikin.float_type_a === ZERO || s_S4_metadata_force.float_type_a === ZERO) && 
               ((s_S4_metadata_anikin.float_type_a === NAN || s_S4_metadata_force.float_type_a === NAN) ||
               (s_S4_128_jedi.exp === '1 && s_S4_128_potential_result[111:0] !== '0))) begin
-            $display(">>>>> boba tea gnarly");
             // If either is NaN, output will be NaN
             s_S5_128_jedi.sign      <= s_S4_128_jedi.sign;
             s_S5_128_jedi.exp       <= '1;
@@ -1272,14 +1271,14 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             s_S5_128_jedi.mantissa  <= '0;
           end
           else if ((s_S4_metadata_anikin.float_type_a === POS_INF || s_S4_metadata_force.float_type_a === POS_INF) ||
-                   (s_S4_128_jedi.sign === '0 && s_S4_128_jedi.exp === '1 && s_S4_128_potential_result[111:0] === '0)) begin
+                   (s_S4_128_jedi.sign === '0 && s_S4_128_jedi.exp === '1 && s_S4_128_potential_result[111:0] === '1)) begin
             // If either is +ve inf, output will be pos inf
             s_S5_128_jedi.sign      <= 1'b0;
             s_S5_128_jedi.exp       <= '1;
             s_S5_128_jedi.mantissa  <= '0;
           end
           else if ((s_S4_metadata_anikin.float_type_a === NEG_INF || s_S4_metadata_force.float_type_a === NEG_INF) ||
-                   (s_S4_128_jedi.sign === '1 && s_S4_128_jedi.exp === '1 && s_S4_128_potential_result[111:0] === '0)) begin
+                   (s_S4_128_jedi.sign === '1 && s_S4_128_jedi.exp === '1 && s_S4_128_potential_result[111:0] === '1)) begin
             // If either is -ve inf, output will be neg inf
             s_S5_128_jedi.sign      <= 1'b1;
             s_S5_128_jedi.exp       <= '1;
@@ -1310,8 +1309,9 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
         TWO_SP_MODE: begin
           if (!(s_S4_metadata_anikin.float_type_a === ZERO || s_S4_metadata_force.float_type_a === ZERO) &&
               ((s_S4_metadata_anikin.float_type_a === NAN || s_S4_metadata_force.float_type_a === NAN) ||
-              (s_S4_64a_jedi.exp === '1 && s_S4_64a_potential_result[51:0] !== '0))) begin
+              (s_S4_64a_jedi.exp === '1 && s_S4_64a_potential_result[51:0] !== '0 && s_S4_64a_potential_result[51:0] !== '1))) begin
             // If either is NaN, output will be NaN
+            $display(">>>>> boba tea gnarly");
             s_S5_64a_jedi.sign      <= s_S4_64a_jedi.sign;
             s_S5_64a_jedi.exp       <= '1;
             s_S5_64a_jedi.mantissa  <= 52'hA; // non-0
@@ -1323,14 +1323,14 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             s_S5_64a_jedi.mantissa  <= '0;
           end
           else if ((s_S4_metadata_anikin.float_type_a === POS_INF || s_S4_metadata_force.float_type_a === POS_INF) ||
-                   (s_S4_64a_jedi.sign === '0 && s_S4_64a_jedi.exp === '1 && s_S4_64a_potential_result[51:0] === '0)) begin
+                   (s_S4_64a_jedi.sign === '0 && s_S4_64a_jedi.exp === '1 && s_S4_64a_potential_result[51:0] === '1)) begin
             // If either is +ve inf, output will be pos inf
             s_S5_64a_jedi.sign      <= 1'b0;
             s_S5_64a_jedi.exp       <= '1;
             s_S5_64a_jedi.mantissa  <= '0;
           end
           else if ((s_S4_metadata_anikin.float_type_a === NEG_INF || s_S4_metadata_force.float_type_a === NEG_INF) ||
-                   (s_S4_64a_jedi.sign === '1 && s_S4_64a_jedi.exp === '1 && s_S4_64a_potential_result[51:0] === '0)) begin
+                   (s_S4_64a_jedi.sign === '1 && s_S4_64a_jedi.exp === '1 && s_S4_64a_potential_result[51:0] === '1)) begin
             // If either is -ve inf, output will be neg inf
             s_S5_64a_jedi.sign      <= 1'b1;
             s_S5_64a_jedi.exp       <= '1;
@@ -1372,14 +1372,14 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             s_S5_64b_jedi.mantissa  <= '0;
           end
           else if ((s_S4_metadata_anikin.float_type_b === POS_INF || s_S4_metadata_force.float_type_b === POS_INF) ||
-                   (s_S4_64b_jedi.sign === '0 && s_S4_64b_jedi.exp === '1 && s_S4_64b_potential_result[51:0] === '0)) begin
+                   (s_S4_64b_jedi.sign === '0 && s_S4_64b_jedi.exp === '1 && s_S4_64b_potential_result[51:0] === '1)) begin
             // If either is +ve inf, output will be pos inf
             s_S5_64b_jedi.sign      <= 1'b0;
             s_S5_64b_jedi.exp       <= '1;
             s_S5_64b_jedi.mantissa  <= '0;
           end
           else if ((s_S4_metadata_anikin.float_type_b === NEG_INF || s_S4_metadata_force.float_type_b === NEG_INF) ||
-                   (s_S4_64b_jedi.sign === '1 && s_S4_64b_jedi.exp === '1 && s_S4_64b_potential_result[51:0] === '0)) begin
+                   (s_S4_64b_jedi.sign === '1 && s_S4_64b_jedi.exp === '1 && s_S4_64b_potential_result[51:0] === '1)) begin
             // If either is -ve inf, output will be neg inf
             s_S5_64b_jedi.sign      <= 1'b1;
             s_S5_64b_jedi.exp       <= '1;
@@ -1423,14 +1423,14 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             s_S5_32a_jedi.mantissa  <= '0;
           end
           else if ((s_S4_metadata_anikin.float_type_a === POS_INF || s_S4_metadata_force.float_type_a === POS_INF) ||
-                   (s_S4_32a_jedi.sign === '0 && s_S4_32a_jedi.exp === '1 && s_S4_32a_potential_result[22:0] === '0)) begin
+                   (s_S4_32a_jedi.sign === '0 && s_S4_32a_jedi.exp === '1 && s_S4_32a_potential_result[22:0] === '1)) begin
             // If either is +ve inf, output will be pos inf
             s_S5_32a_jedi.sign      <= 1'b0;
             s_S5_32a_jedi.exp       <= '1;
             s_S5_32a_jedi.mantissa  <= '0;
           end
           else if ((s_S4_metadata_anikin.float_type_a === NEG_INF || s_S4_metadata_force.float_type_a === NEG_INF) ||
-                   (s_S4_32a_jedi.sign === '1 && s_S4_32a_jedi.exp === '1 && s_S4_32a_potential_result[22:0] === '0)) begin
+                   (s_S4_32a_jedi.sign === '1 && s_S4_32a_jedi.exp === '1 && s_S4_32a_potential_result[22:0] === '1)) begin
             // If either is -ve inf, output will be neg inf
             s_S5_32a_jedi.sign      <= 1'b1;
             s_S5_32a_jedi.exp       <= '1;
@@ -1473,14 +1473,14 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             s_S5_32b_jedi.mantissa  <= '0;
           end
           else if ((s_S4_metadata_anikin.float_type_b === POS_INF || s_S4_metadata_force.float_type_b === POS_INF) ||
-                   (s_S4_32b_jedi.sign === '0 && s_S4_32b_jedi.exp === '1 && s_S4_32b_potential_result[22:0] === '0)) begin
+                   (s_S4_32b_jedi.sign === '0 && s_S4_32b_jedi.exp === '1 && s_S4_32b_potential_result[22:0] === '1)) begin
             // If either is +ve inf, output will be pos inf
             s_S5_32b_jedi.sign      <= 1'b0;
             s_S5_32b_jedi.exp       <= '1;
             s_S5_32b_jedi.mantissa  <= '0;
           end
           else if ((s_S4_metadata_anikin.float_type_b === NEG_INF || s_S4_metadata_force.float_type_b === NEG_INF) ||
-                   (s_S4_32b_jedi.sign === '1 && s_S4_32b_jedi.exp === '1 && s_S4_32b_potential_result[22:0] === '0)) begin
+                   (s_S4_32b_jedi.sign === '1 && s_S4_32b_jedi.exp === '1 && s_S4_32b_potential_result[22:0] === '1)) begin
             // If either is -ve inf, output will be neg inf
             s_S5_32b_jedi.sign      <= 1'b1;
             s_S5_32b_jedi.exp       <= '1;
@@ -1523,14 +1523,14 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             s_S5_32c_jedi.mantissa  <= '0;
           end
           else if ((s_S4_metadata_anikin.float_type_c === POS_INF || s_S4_metadata_force.float_type_c === POS_INF) ||
-                   (s_S4_32c_jedi.sign === '0 && s_S4_32c_jedi.exp === '1 && s_S4_32c_potential_result[22:0] === '0)) begin
+                   (s_S4_32c_jedi.sign === '0 && s_S4_32c_jedi.exp === '1 && s_S4_32c_potential_result[22:0] === '1)) begin
             // If either is +ve inf, output will be pos inf
             s_S5_32c_jedi.sign      <= 1'b0;
             s_S5_32c_jedi.exp       <= '1;
             s_S5_32c_jedi.mantissa  <= '0;
           end
           else if ((s_S4_metadata_anikin.float_type_c === NEG_INF || s_S4_metadata_force.float_type_c === NEG_INF) ||
-                   (s_S4_32c_jedi.sign === '1 && s_S4_32c_jedi.exp === '1 && s_S4_32c_potential_result[22:0] === '0)) begin
+                   (s_S4_32c_jedi.sign === '1 && s_S4_32c_jedi.exp === '1 && s_S4_32c_potential_result[22:0] === '1)) begin
             // If either is -ve inf, output will be neg inf
             s_S5_32c_jedi.sign      <= 1'b1;
             s_S5_32c_jedi.exp       <= '1;
@@ -1573,14 +1573,14 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             s_S5_32d_jedi.mantissa  <= '0;
           end
           else if ((s_S4_metadata_anikin.float_type_d === POS_INF || s_S4_metadata_force.float_type_d === POS_INF) ||
-                   (s_S4_32d_jedi.sign === '0 && s_S4_32d_jedi.exp === '1 && s_S4_32d_potential_result[22:0] === '0)) begin
+                   (s_S4_32d_jedi.sign === '0 && s_S4_32d_jedi.exp === '1 && s_S4_32d_potential_result[22:0] === '1)) begin
             // If either is +ve inf, output will be pos inf
             s_S5_32d_jedi.sign      <= 1'b0;
             s_S5_32d_jedi.exp       <= '1;
             s_S5_32d_jedi.mantissa  <= '0;
           end
           else if ((s_S4_metadata_anikin.float_type_d === NEG_INF || s_S4_metadata_force.float_type_d === NEG_INF) ||
-                   (s_S4_32d_jedi.sign === '1 && s_S4_32d_jedi.exp === '1 && s_S4_32d_potential_result[22:0] === '0)) begin
+                   (s_S4_32d_jedi.sign === '1 && s_S4_32d_jedi.exp === '1 && s_S4_32d_potential_result[22:0] === '1)) begin
             // If either is -ve inf, output will be neg inf
             s_S5_32d_jedi.sign      <= 1'b1;
             s_S5_32d_jedi.exp       <= '1;
