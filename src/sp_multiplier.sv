@@ -946,7 +946,7 @@ always_ff @( posedge i_clk ) begin : stage3b_increment_exp
                                                                           : s_S2_128_jedi.exp;
       s_S3_64a_jedi.exp <= `CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105]) ? (s_S2_64a_jedi.exp + 1'b1)
                                                                           : s_S2_64a_jedi.exp;
-      s_S3_64b_jedi.exp <= `CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105]) ? (s_S2_64b_jedi.exp + 1'b1)
+      s_S3_64b_jedi.exp <= `CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105]) ? (s_S2_64b_jedi.exp + 1'b1)
                                                                           : s_S2_64b_jedi.exp;
       s_S3_32a_jedi.exp <= `CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47])  ? (s_S2_32a_jedi.exp + 1'b1)
                                                                           : s_S2_32a_jedi.exp;

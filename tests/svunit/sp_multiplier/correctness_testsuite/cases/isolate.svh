@@ -16,13 +16,13 @@ localparam logic [31:0] FLT_ONE      = 32'h3F80_0000;
 localparam logic [31:0] FLT_ONE_UP   = 32'h3F80_0001;
 localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
 
-`SVTEST(two_sp_mode_edge_overflow_underflow_and_signs)
-  // Lane A: DBL_MAX * 2 -> +INF (overflow)
-  // Lane B: MIN_NORMAL * 0.5 -> subnormal (underflow to subnormal)
-  logic [63:0] a_top = DBL_MAX;
-  logic [63:0] b_top = DBL_TWO;
-  logic [63:0] a_bot = DBL_MIN_N;
-  logic [63:0] b_bot = DBL_HALF;
+`SVTEST(two_sp_mode_rounding_ulps)
+  // A: (1+ulp) * (1-ulp) ~ 1 - ulp^2 (very close to 1)
+  // B: 1.0 * (1+ulp) -> nextUp(1.0)
+  logic [63:0] a_top = DBL_ONE_UP;
+  logic [63:0] b_top = DBL_ONE_DOWN;
+  logic [63:0] a_bot = DBL_ONE;
+  logic [63:0] b_bot = DBL_ONE_UP;
 
   drive_meta(TWO_SP_MODE, NORMAL, NORMAL, NA, NA);
 
@@ -36,11 +36,9 @@ localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
   wait_n_ticks(5);
 
   `FAIL_UNLESS(s_o_valid64a_jedi && s_o_valid64b_jedi)
-  $display(">>>>> top64(s_o_out_jedi)=0x%x", top64(s_o_out_jedi));
-  $display(">>>>> mul64_bits(a_top, b_top)=0x%x", mul64_bits(a_top, b_top));
-  `FAIL_UNLESS(top64(s_o_out_jedi) == mul64_bits(a_top, b_top)) // expect +INF
-  // `FAIL_UNLESS(bot64(s_o_out_jedi) == mul64_bits(a_bot, b_bot)) // expect subnormal
-  // But because the module treats subnormal as zero, expect zero:
-  `FAIL_UNLESS(bot64(s_o_out_jedi) == '0)
+  `FAIL_UNLESS(top64(s_o_out_jedi) == mul64_bits(a_top, b_top))
+  $display(">>>>> bot64(s_o_out_jedi)=0x%x", bot64(s_o_out_jedi));
+  $display(">>>>> mul64_bits(a_bot, b_bot)=0x%x", mul64_bits(a_bot, b_bot));
+  `FAIL_UNLESS(bot64(s_o_out_jedi) == mul64_bits(a_bot, b_bot))
   `FAIL_UNLESS(s_o_error == '0)
 `SVTEST_END
