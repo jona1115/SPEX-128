@@ -1256,8 +1256,10 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
       end
       case (s_S4_metadata_anikin.sp_mode)
         SINGLE_MODE: begin
-          if ((s_S4_metadata_anikin.float_type_a === NAN || s_S4_metadata_force.float_type_a === NAN) ||
-                   (s_S4_128_jedi.exp === '1 && s_S4_128_potential_result[111:0] !== '0)) begin
+          if (!(s_S4_metadata_anikin.float_type_a === ZERO || s_S4_metadata_force.float_type_a === ZERO) && 
+              ((s_S4_metadata_anikin.float_type_a === NAN || s_S4_metadata_force.float_type_a === NAN) ||
+              (s_S4_128_jedi.exp === '1 && s_S4_128_potential_result[111:0] !== '0))) begin
+            $display(">>>>> boba tea gnarly");
             // If either is NaN, output will be NaN
             s_S5_128_jedi.sign      <= s_S4_128_jedi.sign;
             s_S5_128_jedi.exp       <= '1;
@@ -1285,7 +1287,7 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
           end
           // For now, we treat denormals like ZERO, todo (lowkey low priority) actually implement denormal
           else if ((s_S4_metadata_anikin.float_type_a === POS_DENORMAL || s_S4_metadata_force.float_type_a === POS_DENORMAL) ||
-              (s_S4_metadata_anikin.float_type_a === NEG_DENORMAL || s_S4_metadata_force.float_type_a === NEG_DENORMAL)) begin
+                   (s_S4_metadata_anikin.float_type_a === NEG_DENORMAL || s_S4_metadata_force.float_type_a === NEG_DENORMAL)) begin
             // If either is a zero, output will be a zero
             s_S5_128_jedi.sign      <= s_S4_128_jedi.sign;
             s_S5_128_jedi.exp       <= '0;
@@ -1306,7 +1308,15 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
         end // SINGLE_MODE
 
         TWO_SP_MODE: begin
-          if (s_S4_metadata_anikin.float_type_a === ZERO || s_S4_metadata_force.float_type_a === ZERO) begin
+          if (!(s_S4_metadata_anikin.float_type_a === ZERO || s_S4_metadata_force.float_type_a === ZERO) &&
+              ((s_S4_metadata_anikin.float_type_a === NAN || s_S4_metadata_force.float_type_a === NAN) ||
+              (s_S4_64a_jedi.exp === '1 && s_S4_64a_potential_result[51:0] !== '0))) begin
+            // If either is NaN, output will be NaN
+            s_S5_64a_jedi.sign      <= s_S4_64a_jedi.sign;
+            s_S5_64a_jedi.exp       <= '1;
+            s_S5_64a_jedi.mantissa  <= 52'hA; // non-0
+          end
+          else if (s_S4_metadata_anikin.float_type_a === ZERO || s_S4_metadata_force.float_type_a === ZERO) begin
             // If either is a zero, output will be a zero
             s_S5_64a_jedi.sign      <= s_S4_64a_jedi.sign;
             s_S5_64a_jedi.exp       <= '0;
@@ -1326,16 +1336,9 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             s_S5_64a_jedi.exp       <= '1;
             s_S5_64a_jedi.mantissa  <= '0;
           end
-          else if ((s_S4_metadata_anikin.float_type_a === NAN || s_S4_metadata_force.float_type_a === NAN) ||
-                   (s_S4_64a_jedi.exp === '1 && s_S4_64a_potential_result[51:0] !== '0)) begin
-            // If either is NaN, output will be NaN
-            s_S5_64a_jedi.sign      <= s_S4_64a_jedi.sign;
-            s_S5_64a_jedi.exp       <= '1;
-            s_S5_64a_jedi.mantissa  <= 52'hA; // non-0
-          end
           // For now, we treat denormals like ZERO, todo (lowkey low priority) actually implement denormal
           else if ((s_S4_metadata_anikin.float_type_a === POS_DENORMAL || s_S4_metadata_force.float_type_a === POS_DENORMAL) ||
-              (s_S4_metadata_anikin.float_type_a === NEG_DENORMAL || s_S4_metadata_force.float_type_a === NEG_DENORMAL)) begin
+                   (s_S4_metadata_anikin.float_type_a === NEG_DENORMAL || s_S4_metadata_force.float_type_a === NEG_DENORMAL)) begin
             // If either is a zero, output will be a zero
             s_S5_64a_jedi.sign      <= s_S4_64a_jedi.sign;
             s_S5_64a_jedi.exp       <= '0;
@@ -1354,7 +1357,15 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             s_S5_64a_jedi.mantissa  <= s_S4_64a_potential_result[51:0];
           end
 
-          if (s_S4_metadata_anikin.float_type_b === ZERO || s_S4_metadata_force.float_type_b === ZERO) begin
+          if (!(s_S4_metadata_anikin.float_type_b === ZERO || s_S4_metadata_force.float_type_b === ZERO) &&
+              ((s_S4_metadata_anikin.float_type_b === NAN || s_S4_metadata_force.float_type_b === NAN) ||
+              (s_S4_64b_jedi.exp === '1 && s_S4_64a_potential_result[51:0] !== '0))) begin
+            // If either is NaN, output will be NaN
+            s_S5_64b_jedi.sign      <= s_S4_64b_jedi.sign;
+            s_S5_64b_jedi.exp       <= '1;
+            s_S5_64b_jedi.mantissa  <= 52'hA; // non-0
+          end
+          else if (s_S4_metadata_anikin.float_type_b === ZERO || s_S4_metadata_force.float_type_b === ZERO) begin
             // If either is a zero, output will be a zero
             s_S5_64b_jedi.sign      <= s_S4_64b_jedi.sign;
             s_S5_64b_jedi.exp       <= '0;
@@ -1374,16 +1385,9 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             s_S5_64b_jedi.exp       <= '1;
             s_S5_64b_jedi.mantissa  <= '0;
           end
-          else if ((s_S4_metadata_anikin.float_type_b === NAN || s_S4_metadata_force.float_type_b === NAN) ||
-                   (s_S4_64b_jedi.exp === '1 && s_S4_64a_potential_result[51:0] !== '0)) begin
-            // If either is NaN, output will be NaN
-            s_S5_64b_jedi.sign      <= s_S4_64b_jedi.sign;
-            s_S5_64b_jedi.exp       <= '1;
-            s_S5_64b_jedi.mantissa  <= 52'hA; // non-0
-          end
           // For now, we treat denormals like ZERO, todo (lowkey low priority) actually implement denormal
           else if ((s_S4_metadata_anikin.float_type_b === POS_DENORMAL || s_S4_metadata_force.float_type_b === POS_DENORMAL) ||
-              (s_S4_metadata_anikin.float_type_b === NEG_DENORMAL || s_S4_metadata_force.float_type_b === NEG_DENORMAL)) begin
+                   (s_S4_metadata_anikin.float_type_b === NEG_DENORMAL || s_S4_metadata_force.float_type_b === NEG_DENORMAL)) begin
             // If either is a zero, output will be a zero
             s_S5_64b_jedi.sign      <= s_S4_64b_jedi.sign;
             s_S5_64b_jedi.exp       <= '0;
@@ -1404,7 +1408,15 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
         end // TWO_SP_MODE
 
         FOUR_SP_MODE: begin
-          if (s_S4_metadata_anikin.float_type_a === ZERO || s_S4_metadata_force.float_type_a === ZERO) begin
+          if (!(s_S4_metadata_anikin.float_type_a === ZERO || s_S4_metadata_force.float_type_a === ZERO) &&
+              ((s_S4_metadata_anikin.float_type_a === NAN || s_S4_metadata_force.float_type_a === NAN) ||
+              (s_S4_32a_jedi.exp === '1 && s_S4_32a_potential_result[22:0] !== '0))) begin
+            // If either is NaN, output will be NaN
+            s_S5_32a_jedi.sign      <= s_S4_32a_jedi.sign;
+            s_S5_32a_jedi.exp       <= '1;
+            s_S5_32a_jedi.mantissa  <= 23'hA; // non-0
+          end
+          else if (s_S4_metadata_anikin.float_type_a === ZERO || s_S4_metadata_force.float_type_a === ZERO) begin
             // If either is a zero, output will be a zero
             s_S5_32a_jedi.sign      <= s_S4_32a_jedi.sign;
             s_S5_32a_jedi.exp       <= '0;
@@ -1424,16 +1436,9 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             s_S5_32a_jedi.exp       <= '1;
             s_S5_32a_jedi.mantissa  <= '0;
           end
-          else if ((s_S4_metadata_anikin.float_type_a === NAN || s_S4_metadata_force.float_type_a === NAN) ||
-                   (s_S4_32a_jedi.exp === '1 && s_S4_32a_potential_result[22:0] !== '0)) begin
-            // If either is NaN, output will be NaN
-            s_S5_32a_jedi.sign      <= s_S4_32a_jedi.sign;
-            s_S5_32a_jedi.exp       <= '1;
-            s_S5_32a_jedi.mantissa  <= 23'hA; // non-0
-          end
           // For now, we treat denormals like ZERO, todo (lowkey low priority) actually implement denormal
           else if ((s_S4_metadata_anikin.float_type_a === POS_DENORMAL || s_S4_metadata_force.float_type_a === POS_DENORMAL) ||
-              (s_S4_metadata_anikin.float_type_a === NEG_DENORMAL || s_S4_metadata_force.float_type_a === NEG_DENORMAL)) begin
+                   (s_S4_metadata_anikin.float_type_a === NEG_DENORMAL || s_S4_metadata_force.float_type_a === NEG_DENORMAL)) begin
             // If either is a zero, output will be a zero
             s_S5_32a_jedi.sign      <= s_S4_32a_jedi.sign;
             s_S5_32a_jedi.exp       <= '0;
@@ -1453,7 +1458,15 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
           end
 
 
-          if (s_S4_metadata_anikin.float_type_b === ZERO || s_S4_metadata_force.float_type_b === ZERO) begin
+          if (!(s_S4_metadata_anikin.float_type_b === ZERO || s_S4_metadata_force.float_type_b === ZERO) &&
+              ((s_S4_metadata_anikin.float_type_b === NAN || s_S4_metadata_force.float_type_b === NAN) ||
+              (s_S4_32b_jedi.exp === '1 && s_S4_32a_potential_result[22:0] !== '0))) begin
+            // If either is NaN, output will be NaN
+            s_S5_32b_jedi.sign      <= s_S4_32b_jedi.sign;
+            s_S5_32b_jedi.exp       <= '1;
+            s_S5_32b_jedi.mantissa  <= 23'hA; // non-0
+          end
+          else if (s_S4_metadata_anikin.float_type_b === ZERO || s_S4_metadata_force.float_type_b === ZERO) begin
             // If either is a zero, output will be a zero
             s_S5_32b_jedi.sign      <= s_S4_32b_jedi.sign;
             s_S5_32b_jedi.exp       <= '0;
@@ -1473,16 +1486,9 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             s_S5_32b_jedi.exp       <= '1;
             s_S5_32b_jedi.mantissa  <= '0;
           end
-          else if ((s_S4_metadata_anikin.float_type_b === NAN || s_S4_metadata_force.float_type_b === NAN) ||
-                   (s_S4_32b_jedi.exp === '1 && s_S4_32a_potential_result[22:0] !== '0)) begin
-            // If either is NaN, output will be NaN
-            s_S5_32b_jedi.sign      <= s_S4_32b_jedi.sign;
-            s_S5_32b_jedi.exp       <= '1;
-            s_S5_32b_jedi.mantissa  <= 23'hA; // non-0
-          end
           // For now, we treat denormals like ZERO, todo (lowkey low priority) actually implement denormal
           else if ((s_S4_metadata_anikin.float_type_b === POS_DENORMAL || s_S4_metadata_force.float_type_b === POS_DENORMAL) ||
-              (s_S4_metadata_anikin.float_type_b === NEG_DENORMAL || s_S4_metadata_force.float_type_b === NEG_DENORMAL)) begin
+                   (s_S4_metadata_anikin.float_type_b === NEG_DENORMAL || s_S4_metadata_force.float_type_b === NEG_DENORMAL)) begin
             // If either is a zero, output will be a zero
             s_S5_32b_jedi.sign      <= s_S4_32b_jedi.sign;
             s_S5_32b_jedi.exp       <= '0;
@@ -1502,7 +1508,15 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
           end
 
 
-          if (s_S4_metadata_anikin.float_type_c === ZERO || s_S4_metadata_force.float_type_c === ZERO) begin
+          if (!(s_S4_metadata_anikin.float_type_c === ZERO || s_S4_metadata_force.float_type_c === ZERO) &&
+              ((s_S4_metadata_anikin.float_type_c === NAN || s_S4_metadata_force.float_type_c === NAN) ||
+              (s_S4_32c_jedi.exp === '1 && s_S4_32a_potential_result[22:0] !== '0))) begin
+            // If either is NaN, output will be NaN
+            s_S5_32c_jedi.sign      <= s_S4_32c_jedi.sign;
+            s_S5_32c_jedi.exp       <= '1;
+            s_S5_32c_jedi.mantissa  <= 23'hA; // non-0
+          end
+          else if (s_S4_metadata_anikin.float_type_c === ZERO || s_S4_metadata_force.float_type_c === ZERO) begin
             // If either is a zero, output will be a zero
             s_S5_32c_jedi.sign      <= s_S4_32c_jedi.sign;
             s_S5_32c_jedi.exp       <= '0;
@@ -1522,16 +1536,9 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             s_S5_32c_jedi.exp       <= '1;
             s_S5_32c_jedi.mantissa  <= '0;
           end
-          else if ((s_S4_metadata_anikin.float_type_c === NAN || s_S4_metadata_force.float_type_c === NAN) ||
-                   (s_S4_32c_jedi.exp === '1 && s_S4_32a_potential_result[22:0] !== '0)) begin
-            // If either is NaN, output will be NaN
-            s_S5_32c_jedi.sign      <= s_S4_32c_jedi.sign;
-            s_S5_32c_jedi.exp       <= '1;
-            s_S5_32c_jedi.mantissa  <= 23'hA; // non-0
-          end
           // For now, we treat denormals like ZERO, todo (lowkey low priority) actually implement denormal
           else if ((s_S4_metadata_anikin.float_type_c === POS_DENORMAL || s_S4_metadata_force.float_type_c === POS_DENORMAL) ||
-              (s_S4_metadata_anikin.float_type_c === NEG_DENORMAL || s_S4_metadata_force.float_type_c === NEG_DENORMAL)) begin
+                   (s_S4_metadata_anikin.float_type_c === NEG_DENORMAL || s_S4_metadata_force.float_type_c === NEG_DENORMAL)) begin
             // If either is a zero, output will be a zero
             s_S5_32c_jedi.sign      <= s_S4_32c_jedi.sign;
             s_S5_32c_jedi.exp       <= '0;
@@ -1551,7 +1558,15 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
           end
 
           
-          if (s_S4_metadata_anikin.float_type_d === ZERO || s_S4_metadata_force.float_type_d === ZERO) begin
+          if (!(s_S4_metadata_anikin.float_type_d === ZERO || s_S4_metadata_force.float_type_d === ZERO) &&
+              ((s_S4_metadata_anikin.float_type_d === NAN || s_S4_metadata_force.float_type_d === NAN) ||
+              (s_S4_32d_jedi.exp === '1 && s_S4_32a_potential_result[22:0] !== '0))) begin
+            // If either is NaN, output will be NaN
+            s_S5_32d_jedi.sign      <= s_S4_32d_jedi.sign;
+            s_S5_32d_jedi.exp       <= '1;
+            s_S5_32d_jedi.mantissa  <= 23'hA; // non-0
+          end
+          else if (s_S4_metadata_anikin.float_type_d === ZERO || s_S4_metadata_force.float_type_d === ZERO) begin
             // If either is a zero, output will be a zero
             s_S5_32d_jedi.sign      <= s_S4_32d_jedi.sign;
             s_S5_32d_jedi.exp       <= '0;
@@ -1571,16 +1586,9 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
             s_S5_32d_jedi.exp       <= '1;
             s_S5_32d_jedi.mantissa  <= '0;
           end
-          else if ((s_S4_metadata_anikin.float_type_d === NAN || s_S4_metadata_force.float_type_d === NAN) ||
-                   (s_S4_32d_jedi.exp === '1 && s_S4_32a_potential_result[22:0] !== '0)) begin
-            // If either is NaN, output will be NaN
-            s_S5_32d_jedi.sign      <= s_S4_32d_jedi.sign;
-            s_S5_32d_jedi.exp       <= '1;
-            s_S5_32d_jedi.mantissa  <= 23'hA; // non-0
-          end
           // For now, we treat denormals like ZERO, todo (lowkey low priority) actually implement denormal
           else if ((s_S4_metadata_anikin.float_type_d === POS_DENORMAL || s_S4_metadata_force.float_type_d === POS_DENORMAL) ||
-              (s_S4_metadata_anikin.float_type_d === NEG_DENORMAL || s_S4_metadata_force.float_type_d === NEG_DENORMAL)) begin
+                   (s_S4_metadata_anikin.float_type_d === NEG_DENORMAL || s_S4_metadata_force.float_type_d === NEG_DENORMAL)) begin
             // If either is a zero, output will be a zero
             s_S5_32d_jedi.sign      <= s_S4_32d_jedi.sign;
             s_S5_32d_jedi.exp       <= '0;

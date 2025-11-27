@@ -1,44 +1,33 @@
-// -------------------------------------------------------------------------
-// Spec 3/4/7: FOUR_SP_MODE special types and denormals -> 0
-// -------------------------------------------------------------------------
-`define MY_POS_DENORMAL {1'b0, {8{1'b0}}, 23'b1}
-`define MY_POS_INF      {1'b0, {8{1'b1}}, {23{1'b0}}}
-`define MY_NEG_INF      {1'b1, {8{1'b1}}, {23{1'b0}}}
-`define MY_NAN          {1'b0, {8{1'b1}}, 23'hB1B1}
-`SVTEST(four_sp_mode_special_cases_and_denormals)
-  logic [31:0] oa;
-  logic [31:0] ob;
-  logic [31:0] oc;
-  logic [31:0] od;
+`SVTEST(single_mode_numeric_from_hex_vectors)
+  logic [127:0] qA[$], qB[$], qC[$];
 
-  drive_meta(FOUR_SP_MODE, POS_DENORMAL, POS_INF, NEG_INF, NAN);
+  read_hex128_to_queue(HEX_A_128, qA);
+  read_hex128_to_queue(HEX_B_128, qB);
+  read_hex128_to_queue(HEX_C_128, qC);
 
-  s_i_in_anikin = {`MY_POS_DENORMAL, `MY_POS_INF, `MY_NEG_INF, `MY_NAN};
-  s_i_in_force  = pack_4x32(shortreal'(2.0), shortreal'(2.0), shortreal'(2.0), shortreal'(1.0));
+  `FAIL_UNLESS(qA.size() > 0)
+  `FAIL_UNLESS(qA.size() == qB.size())
+  `FAIL_UNLESS(qA.size() == qC.size())
 
-  s_i_valid32a_anikin = 1; s_i_valid32a_force = 1;
-  s_i_valid32b_anikin = 1; s_i_valid32b_force = 1;
-  s_i_valid32c_anikin = 1; s_i_valid32c_force = 1;
-  s_i_valid32d_anikin = 1; s_i_valid32d_force = 1;
-  @(posedge s_i_clk); clear_valids();
+  drive_meta(SINGLE_MODE, NORMAL, NA, NA, NA);
 
-  wait_n_ticks(5);
+  // For each vector, pulse valids for exactly one cycle, wait 5, and compare.
+  foreach (qA[i]) begin
+    s_i_in_anikin = qA[i];
+    s_i_in_force  = qB[i];
+    s_i_valid128_anikin = 1;
+    s_i_valid128_force  = 1;
+    @(posedge s_i_clk);
+    clear_valids();
 
-  oa = lane32_a(s_o_out_jedi);
-  ob = lane32_b(s_o_out_jedi);
-  oc = lane32_c(s_o_out_jedi);
-  od = lane32_d(s_o_out_jedi);
+    wait_n_ticks(5);
 
-  $display(">>>>> oa=0x%x", oa);
-  $display(">>>>> ob=0x%x", ob);
-  $display(">>>>> oc=0x%x", oc);
-  $display(">>>>> od=0x%x", od);
-
-  `FAIL_UNLESS(s_o_valid32a_jedi && s_o_valid32b_jedi && s_o_valid32c_jedi && s_o_valid32d_jedi)
-
-  `FAIL_UNLESS(oa == F32_ZERO)
-  `FAIL_UNLESS(ob == F32_POS_INF)
-  `FAIL_UNLESS(oc == F32_NEG_INF)
-  `FAIL_UNLESS(is_nan32(od))
-  `FAIL_UNLESS(s_o_error === '0)
+    `FAIL_UNLESS(s_o_valid128_jedi)
+    // $display(">>>>> s_i_in_anikin=0x%x", s_i_in_anikin);
+    // $display(">>>>> s_i_in_force=0x%x", s_i_in_force);
+    // $display(">>>>> s_o_out_jedi=0x%x", s_o_out_jedi);
+    // $display(">>>>> qC[i]=0x%x", qC[i]);
+    `FAIL_UNLESS(s_o_out_jedi == qC[i])
+    `FAIL_UNLESS(s_o_error === '0)
+  end
 `SVTEST_END
