@@ -1,7 +1,7 @@
 `SVTEST(correctness_0)
   s_i_f = '0;
 
-  #1;
+  wait_n_ticks(1);
   `FAIL_UNLESS_EQUAL(s_o_exp_f, {1'b0, 15'd16383, 52'b0, 60'b0})
 `SVTEST_END
 
@@ -30,7 +30,7 @@
       mantissa: {52'b0, s_i_f[64:5]}
     };
 
-    #1;
+    wait_n_ticks(1);
     `FAIL_UNLESS_EQUAL(s_o_exp_f, exp)
   end
 `SVTEST_END
@@ -53,7 +53,7 @@
       mantissa: {52'b0, val[64:5]}
     };
 
-    #1;
+    wait_n_ticks(1);
     `FAIL_UNLESS_EQUAL(s_o_exp_f, exp_rand)
   end
 

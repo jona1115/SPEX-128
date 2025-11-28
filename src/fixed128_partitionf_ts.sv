@@ -45,8 +45,8 @@ module fixed128_partitionf_ts #(
   parameter int ERROR_SIGNAL_NUM_BITS = 32,
   parameter int DEBUG_SIGNAL_NUM_BITS = 32
 ) (
-  // input   logic                                   i_clk,
-  // input   logic                                   i_rst_n, // Synchronous
+  input   logic                                   i_clk,
+  input   logic                                   i_rst_n, // Synchronous
 
   // Metadata stuff
   // input   float_metadata_t                        i_metadata,
@@ -57,8 +57,8 @@ module fixed128_partitionf_ts #(
   output  binary128_t                             o_exp_f,
 
   // Handshake
-  // input   logic                                   i_valid,
-  // output  logic                                   o_ready, todo need?
+  input   logic                                   i_valid,
+  output  logic                                   o_valid,
 
   // Module identifier
   output  logic [3:0]                             o_sanity_identifier,
@@ -73,10 +73,30 @@ module fixed128_partitionf_ts #(
 //=====================================================================================
 
 //=====================================================================================
+// Module Body
+//=====================================================================================
+binary128_t s_o_exp_f;
+logic s_o_valid;
+always_ff @( posedge i_clk ) begin : blockhaha
+  if (!i_rst_n) begin
+    s_o_exp_f <= '0;
+    s_o_valid <= '0;
+  end
+  else begin
+    if (i_valid) begin
+      s_o_exp_f <= binary128_t'({1'b0, 15'h3FFF/*16383*/, 52'b0, i_f[64:5]});
+      s_o_valid <= i_valid;
+    end // if (i_valid) begin
+  end // else begin
+end // always_ff
+
+
+//=====================================================================================
 // Final assignment
 //=====================================================================================
 // assign o_metadata = i_metadata;
-assign o_exp_f = binary128_t'({1'b0, 15'h3FFF/*16383*/, 52'b0, i_f[64:5]});
+assign o_exp_f = s_o_exp_f;
+assign o_valid = s_o_valid;
 assign o_sanity_identifier = 4'b0000;
 assign o_error = '0;
 assign o_debug = '0;

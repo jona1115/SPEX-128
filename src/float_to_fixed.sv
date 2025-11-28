@@ -28,6 +28,7 @@ import binary32_pkg::*;
 import fixed128_pkg::*;
 import fixed64_pkg::*;
 import fixed32_pkg::*;
+import unbiasing_pkg::*;
 
 module float_to_fixed #(
   parameter int NUM_BITS_128  = 128,
@@ -83,11 +84,6 @@ binary32_t s_binary32_a;
 binary32_t s_binary32_b;
 binary32_t s_binary32_c;
 binary32_t s_binary32_d;
-// For the type of float
-float_flag_t s_float_type_a;
-float_flag_t s_float_type_b;
-float_flag_t s_float_type_c;
-float_flag_t s_float_type_d;
 // For internal output
 fixed128_t s_fixed128;
 fixed64_t s_fixed64_a;
@@ -130,7 +126,7 @@ assign s_current_sp =
 // // Check that INVALID_SP_MODE should never be passed into this module; commented because cant do this ouside a always block or need to use property, but todo we still want to perform this check
 // assert(s_current_sp != INVALID_SP_MODE && i_valid == 1'b1) else begin
 //   s_o_error[2] <= 1'b1;
-  $fatal(1, "INVALID_SP_MODE detected"); // This is for simulator not synthesis
+//  $fatal(1, "INVALID_SP_MODE detected"); // This is for simulator not synthesis
 // end
 
 // Generate a bunch of helper signals as decoders
@@ -182,93 +178,12 @@ end
 /**
  * Decoder to determine what the output float types are based on s_current_sp
  */
-always_comb begin : float_type_determiner
-  case (s_current_sp)
-    SINGLE_MODE: begin
-      s_float_type_a = 
-                (s_binary128.exp == '0 && s_binary128.mantissa == '0)                               ? ZERO          :
-                (s_binary128.sign == '0 && s_binary128.exp == '1 && s_binary128.mantissa == '0)     ? POS_INF       :
-                (s_binary128.sign == '1 && s_binary128.exp == '1 && s_binary128.mantissa == '0)     ? NEG_INF       :
-                (s_binary128.exp == '1 && s_binary128.mantissa != '0)                               ? NAN           :
-                (s_binary128.sign == '0 && s_binary128.exp == '0 && s_binary128.mantissa != '0)     ? POS_DENORMAL  :
-                (s_binary128.sign == '1 && s_binary128.exp == '0 && s_binary128.mantissa != '0)     ? NEG_DENORMAL  :
-                NORMAL;
-      s_float_type_b = NA;
-      s_float_type_c = NA;
-      s_float_type_d = NA;
-    end
-
-    TWO_SP_MODE: begin
-      s_float_type_a = 
-                (s_binary64_a.exp == '0 && s_binary64_a.mantissa == '0)                             ? ZERO          :
-                (s_binary64_a.sign == '0 && s_binary64_a.exp == '1 && s_binary64_a.mantissa == '0)  ? POS_INF       :
-                (s_binary64_a.sign == '1 && s_binary64_a.exp == '1 && s_binary64_a.mantissa == '0)  ? NEG_INF       :
-                (s_binary64_a.exp == '1 && s_binary64_a.mantissa != '0)                             ? NAN           :
-                (s_binary64_a.sign == '0 && s_binary64_a.exp == '0 && s_binary64_a.mantissa != '0)  ? POS_DENORMAL  :
-                (s_binary64_a.sign == '1 && s_binary64_a.exp == '0 && s_binary64_a.mantissa != '0)  ? NEG_DENORMAL  :
-                NORMAL;
-      s_float_type_b = 
-                (s_binary64_b.exp == '0 && s_binary64_b.mantissa == '0)                             ? ZERO          :
-                (s_binary64_b.sign == '0 && s_binary64_b.exp == '1 && s_binary64_b.mantissa == '0)  ? POS_INF       :
-                (s_binary64_b.sign == '1 && s_binary64_b.exp == '1 && s_binary64_b.mantissa == '0)  ? NEG_INF       :
-                (s_binary64_b.exp == '1 && s_binary64_b.mantissa != '0)                             ? NAN           :
-                (s_binary64_b.sign == '0 && s_binary64_b.exp == '0 && s_binary64_b.mantissa != '0)  ? POS_DENORMAL  :
-                (s_binary64_b.sign == '1 && s_binary64_b.exp == '0 && s_binary64_b.mantissa != '0)  ? NEG_DENORMAL  :
-                NORMAL;
-      s_float_type_c = NA;
-      s_float_type_d = NA;
-    end
-
-    FOUR_SP_MODE: begin
-      s_float_type_a = 
-                (s_binary32_a.exp == '0 && s_binary32_a.mantissa == '0)                             ? ZERO          :
-                (s_binary32_a.sign == '0 && s_binary32_a.exp == '1 && s_binary32_a.mantissa == '0)  ? POS_INF       :
-                (s_binary32_a.sign == '1 && s_binary32_a.exp == '1 && s_binary32_a.mantissa == '0)  ? NEG_INF       :
-                (s_binary32_a.exp == '1 && s_binary32_a.mantissa != '0)                             ? NAN           :
-                (s_binary32_a.sign == '0 && s_binary32_a.exp == '0 && s_binary32_a.mantissa != '0)  ? POS_DENORMAL  :
-                (s_binary32_a.sign == '1 && s_binary32_a.exp == '0 && s_binary32_a.mantissa != '0)  ? NEG_DENORMAL  :
-                NORMAL;
-      s_float_type_b = 
-                (s_binary32_b.exp == '0 && s_binary32_b.mantissa == '0)                             ? ZERO          :
-                (s_binary32_b.sign == '0 && s_binary32_b.exp == '1 && s_binary32_b.mantissa == '0)  ? POS_INF       :
-                (s_binary32_b.sign == '1 && s_binary32_b.exp == '1 && s_binary32_b.mantissa == '0)  ? NEG_INF       :
-                (s_binary32_b.exp == '1 && s_binary32_b.mantissa != '0)                             ? NAN           :
-                (s_binary32_b.sign == '0 && s_binary32_b.exp == '0 && s_binary32_b.mantissa != '0)  ? POS_DENORMAL  :
-                (s_binary32_b.sign == '1 && s_binary32_b.exp == '0 && s_binary32_b.mantissa != '0)  ? NEG_DENORMAL  :
-                NORMAL;
-      s_float_type_c = 
-                (s_binary32_c.exp == '0 && s_binary32_c.mantissa == '0)                             ? ZERO          :
-                (s_binary32_c.sign == '0 && s_binary32_c.exp == '1 && s_binary32_c.mantissa == '0)  ? POS_INF       :
-                (s_binary32_c.sign == '1 && s_binary32_c.exp == '1 && s_binary32_c.mantissa == '0)  ? NEG_INF       :
-                (s_binary32_c.exp == '1 && s_binary32_c.mantissa != '0)                             ? NAN           :
-                (s_binary32_c.sign == '0 && s_binary32_c.exp == '0 && s_binary32_c.mantissa != '0)  ? POS_DENORMAL  :
-                (s_binary32_c.sign == '1 && s_binary32_c.exp == '0 && s_binary32_c.mantissa != '0)  ? NEG_DENORMAL  :
-                NORMAL;
-      s_float_type_d = 
-                (s_binary32_d.exp == '0 && s_binary32_d.mantissa == '0)                             ? ZERO          :
-                (s_binary32_d.sign == '0 && s_binary32_d.exp == '1 && s_binary32_d.mantissa == '0)  ? POS_INF       :
-                (s_binary32_d.sign == '1 && s_binary32_d.exp == '1 && s_binary32_d.mantissa == '0)  ? NEG_INF       :
-                (s_binary32_d.exp == '1 && s_binary32_d.mantissa != '0)                             ? NAN           :
-                (s_binary32_d.sign == '0 && s_binary32_d.exp == '0 && s_binary32_d.mantissa != '0)  ? POS_DENORMAL  :
-                (s_binary32_d.sign == '1 && s_binary32_d.exp == '0 && s_binary32_d.mantissa != '0)  ? NEG_DENORMAL  :
-                NORMAL;
-    end
-
-    INVALID_SP_MODE: begin
-      s_float_type_a = NA;
-      s_float_type_b = NA;
-      s_float_type_c = NA;
-      s_float_type_d = NA;
-    end
-
-    default: begin
-      s_float_type_a = NA;
-      s_float_type_b = NA;
-      s_float_type_c = NA;
-      s_float_type_d = NA;
-    end
-  endcase
-end
+float_metadata_t s_o_metadata;
+float_classifier #() my_float_classifier_0 (
+  .i_current_sp(s_current_sp),
+  .i_float(i_float),
+  .o_metadata(s_o_metadata)
+);
 
 /**
  * FSM
@@ -324,18 +239,6 @@ end
 /**
  * Stage 1 block
  */
-typedef logic signed [15:0] sh_t; // we use 16 bits so we can properly represent -ve shift amount 
-                                  // for single_mode
-function automatic sh_t unbias_q128 (input logic [14:0] exp);
-  return (exp == 15'd0) ? sh_t'(-16'sd16382) // IEEE-754: for subnormal (exp==0), unbiased exponent is 1 - bias
-                        : sh_t'($signed({1'b0, exp}) - 16'sd16383);
-endfunction
-function automatic sh_t unbias_q64  (input logic [10:0] exp);
-  return (exp == 11'd0) ? sh_t'(-16'sd1022) : sh_t'($signed({5'b0, exp}) - 16'sd1023);
-endfunction
-function automatic sh_t unbias_q32  (input logic  [7:0] exp);
-  return (exp ==  8'd0) ? sh_t'( -16'sd126) : sh_t'($signed({8'b0, exp}) - 16'sd127);
-endfunction
 sh_t s_shift_amount_a, s_shift_amount_b, s_shift_amount_c, s_shift_amount_d; // Why 15:0? Because in the 
                                                                              // worse case, we want to 
                                                                              // accomodate shifting 16383 
@@ -636,11 +539,7 @@ end // always_ff
 //=====================================================================================
 // Final assignment
 //=====================================================================================
-assign o_metadata.sp_mode       = s_current_sp;
-assign o_metadata.float_type_a  = s_float_type_a;
-assign o_metadata.float_type_b  = s_float_type_b;
-assign o_metadata.float_type_c  = s_float_type_c;
-assign o_metadata.float_type_d  = s_float_type_d;
+assign o_metadata = s_o_metadata;
 
 // assign o_fixed = (s_current_sp == SINGLE_MODE)  ? {s_binary128.sign,
 //                                                    s_fixed128.int_portion,

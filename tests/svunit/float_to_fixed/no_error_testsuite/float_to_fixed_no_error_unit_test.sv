@@ -26,6 +26,7 @@ module float_to_fixed_no_error_unit_test;
   import binary128_pkg::*;
   import binary64_pkg::*;
   import binary32_pkg::*;
+  import unbiasing_pkg::*;
 
 
   string name = "float_to_fixed_ut";
