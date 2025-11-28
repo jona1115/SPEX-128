@@ -1258,7 +1258,7 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
         SINGLE_MODE: begin
           if (!(s_S4_metadata_anikin.float_type_a === ZERO || s_S4_metadata_force.float_type_a === ZERO) && 
               ((s_S4_metadata_anikin.float_type_a === NAN || s_S4_metadata_force.float_type_a === NAN) ||
-              (s_S4_128_jedi.exp === '1 && s_S4_128_potential_result[111:0] !== '0))) begin
+              (s_S4_128_jedi.exp === '1 && s_S4_128_potential_result[111:0] !== '0 && s_S4_128_potential_result[111:0] !== '1))) begin
             // If either is NaN, output will be NaN
             s_S5_128_jedi.sign      <= s_S4_128_jedi.sign;
             s_S5_128_jedi.exp       <= '1;

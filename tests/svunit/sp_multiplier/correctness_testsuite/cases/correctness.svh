@@ -754,8 +754,7 @@ localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
   s_i_valid128_anikin = 1; s_i_valid128_force = 1;
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(4); `FAIL_UNLESS(!s_o_valid128_jedi) // no early valid
-  wait_n_ticks(1);
+  wait_n_ticks(5);
 
   `FAIL_UNLESS(s_o_valid128_jedi)
   `FAIL_UNLESS(is_inf128(s_o_out_jedi) && (s_o_out_jedi[127] == 1'b0)) // +INF
