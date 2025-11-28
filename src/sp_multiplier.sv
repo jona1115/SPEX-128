@@ -396,6 +396,7 @@ end // always_ff @( posedge i_clk )
 /**
  * Stage 1b block: Add exp of anikin and force, then unbias it
  */
+`define MAX_0(x, y, b) ($signed($signed((x)) + $signed((y)) - (b)) < 0 ? '0 : ((x) + (y) - (b)))
 always_ff @( posedge i_clk ) begin : stage1b_add_the_two_exp
   if (!i_rst_n) begin
     s_S1_128_jedi.exp <= '0;
@@ -415,19 +416,22 @@ always_ff @( posedge i_clk ) begin : stage1b_add_the_two_exp
       
       case (s_S0_metadata_anikin.sp_mode)
         SINGLE_MODE: begin
-          s_S1_128_jedi.exp <= {1'b0, s_S0_128_anikin.exp} + {1'b0, s_S0_128_force.exp} - 15'd16383;
+          s_S1_128_jedi.exp <=  `MAX_0({1'b0, s_S0_128_anikin.exp}, {1'b0, s_S0_128_force.exp}, 16'sd16383);
+                                // This fancy shit to detect underflow to zero
+                                // I wonder what this will be inferred into, like will there be two addition checks or just one
+                                // Jones will not be too happy about this
         end
 
         TWO_SP_MODE: begin
-          s_S1_64a_jedi.exp <= {5'b0, s_S0_64a_anikin.exp} + {5'b0, s_S0_64a_force.exp} - 15'd1023;
-          s_S1_64b_jedi.exp <= {5'b0, s_S0_64b_anikin.exp} + {5'b0, s_S0_64b_force.exp} - 15'd1023;
+          s_S1_64a_jedi.exp <=  `MAX_0({5'b0, s_S0_64a_anikin.exp}, {5'b0, s_S0_64a_force.exp}, 15'sd1023);
+          s_S1_64b_jedi.exp <=  `MAX_0({5'b0, s_S0_64b_anikin.exp}, {5'b0, s_S0_64b_force.exp}, 15'sd1023);
         end
 
         FOUR_SP_MODE: begin
-          s_S1_32a_jedi.exp <= {8'b0, s_S0_32a_anikin.exp} + {8'b0, s_S0_32a_force.exp} - 15'd127;
-          s_S1_32b_jedi.exp <= {8'b0, s_S0_32b_anikin.exp} + {8'b0, s_S0_32b_force.exp} - 15'd127;
-          s_S1_32c_jedi.exp <= {8'b0, s_S0_32c_anikin.exp} + {8'b0, s_S0_32c_force.exp} - 15'd127;
-          s_S1_32d_jedi.exp <= {8'b0, s_S0_32d_anikin.exp} + {8'b0, s_S0_32d_force.exp} - 15'd127;
+          s_S1_32a_jedi.exp <=  `MAX_0({8'b0, s_S0_32a_anikin.exp}, {8'b0, s_S0_32a_force.exp}, 15'sd127);
+          s_S1_32b_jedi.exp <=  `MAX_0({8'b0, s_S0_32b_anikin.exp}, {8'b0, s_S0_32b_force.exp}, 15'sd127);
+          s_S1_32c_jedi.exp <=  `MAX_0({8'b0, s_S0_32c_anikin.exp}, {8'b0, s_S0_32c_force.exp}, 15'sd127);
+          s_S1_32d_jedi.exp <=  `MAX_0({8'b0, s_S0_32d_anikin.exp}, {8'b0, s_S0_32d_force.exp}, 15'sd127);
         end
 
         default: begin
