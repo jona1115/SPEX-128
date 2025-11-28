@@ -26,6 +26,10 @@ Below are easy, copy-pastable commands to do stuff. They, in theory, should "jus
     # And even include the do file cli:
     ../sim_and_gen_waveform.sh && vsim -view ./waves/svunit.wlf -do "./dos/wave.do" &
     ```
+3. Git log, this repo has some pretty stupid commits that are long, so use this for a nicer git log:
+    ```sh
+    git log --graph --decorate --all --format='%C(auto)%h %d %<(60,trunc)%s'
+    ```
 
 # Creating/running SVUnit Tests
 ```sh
