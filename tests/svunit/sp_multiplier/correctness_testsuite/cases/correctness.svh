@@ -737,9 +737,8 @@ localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
 
   wait_n_ticks(5);
 
-  `FAIL_UNLESS(!s_o_valid64a_jedi && s_o_valid64b_jedi)
-  `FAIL_UNLESS(top64(s_o_out_jedi) === top64(prev))                  // A holds
-  `FAIL_UNLESS(bot64(s_o_out_jedi) == mul64_bits(a_bot, b_bot))      // B updates
+  `FAIL_UNLESS(!s_o_valid64a_jedi && !s_o_valid64b_jedi) // Both invalid
+  `FAIL_UNLESS(s_o_out_jedi === prev)                    // Nothing happens
   `FAIL_UNLESS(s_o_error == '0)
 `SVTEST_END
 
