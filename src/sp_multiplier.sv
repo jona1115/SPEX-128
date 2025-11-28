@@ -184,6 +184,7 @@ always_comb begin : valid_bit_decoder
   s_S0_valid32d_force   = 1'b0;
 
   // This is an interesting way of implementing.... kinda... stupid and redundant now that I look back 2 days later
+  // Welp too late, we are sticking to it now
   case (i_metadata.sp_mode)
     SINGLE_MODE: begin
       if (i_valid128_anikin === 1'b1 && i_valid128_force === 1'b1) begin
@@ -396,6 +397,7 @@ end // always_ff @( posedge i_clk )
 /**
  * Stage 1b block: Add exp of anikin and force, then unbias it
  */
+// This is basically a max(x, 0) function
 `define MAX_0(x, y, b) ($signed($signed((x)) + $signed((y)) - (b)) < 0 ? '0 : ((x) + (y) - (b)))
 always_ff @( posedge i_clk ) begin : stage1b_add_the_two_exp
   if (!i_rst_n) begin
@@ -1062,7 +1064,7 @@ always_ff @( posedge i_clk ) begin : stage4a_renormalize
           if (s_S3_128_potential_result[113] === 1'b1) begin
             // s_S3_128_potential_result[113] will be a 1 if overflow occurred 
             // 1. Increment exponent
-            s_S4_128_jedi.exp         <= s_S3_128_jedi.exp + 1'b1; // todo again, this might not be right but for now who cares
+            s_S4_128_jedi.exp         <= s_S3_128_jedi.exp + 1'b1;
             // 2. Right shift
             s_S4_128_potential_result <= {1'b0, s_S3_128_potential_result[113:1]};
 
@@ -1081,7 +1083,7 @@ always_ff @( posedge i_clk ) begin : stage4a_renormalize
           if (s_S3_64a_potential_result[53] === 1'b1) begin
             // s_S3_64a_potential_result[53] will be a 1 if overflow occurred 
             // 1. Increment exponent
-            s_S4_64a_jedi.exp         <= s_S3_64a_jedi.exp + 1'b1; // todo again, this might not be right but for now who cares
+            s_S4_64a_jedi.exp         <= s_S3_64a_jedi.exp + 1'b1;
             // 2. Right shift
             s_S4_64a_potential_result <= {1'b0, s_S3_64a_potential_result[53:1]};
 
@@ -1098,7 +1100,7 @@ always_ff @( posedge i_clk ) begin : stage4a_renormalize
           if (s_S3_64b_potential_result[53] === 1'b1) begin
             // s_S3_64b_potential_result[53] will be a 1 if overflow occurred 
             // 1. Increment exponent
-            s_S4_64b_jedi.exp         <= s_S3_64b_jedi.exp + 1'b1; // todo again, this might not be right but for now who cares
+            s_S4_64b_jedi.exp         <= s_S3_64b_jedi.exp + 1'b1;
             // 2. Right shift
             s_S4_64b_potential_result <= {1'b0, s_S3_64b_potential_result[53:1]};
 
@@ -1117,7 +1119,7 @@ always_ff @( posedge i_clk ) begin : stage4a_renormalize
           if (s_S3_32a_potential_result[24] === 1'b1) begin
             // s_S3_32a_potential_result[24] will be a 1 if overflow occurred 
             // 1. Increment exponent
-            s_S4_32a_jedi.exp         <= s_S3_32a_jedi.exp + 1'b1; // todo again, this might not be right but for now who cares
+            s_S4_32a_jedi.exp         <= s_S3_32a_jedi.exp + 1'b1;
             // 2. Right shift
             s_S4_32a_potential_result <= {1'b0, s_S3_32a_potential_result[24:1]};
 
@@ -1134,7 +1136,7 @@ always_ff @( posedge i_clk ) begin : stage4a_renormalize
           if (s_S3_32b_potential_result[24] === 1'b1) begin
             // s_S3_32b_potential_result[24] will be a 1 if overflow occurred 
             // 1. Increment exponent
-            s_S4_32b_jedi.exp         <= s_S3_32b_jedi.exp + 1'b1; // todo again, this might not be right but for now who cares
+            s_S4_32b_jedi.exp         <= s_S3_32b_jedi.exp + 1'b1;
             // 2. Right shift
             s_S4_32b_potential_result <= {1'b0, s_S3_32b_potential_result[24:1]};
 
@@ -1151,7 +1153,7 @@ always_ff @( posedge i_clk ) begin : stage4a_renormalize
           if (s_S3_32c_potential_result[24] === 1'b1) begin
             // s_S3_32c_potential_result[24] will be a 1 if overflow occurred 
             // 1. Increment exponent
-            s_S4_32c_jedi.exp         <= s_S3_32c_jedi.exp + 1'b1; // todo again, this might not be right but for now who cares
+            s_S4_32c_jedi.exp         <= s_S3_32c_jedi.exp + 1'b1;
             // 2. Right shift
             s_S4_32c_potential_result <= {1'b0, s_S3_32c_potential_result[24:1]};
 
@@ -1168,7 +1170,7 @@ always_ff @( posedge i_clk ) begin : stage4a_renormalize
           if (s_S3_32d_potential_result[24] === 1'b1) begin
             // s_S3_32d_potential_result[24] will be a 1 if overflow occurred 
             // 1. Increment exponent
-            s_S4_32d_jedi.exp         <= s_S3_32d_jedi.exp + 1'b1; // todo again, this might not be right but for now who cares
+            s_S4_32d_jedi.exp         <= s_S3_32d_jedi.exp + 1'b1;
             // 2. Right shift
             s_S4_32d_potential_result <= {1'b0, s_S3_32d_potential_result[24:1]};
 
@@ -1668,7 +1670,7 @@ assign o_metadata           = s_S5_metadata_anikin/*should be the same as s_S5_m
 assign o_out_jedi           = (s_S5_metadata_anikin.sp_mode === SINGLE_MODE)  ? s_S5_128_jedi                                                 :
                               (s_S5_metadata_anikin.sp_mode === TWO_SP_MODE)  ? {s_S5_64a_jedi, s_S5_64b_jedi}                                :
                               (s_S5_metadata_anikin.sp_mode === FOUR_SP_MODE) ? {s_S5_32a_jedi, s_S5_32b_jedi, s_S5_32c_jedi, s_S5_32d_jedi}  :
-                              128'hDEAD;
+                              128'hB1B1; // https://youtu.be/smdmEhkIRVc?si=WFrAqEqgQmf-JaDX
 assign o_valid128_jedi      = s_S5_valid128_jedi;
 assign o_valid64a_jedi      = s_S5_valid64a_jedi;
 assign o_valid64b_jedi      = s_S5_valid64b_jedi;
