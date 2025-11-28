@@ -1410,7 +1410,7 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
         FOUR_SP_MODE: begin
           if (!(s_S4_metadata_anikin.float_type_a === ZERO || s_S4_metadata_force.float_type_a === ZERO) &&
               ((s_S4_metadata_anikin.float_type_a === NAN || s_S4_metadata_force.float_type_a === NAN) ||
-              (s_S4_32a_jedi.exp === '1 && s_S4_32a_potential_result[22:0] !== '0))) begin
+              (s_S4_32a_jedi.exp === '1 && s_S4_32a_potential_result[22:0] !== '0 && s_S4_32a_potential_result[22:0] !== '1))) begin
             // If either is NaN, output will be NaN
             s_S5_32a_jedi.sign      <= s_S4_32a_jedi.sign;
             s_S5_32a_jedi.exp       <= '1;
@@ -1460,7 +1460,7 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
 
           if (!(s_S4_metadata_anikin.float_type_b === ZERO || s_S4_metadata_force.float_type_b === ZERO) &&
               ((s_S4_metadata_anikin.float_type_b === NAN || s_S4_metadata_force.float_type_b === NAN) ||
-              (s_S4_32b_jedi.exp === '1 && s_S4_32a_potential_result[22:0] !== '0))) begin
+              (s_S4_32b_jedi.exp === '1 && s_S4_32b_potential_result[22:0] !== '0 && s_S4_32b_potential_result[22:0] !== '1))) begin
             // If either is NaN, output will be NaN
             s_S5_32b_jedi.sign      <= s_S4_32b_jedi.sign;
             s_S5_32b_jedi.exp       <= '1;
@@ -1510,7 +1510,7 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
 
           if (!(s_S4_metadata_anikin.float_type_c === ZERO || s_S4_metadata_force.float_type_c === ZERO) &&
               ((s_S4_metadata_anikin.float_type_c === NAN || s_S4_metadata_force.float_type_c === NAN) ||
-              (s_S4_32c_jedi.exp === '1 && s_S4_32a_potential_result[22:0] !== '0))) begin
+              (s_S4_32c_jedi.exp === '1 && s_S4_32c_potential_result[22:0] !== '0 && s_S4_32c_potential_result[22:0] !== '1))) begin
             // If either is NaN, output will be NaN
             s_S5_32c_jedi.sign      <= s_S4_32c_jedi.sign;
             s_S5_32c_jedi.exp       <= '1;
@@ -1560,7 +1560,7 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
           
           if (!(s_S4_metadata_anikin.float_type_d === ZERO || s_S4_metadata_force.float_type_d === ZERO) &&
               ((s_S4_metadata_anikin.float_type_d === NAN || s_S4_metadata_force.float_type_d === NAN) ||
-              (s_S4_32d_jedi.exp === '1 && s_S4_32a_potential_result[22:0] !== '0))) begin
+              (s_S4_32d_jedi.exp === '1 && s_S4_32d_potential_result[22:0] !== '0 && s_S4_32d_potential_result[22:0] !== '1))) begin
             // If either is NaN, output will be NaN
             s_S5_32d_jedi.sign      <= s_S4_32d_jedi.sign;
             s_S5_32d_jedi.exp       <= '1;
