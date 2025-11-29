@@ -902,7 +902,7 @@ sp_multiplier #() my_sp_multiplier_4 (
 // Final assignment
 //=====================================================================================
 `define S (s_my_float_to_fixed_metadata_out.sp_mode)
-assign o_exp_x              = `S === SINGLE_MODE  ?  x :
+assign o_exp_x              = `S === SINGLE_MODE  ?  s_my_sp_multiplier_4_jedi :
                               `S === TWO_SP_MODE  ?  s_my_sp_multiplier_3_jedi :
                               `S === FOUR_SP_MODE ?  s_my_sp_multiplier_3_jedi :
                               '0;

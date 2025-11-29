@@ -1,24 +1,26 @@
 // Handwritten tests:
 `SVTEST(handwritten_sanity_correctness_test_0)
-  // logic [127:0] expected = 128'h4000c000000000000000000000000000; // 3.5
+  logic [127:0] expected = 128'h3fffa61298e1e069bc972dfefab6df34; // 1.6487212707001281468486507878141635764
 
-  // s_i_in_anikin = 128'h3ffe0000000000000000000000000000; // 0.5
-  // s_i_in_force  = 128'h4001c000000000000000000000000000; // 7.0
+  s_i_x     = 128'h3ffe0000000000000000000000000000; // 0.5
+  s_i_ctrl  = 4'b0000; // single mode
 
-  // wait_n_ticks(5);
+  wait_n_ticks(2+1+5*3/*idk why the +3*/+3);
 
-  // `FAIL_UNLESS(s_o_out_jedi === expected)
+  $display(">>>>> s_o_exp_x=0x%X", s_o_exp_x);
+  `FAIL_UNLESS(s_o_exp_x === expected)
 `SVTEST_END
 
 `SVTEST(handwritten_sanity_correctness_test_1)
-  // logic [127:0] expected = 128'hc0076ee894ea7ad6392654fa263a57be; // -366.90852227686830087000000000000000737
+  logic [127:0] expected = 128'h402899670853bf4bb876f5ead09f48e8; // 3516740446078.5915669155853082529447639
+                           // 0x402899670853bf4bb876f5ead09f48a5
+  s_i_x     = 128'h4003ce3786259f7d0292051588915546; // 28.888555666890000000000000000000000887
+  s_i_ctrl  = 4'b0000; // single mode
 
-  // s_i_in_anikin = 128'hbff7316088898481372ac2290d730dc7; // -0.0046596844999999999999999999999999997928
-  // s_i_in_force  = 128'h400f339510c28a7e9e96838f970c4b93; // 78741.065468460000000000000000000002343
+  wait_n_ticks(2+1+5*3/*idk why the +3*/+3);
 
-  // wait_n_ticks(5);
-
-  // `FAIL_UNLESS(s_o_out_jedi === expected)
+  $display(">>>>> s_o_exp_x=0x%X", s_o_exp_x);
+  `FAIL_UNLESS(s_o_exp_x === expected)
 `SVTEST_END
 
 
