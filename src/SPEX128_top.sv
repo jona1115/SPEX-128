@@ -104,8 +104,6 @@ float_metadata_t  s_my_fixed128_64_partitiona_metadata;
 binary64_t        s_my_fixed128_64_partitiona_exp_a64a;
 binary64_t        s_my_fixed128_64_partitiona_exp_a64b;
 binary128_t       s_my_fixed128_64_partitiona_exp_a128;
-logic [127:0]     s_my_fixed128_64_partitiona_fixed_out;
-float_metadata_t  s_my_fixed128_64_partitiona_metadata_out;
 logic             s_my_fixed128_64_partitiona_o_valid64a;
 logic             s_my_fixed128_64_partitiona_o_valid64b;
 logic             s_my_fixed128_64_partitiona_o_valid128;
