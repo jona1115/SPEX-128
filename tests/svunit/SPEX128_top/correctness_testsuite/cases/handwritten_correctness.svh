@@ -4,11 +4,13 @@
   s_i_x     = 128'h3ffe0000000000000000000000000000; // 0.5
   s_i_ctrl  = 4'b0000; // single mode
 
+  s_i_valid = '1;
+
   wait_n_ticks(2+1+5*3/*idk why the +3*/+3);
 
-  $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
-  $display(">>>>> expected  = 0x%x", expected);
-  $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
+  // $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
+  // $display(">>>>> expected  = 0x%x", expected);
+  // $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
   `FAIL_UNLESS(s_o_exp_x === expected)
 `SVTEST_END
 
@@ -19,11 +21,13 @@
   s_i_x     = 128'h3ffe45575c44f4e77ad333b441e67d10; // 0.63543213216548984651621321000000003673
   s_i_ctrl  = 4'b0000; // single mode
 
+  s_i_valid = '1;
+
   wait_n_ticks(2+1+5*3/*idk why the +3*/+3);
 
-  $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
-  $display(">>>>> expected  = 0x%x", expected);
-  $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
+  // $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
+  // $display(">>>>> expected  = 0x%x", expected);
+  // $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
 
   `PRINT_INTERMEDIATE_RESULTS
   `FAIL_UNLESS(s_o_exp_x === expected)
@@ -36,11 +40,13 @@
   s_i_x     = 128'h3ffe051eb851eb851eb851eb851eb852; // 0.5100000000000000000000000000000000077
   s_i_ctrl  = 4'b0000; // single mode
 
+  s_i_valid = '1;
+
   wait_n_ticks(2+1+5*3/*idk why the +3*/+3);
 
-  $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
-  $display(">>>>> expected  = 0x%x", expected);
-  $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
+  // $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
+  // $display(">>>>> expected  = 0x%x", expected);
+  // $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
   `FAIL_UNLESS(s_o_exp_x === expected)
 `SVTEST_END
 
@@ -50,11 +56,13 @@
   s_i_x     = 128'h4003ce3786259f7d0292051588915546; // 28.888555666890000000000000000000000887
   s_i_ctrl  = 4'b0000; // single mode
 
+  s_i_valid = '1;
+
   wait_n_ticks(2+1+5*3/*idk why the +3*/+3);
 
-  $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
-  $display(">>>>> expected  = 0x%x", expected);
-  $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
+  // $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
+  // $display(">>>>> expected  = 0x%x", expected);
+  // $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
   `FAIL_UNLESS(s_o_exp_x === expected)
 `SVTEST_END
 
@@ -65,11 +73,13 @@
   s_i_x     = 128'h3ff50624dd2f1a9fbe76c8b439581062; // 0.00099999999999999999999999999999999994282
   s_i_ctrl  = 4'b0000; // single mode
 
+  s_i_valid = '1;
+
   wait_n_ticks(2+1+5*3/*idk why the +3*/+3);
 
-  $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
-  $display(">>>>> expected  = 0x%x", expected);
-  $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
+  // $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
+  // $display(">>>>> expected  = 0x%x", expected);
+  // $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
   `FAIL_UNLESS(s_o_exp_x === expected)
 `SVTEST_END
 
@@ -79,11 +89,13 @@
   s_i_x     = '0; // 0.0
   s_i_ctrl  = 4'b0000; // single mode
 
+  s_i_valid = '1;
+
   wait_n_ticks(2+1+5*3/*idk why the +3*/+3);
 
-  $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
-  $display(">>>>> expected  = 0x%x", expected);
-  $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
+  // $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
+  // $display(">>>>> expected  = 0x%x", expected);
+  // $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
 
   `PRINT_INTERMEDIATE_RESULTS
   `FAIL_UNLESS(s_o_exp_x === expected)

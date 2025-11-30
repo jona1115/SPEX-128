@@ -359,6 +359,7 @@ module SPEX128_top_unit_test;
 
     `include "cases/handwritten_correctness.svh"
     `include "cases/vibed_correctness.svh"
+    // `include "cases/isolate.svh"
 
   `SVUNIT_TESTS_END
 
