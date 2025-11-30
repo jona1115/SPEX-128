@@ -372,7 +372,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed32_partitionb_a_debug;
 fixed32_partitionb #() my_fixed32_partitionb_a (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_b(s_my_float_to_fixed_fixed_out[127:117]),
+  .i_b(s_my_float_to_fixed_fixed_out[116:107]),
   .o_exp_b(s_my_fixed32_partitionb_a_exp_d32a),
   .i_valid(1'b1/*todo*/),
   .o_valid(s_my_fixed32_partitionb_a_o_valid),
@@ -390,7 +390,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed32_partitionb_b_debug;
 fixed32_partitionb #() my_fixed32_partitionb_b (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_b(s_my_float_to_fixed_fixed_out[95:85]),
+  .i_b(s_my_float_to_fixed_fixed_out[84:75]),
   .o_exp_b(s_my_fixed32_partitionb_b_exp_d32b),
   .i_valid(1'b1/*todo*/),
   .o_valid(s_my_fixed32_partitionb_b_o_valid),
@@ -408,7 +408,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed32_partitionb_c_debug;
 fixed32_partitionb #() my_fixed32_partitionb_c (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_b(s_my_float_to_fixed_fixed_out[63:53]),
+  .i_b(s_my_float_to_fixed_fixed_out[52:43]),
   .o_exp_b(s_my_fixed32_partitionb_c_exp_d32c),
   .i_valid(1'b1/*todo*/),
   .o_valid(s_my_fixed32_partitionb_c_o_valid),
@@ -426,7 +426,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed32_partitionb_d_debug;
 fixed32_partitionb #() my_fixed32_partitionb_d (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_b(s_my_float_to_fixed_fixed_out[31:21]),
+  .i_b(s_my_float_to_fixed_fixed_out[20:11]),
   .o_exp_b(s_my_fixed32_partitionb_d_exp_d32d),
   .i_valid(1'b1/*todo*/),
   .o_valid(s_my_fixed32_partitionb_d_o_valid),
@@ -445,7 +445,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed32_partitionc_a_debug;
 fixed32_partitionc #() my_fixed32_partitionc_a (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_c(s_my_float_to_fixed_fixed_out[127:117]),
+  .i_c(s_my_float_to_fixed_fixed_out[106:96]),
   .o_exp_c(s_my_fixed32_partitionc_a_exp_c32a),
   .i_valid(1'b1/*todo*/),
   .o_valid(s_my_fixed32_partitionc_a_o_valid),
@@ -463,7 +463,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed32_partitionc_b_debug;
 fixed32_partitionc #() my_fixed32_partitionc_b (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_c(s_my_float_to_fixed_fixed_out[95:85]),
+  .i_c(s_my_float_to_fixed_fixed_out[74:64]),
   .o_exp_c(s_my_fixed32_partitionc_b_exp_c32b),
   .i_valid(1'b1/*todo*/),
   .o_valid(s_my_fixed32_partitionc_b_o_valid),
@@ -481,7 +481,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed32_partitionc_c_debug;
 fixed32_partitionc #() my_fixed32_partitionc_c (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_c(s_my_float_to_fixed_fixed_out[63:53]),
+  .i_c(s_my_float_to_fixed_fixed_out[42:32]),
   .o_exp_c(s_my_fixed32_partitionc_c_exp_c32c),
   .i_valid(1'b1/*todo*/),
   .o_valid(s_my_fixed32_partitionc_c_o_valid),
@@ -499,7 +499,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed32_partitionc_d_debug;
 fixed32_partitionc #() my_fixed32_partitionc_d (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_c(s_my_float_to_fixed_fixed_out[31:21]),
+  .i_c(s_my_float_to_fixed_fixed_out[10:0]),
   .o_exp_c(s_my_fixed32_partitionc_d_exp_c32d),
   .i_valid(1'b1/*todo*/),
   .o_valid(s_my_fixed32_partitionc_d_o_valid),
