@@ -59,12 +59,21 @@ module SPEX128_top #(
 
   // Error and debug signals
   output  logic [ERROR_SIGNAL_NUM_BITS-1:0]       o_error,
-  output  logic [DEBUG_SIGNAL_NUM_BITS-1:0]       o_debug
-);
+  output  logic [DEBUG_SIGNAL_NUM_BITS-1:0]       o_debug,
 
-//=====================================================================================
-// Signal definitions
-//=====================================================================================
+  // These are temporary, probably
+  output logic [127:0] os_my_float_to_fixed_fixed_out,
+  output logic [127:0] os_mux_0,
+  output logic [127:0] os_mux_1,
+  output logic [127:0] os_mux_2,
+  output logic [127:0] os_mux_3,
+  output logic [127:0] os_my_sp_multiplier_0_jedi,
+  output logic [127:0] os_my_sp_multiplier_1_jedi,
+  output logic [127:0] os_my_sp_multiplier_2_jedi,
+  output logic [127:0] os_mux_4,
+  output logic [127:0] os_my_sp_multiplier_3_jedi,
+  output logic [127:0] os_my_sp_multiplier_4_jedi
+);
 
 
 //=====================================================================================
@@ -908,5 +917,18 @@ assign o_ready              = '1; //todo
 assign o_sanity_identifier  = MODULE_IDENTIFIER;
 assign o_error              = '0; //todo
 assign o_debug              = '0; //todo
+
+// Temp, maybe
+assign os_my_float_to_fixed_fixed_out = s_my_float_to_fixed_fixed_out;
+assign os_mux_0 = s_mux_0;
+assign os_mux_1 = s_mux_1;
+assign os_mux_2 = s_mux_2;
+assign os_mux_3 = s_mux_3;
+assign os_my_sp_multiplier_0_jedi = s_my_sp_multiplier_0_jedi;
+assign os_my_sp_multiplier_1_jedi = s_my_sp_multiplier_1_jedi;
+assign os_my_sp_multiplier_2_jedi = s_my_sp_multiplier_2_jedi;
+assign os_mux_4 = s_mux_4;
+assign os_my_sp_multiplier_3_jedi = s_my_sp_multiplier_3_jedi;
+assign os_my_sp_multiplier_4_jedi = s_my_sp_multiplier_4_jedi;
 
 endmodule // module SPEX128_top #()

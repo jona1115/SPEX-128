@@ -6,7 +6,9 @@
 
   wait_n_ticks(2+1+5*3/*idk why the +3*/+3);
 
-  $display(">>>>> s_o_exp_x=0x%X", s_o_exp_x);
+  $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
+  $display(">>>>> expected  = 0x%x", expected);
+  $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
   `FAIL_UNLESS(s_o_exp_x === expected)
 `SVTEST_END
 
@@ -19,7 +21,11 @@
 
   wait_n_ticks(2+1+5*3/*idk why the +3*/+3);
 
-  $display(">>>>> s_o_exp_x=0x%X", s_o_exp_x);
+  $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
+  $display(">>>>> expected  = 0x%x", expected);
+  $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
+
+  `PRINT_INTERMEDIATE_RESULTS
   `FAIL_UNLESS(s_o_exp_x === expected)
 `SVTEST_END
 
@@ -32,7 +38,9 @@
 
   wait_n_ticks(2+1+5*3/*idk why the +3*/+3);
 
-  $display(">>>>> s_o_exp_x=0x%X", s_o_exp_x);
+  $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
+  $display(">>>>> expected  = 0x%x", expected);
+  $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
   `FAIL_UNLESS(s_o_exp_x === expected)
 `SVTEST_END
 
@@ -44,7 +52,9 @@
 
   wait_n_ticks(2+1+5*3/*idk why the +3*/+3);
 
-  $display(">>>>> s_o_exp_x=0x%X", s_o_exp_x);
+  $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
+  $display(">>>>> expected  = 0x%x", expected);
+  $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
   `FAIL_UNLESS(s_o_exp_x === expected)
 `SVTEST_END
 
@@ -57,7 +67,9 @@
 
   wait_n_ticks(2+1+5*3/*idk why the +3*/+3);
 
-  $display(">>>>> s_o_exp_x=0x%X", s_o_exp_x);
+  $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
+  $display(">>>>> expected  = 0x%x", expected);
+  $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
   `FAIL_UNLESS(s_o_exp_x === expected)
 `SVTEST_END
 
@@ -69,7 +81,11 @@
 
   wait_n_ticks(2+1+5*3/*idk why the +3*/+3);
 
-  $display(">>>>> s_o_exp_x=0x%X", s_o_exp_x);
+  $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
+  $display(">>>>> expected  = 0x%x", expected);
+  $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
+
+  `PRINT_INTERMEDIATE_RESULTS
   `FAIL_UNLESS(s_o_exp_x === expected)
 `SVTEST_END
 
