@@ -13,6 +13,7 @@ The way I set my project up:
 I have set up scripts that you can run to make your life much easier. Two main ones are:
 1. [`svunit_run.sh`](https://github.com/jona1115/SPEX-128/blob/13-write-level-2-module/tests/svunit/svunit_run.sh) - For running svunit tests, it also does a lot with generating filelist, use the `-h` flag to se more
 2. [`sim_and_gen_waveform.sh`](https://github.com/jona1115/SPEX-128/blob/13-write-level-2-module/tests/svunit/sim_and_gen_waveform.sh) - For running svunit_run.sh + generating waveforms that can be viewed in modelsim/questasim.
+3. [`./run_all_test.sh -s modelsim`](https://youtu.be/txp2Tdiaw34?si=fuYJVkKCDHxA17Ul) - For running regression tests, this is the final boss, pass this and we are good.
 
 # SVUnit Tips:
 Macros you can use to do tests
