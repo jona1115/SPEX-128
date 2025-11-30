@@ -119,7 +119,7 @@ module SPEX128_top_unit_test;
   //===================================
   `SVUNIT_TESTS_BEGIN
 
-    `include "cases/correctness.svh"
+    `include "cases/handwritten_correctness.svh"
 
   `SVUNIT_TESTS_END
 
