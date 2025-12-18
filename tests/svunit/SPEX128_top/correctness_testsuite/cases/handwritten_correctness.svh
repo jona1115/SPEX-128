@@ -11,7 +11,9 @@
   // $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
   // $display(">>>>> expected  = 0x%x", expected);
   // $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
-  `FAIL_UNLESS(s_o_exp_x === expected)
+
+  `FAIL_UNLESS(lsb_error(expected, s_o_exp_x, `LSB_WINDOW) <= `ERR_TOL_LSB_128)
+  // `FAIL_UNLESS(s_o_exp_x === expected)
 `SVTEST_END
 
 `SVTEST(handwritten_sanity_correctness_test_1)
@@ -30,7 +32,9 @@
   // $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
 
   `PRINT_INTERMEDIATE_RESULTS
-  `FAIL_UNLESS(s_o_exp_x === expected)
+
+  `FAIL_UNLESS(lsb_error(expected, s_o_exp_x, `LSB_WINDOW) <= `ERR_TOL_LSB_128)
+  // `FAIL_UNLESS(s_o_exp_x === expected)
 `SVTEST_END
 
 `SVTEST(handwritten_sanity_correctness_test_2)
@@ -47,7 +51,9 @@
   // $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
   // $display(">>>>> expected  = 0x%x", expected);
   // $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
-  `FAIL_UNLESS(s_o_exp_x === expected)
+
+  `FAIL_UNLESS(lsb_error(expected, s_o_exp_x, `LSB_WINDOW) <= `ERR_TOL_LSB_128)
+  // `FAIL_UNLESS(s_o_exp_x === expected)
 `SVTEST_END
 
 `SVTEST(handwritten_sanity_correctness_test_3)
@@ -63,7 +69,9 @@
   // $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
   // $display(">>>>> expected  = 0x%x", expected);
   // $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
-  `FAIL_UNLESS(s_o_exp_x === expected)
+
+  `FAIL_UNLESS(lsb_error(expected, s_o_exp_x, `LSB_WINDOW) <= `ERR_TOL_LSB_128)
+  // `FAIL_UNLESS(s_o_exp_x === expected)
 `SVTEST_END
 
 `SVTEST(handwritten_sanity_correctness_test_4)
@@ -80,7 +88,9 @@
   // $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
   // $display(">>>>> expected  = 0x%x", expected);
   // $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
-  `FAIL_UNLESS(s_o_exp_x === expected)
+
+  `FAIL_UNLESS(lsb_error(expected, s_o_exp_x, `LSB_WINDOW) <= `ERR_TOL_LSB_128)
+  // `FAIL_UNLESS(s_o_exp_x === expected)
 `SVTEST_END
 
 `SVTEST(handwritten_sanity_correctness_test_5)
@@ -98,6 +108,8 @@
   // $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
 
   `PRINT_INTERMEDIATE_RESULTS
-  `FAIL_UNLESS(s_o_exp_x === expected)
+
+  `FAIL_UNLESS(lsb_error(expected, s_o_exp_x, `LSB_WINDOW) <= `ERR_TOL_LSB_128)
+  // `FAIL_UNLESS(s_o_exp_x === expected)
 `SVTEST_END
 

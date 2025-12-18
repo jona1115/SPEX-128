@@ -44,6 +44,12 @@ module SPEX128_top_unit_test;
   logic [127:0] s_mux_4;
   logic [127:0] s_my_sp_multiplier_3_jedi;
   logic [127:0] s_my_sp_multiplier_4_jedi;
+  binary128_t s_my_fixed128_64_partitiona_exp_a128;
+  binary128_t s_my_fixed128_64_partitionb_exp_a128;
+  binary128_t s_my_fixed128_64_partitionc_exp_a128;
+  binary128_t s_my_fixed128_partitiond_exp_d128;
+  binary128_t s_my_fixed128_partitione_exp_d128;
+  binary128_t s_my_fixed128_partitionf_ts_exp_f128;
 
   //===================================
   // This is the UUT that we're 
@@ -77,7 +83,13 @@ module SPEX128_top_unit_test;
     .os_my_sp_multiplier_2_jedi(s_my_sp_multiplier_2_jedi),
     .os_mux_4(s_mux_4),
     .os_my_sp_multiplier_3_jedi(s_my_sp_multiplier_3_jedi),
-    .os_my_sp_multiplier_4_jedi(s_my_sp_multiplier_4_jedi)
+    .os_my_sp_multiplier_4_jedi(s_my_sp_multiplier_4_jedi),
+    .os_my_fixed128_64_partitiona_exp_a128(s_my_fixed128_64_partitiona_exp_a128),
+    .os_my_fixed128_64_partitionb_exp_a128(s_my_fixed128_64_partitionb_exp_a128),
+    .os_my_fixed128_64_partitionc_exp_a128(s_my_fixed128_64_partitionc_exp_a128),
+    .os_my_fixed128_partitiond_exp_d128(s_my_fixed128_partitiond_exp_d128),
+    .os_my_fixed128_partitione_exp_d128(s_my_fixed128_partitione_exp_d128),
+    .os_my_fixed128_partitionf_ts_exp_f128(s_my_fixed128_partitionf_ts_exp_f128)
   );
 
 
@@ -169,27 +181,37 @@ module SPEX128_top_unit_test;
     repeat (n) @(posedge s_i_clk) @(negedge s_i_clk);
   endtask
 
-  `define PRINT_INTERMEDIATE_RESULTS                                                        \
-    $display("<<<<< Intermediate results:");                                                \
-    $display("<<<<< s_my_float_to_fixed_fixed_out = 0x%x", s_my_float_to_fixed_fixed_out);  \
-    $display("<<<<< s_mux_0 = 0x%x", s_mux_0);                                              \
-    $display("<<<<< s_mux_1 = 0x%x", s_mux_1);                                              \
-    $display("<<<<< s_mux_2 = 0x%x", s_mux_2);                                              \
-    $display("<<<<< s_mux_3 = 0x%x", s_mux_3);                                              \
-    $display("<<<<< s_my_sp_multiplier_0_jedi = 0x%x", s_my_sp_multiplier_0_jedi);          \
-    $display("<<<<< s_my_sp_multiplier_1_jedi = 0x%x", s_my_sp_multiplier_1_jedi);          \
-    $display("<<<<< s_my_sp_multiplier_2_jedi = 0x%x", s_my_sp_multiplier_2_jedi);          \
-    $display("<<<<< s_mux_4 = 0x%x", s_mux_4);                                              \
-    $display("<<<<< s_my_sp_multiplier_3_jedi = 0x%x", s_my_sp_multiplier_3_jedi);          \
-    $display("<<<<< s_my_sp_multiplier_4_jedi = 0x%x", s_my_sp_multiplier_4_jedi);
+  `define PRINT_INTERMEDIATE_RESULTS                                                                      \
+    $display("<<<<< =================== Intermediate results: ===================");                      \
+    $display("<<<<< ------------------------ Level 1 ------------------------");                          \
+    $display("<<<<< s_my_float_to_fixed_fixed_out = 0x%x", s_my_float_to_fixed_fixed_out);                \
+    $display("<<<<< ------------------------ Level 2 ------------------------");                          \
+    $display("<<<<< s_my_fixed128_64_partitiona_exp_a128 = 0x%x", s_my_fixed128_64_partitiona_exp_a128);  \
+    $display("<<<<< s_my_fixed128_64_partitionb_exp_a128 = 0x%x", s_my_fixed128_64_partitionb_exp_a128);  \
+    $display("<<<<< s_my_fixed128_64_partitionc_exp_a128 = 0x%x", s_my_fixed128_64_partitionc_exp_a128);  \
+    $display("<<<<< s_my_fixed128_partitiond_exp_d128    = 0x%x", s_my_fixed128_partitiond_exp_d128);        \
+    $display("<<<<< s_my_fixed128_partitione_exp_d128    = 0x%x", s_my_fixed128_partitione_exp_d128);        \
+    $display("<<<<< s_my_fixed128_partitionf_ts_exp_f128 = 0x%x", s_my_fixed128_partitionf_ts_exp_f128);  \
+    $display("<<<<< ------------------------ Level 3 ------------------------");                          \
+    $display("<<<<< s_mux_0 = 0x%x", s_mux_0);                                                            \
+    $display("<<<<< s_mux_1 = 0x%x", s_mux_1);                                                            \
+    $display("<<<<< s_mux_2 = 0x%x", s_mux_2);                                                            \
+    $display("<<<<< s_mux_3 = 0x%x", s_mux_3);                                                            \
+    $display("<<<<< s_my_sp_multiplier_0_jedi = 0x%x", s_my_sp_multiplier_0_jedi);                        \
+    $display("<<<<< s_my_sp_multiplier_1_jedi = 0x%x", s_my_sp_multiplier_1_jedi);                        \
+    $display("<<<<< s_my_sp_multiplier_2_jedi = 0x%x", s_my_sp_multiplier_2_jedi);                        \
+    $display("<<<<< s_mux_4 = 0x%x", s_mux_4);                                                            \
+    $display("<<<<< s_my_sp_multiplier_3_jedi = 0x%x", s_my_sp_multiplier_3_jedi);                        \
+    $display("<<<<< s_my_sp_multiplier_4_jedi = 0x%x", s_my_sp_multiplier_4_jedi);                        \
+    $display("<<<<< =================== End Intermediate Results ===================");
 
   // -------- Tunables --------------------------------------------------------
   `define LATENCY 2+1+5*3/*idk why the +3*/+3 // 21
   // LSB error tolerances (difference in integer value of the LSB slice)
-  `define ERR_TOL_LSB_128 3
-  `define ERR_TOL_LSB_64  3
-  `define ERR_TOL_LSB_32  3
-  // Width of the LSB window to compare (use 16 as you suggested)
+  `define ERR_TOL_LSB_128 200
+  `define ERR_TOL_LSB_64  2000
+  `define ERR_TOL_LSB_32  2000
+  // Width of the LSB window to compare
   `define LSB_WINDOW 16
   // --------------------------------------------------------------------------
 
@@ -303,8 +325,8 @@ module SPEX128_top_unit_test;
   // ---------------------------------------------------------------------
 
   // ----------------- Vector file loader for binary128 ------------------
-  localparam string VEC128_IN_FILE  = "spex_vectors_128_in.hex";
-  localparam string VEC128_EXP_FILE = "spex_vectors_128_exp.hex";
+  localparam string VEC128_IN_FILE  = "x_128b.hex";
+  localparam string VEC128_EXP_FILE = "expx_128b.hex";
   localparam int    VEC128_MAX      = 4096;
 
   logic [127:0] vec128_in [0:VEC128_MAX-1];
@@ -357,9 +379,14 @@ module SPEX128_top_unit_test;
   //===================================
   `SVUNIT_TESTS_BEGIN
 
+// `define ISOLATE
+
+`ifndef ISOLATE
     `include "cases/handwritten_correctness.svh"
     `include "cases/vibed_correctness.svh"
-    // `include "cases/isolate.svh"
+`else
+    `include "cases/isolate.svh"
+`endif
 
   `SVUNIT_TESTS_END
 

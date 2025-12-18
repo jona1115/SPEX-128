@@ -61,7 +61,7 @@ module SPEX128_top #(
   output  logic [ERROR_SIGNAL_NUM_BITS-1:0]       o_error,
   output  logic [DEBUG_SIGNAL_NUM_BITS-1:0]       o_debug,
 
-  // These are temporary, probably
+  // These are temporary... probably
   output logic [127:0] os_my_float_to_fixed_fixed_out,
   output logic [127:0] os_mux_0,
   output logic [127:0] os_mux_1,
@@ -72,7 +72,13 @@ module SPEX128_top #(
   output logic [127:0] os_my_sp_multiplier_2_jedi,
   output logic [127:0] os_mux_4,
   output logic [127:0] os_my_sp_multiplier_3_jedi,
-  output logic [127:0] os_my_sp_multiplier_4_jedi
+  output logic [127:0] os_my_sp_multiplier_4_jedi,
+  output binary128_t os_my_fixed128_64_partitiona_exp_a128,
+  output binary128_t os_my_fixed128_64_partitionb_exp_a128,
+  output binary128_t os_my_fixed128_64_partitionc_exp_a128,
+  output binary128_t os_my_fixed128_partitiond_exp_d128,
+  output binary128_t os_my_fixed128_partitione_exp_d128,
+  output binary128_t os_my_fixed128_partitionf_ts_exp_f128
 );
 
 
@@ -922,6 +928,12 @@ assign o_debug              = '0; //todo
 
 // Temp, maybe
 assign os_my_float_to_fixed_fixed_out = s_my_float_to_fixed_fixed_out;
+assign os_my_fixed128_64_partitiona_exp_a128 = s_my_fixed128_64_partitiona_exp_a128;
+assign os_my_fixed128_64_partitionb_exp_a128 = s_my_fixed128_64_partitionb_exp_a128;
+assign os_my_fixed128_64_partitionc_exp_a128 = s_my_fixed128_64_partitionc_exp_a128;
+assign os_my_fixed128_partitiond_exp_d128 = s_my_fixed128_partitiond_exp_d128;
+assign os_my_fixed128_partitione_exp_d128 = s_my_fixed128_partitione_exp_d128;
+assign os_my_fixed128_partitionf_ts_exp_f128 = s_my_fixed128_partitionf_ts_exp_f128;
 assign os_mux_0 = s_mux_0;
 assign os_mux_1 = s_mux_1;
 assign os_mux_2 = s_mux_2;
