@@ -52,6 +52,7 @@ module SPEX128_top #(
 
   // Handshake
   input   logic                                   i_valid,
+  output  logic                                   o_valid,
   output  logic                                   o_ready,
 
   // Module identifier
@@ -62,7 +63,7 @@ module SPEX128_top #(
   output  logic [DEBUG_SIGNAL_NUM_BITS-1:0]       o_debug,
 
   // These are temporary... probably
-  output logic [127:0] os_my_float_to_fixed_fixed_out,
+  output logic [127:0] os_my_float_to_fixed_fixed,
   output logic [127:0] os_mux_0,
   output logic [127:0] os_mux_1,
   output logic [127:0] os_mux_2,
@@ -85,13 +86,14 @@ module SPEX128_top #(
 //=====================================================================================
 // Module body
 //=====================================================================================
+// Signal naming convention: s_<module-name>_<signal-name>
 /******************************************************************
  * 
  * Level 1
  * 
  *****************************************************************/
-logic [127:0]     s_my_float_to_fixed_fixed_out;
-float_metadata_t  s_my_float_to_fixed_metadata_out;
+logic [127:0]     s_my_float_to_fixed_fixed;
+float_metadata_t  s_my_float_to_fixed_metadata;
 logic             s_my_float_to_fixed_o_valid;
 // Identifier signals
 logic [3:0] s_my_float_to_fixed_identifier;
@@ -103,8 +105,8 @@ float_to_fixed #() my_float_to_fixed (
   .i_rst_n(i_rst_n),
   .i_float(i_x),
   .i_ctrl(i_ctrl),
-  .o_fixed(s_my_float_to_fixed_fixed_out),
-  .o_metadata(s_my_float_to_fixed_metadata_out),
+  .o_fixed(s_my_float_to_fixed_fixed),
+  .o_metadata(s_my_float_to_fixed_metadata),
   .i_valid(i_valid),
   .o_valid(s_my_float_to_fixed_o_valid),
   .o_sanity_identifier(s_my_float_to_fixed_identifier),
@@ -131,10 +133,10 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed128_64_partitiona_debug;
 fixed128_64_partitiona #() my_fixed128_64_partitiona (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_metadata(s_my_float_to_fixed_metadata_out),
+  .i_metadata(s_my_float_to_fixed_metadata),
   .o_metadata(s_my_fixed128_64_partitiona_metadata),
-  .i_a(s_my_float_to_fixed_fixed_out[127:117]),
-  .i_a2(s_my_float_to_fixed_fixed_out[63:53]),
+  .i_a(s_my_float_to_fixed_fixed[127:117]),
+  .i_a2(s_my_float_to_fixed_fixed[63:53]),
   .o_exp_a64a(s_my_fixed128_64_partitiona_exp_a64a),
   .o_exp_a64b(s_my_fixed128_64_partitiona_exp_a64b),
   .o_exp_a128(s_my_fixed128_64_partitiona_exp_a128),
@@ -163,10 +165,10 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed128_64_partitionb_debug;
 fixed128_64_partitionb #() my_fixed128_64_partitionb (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_metadata(s_my_float_to_fixed_metadata_out),
+  .i_metadata(s_my_float_to_fixed_metadata),
   .o_metadata(s_my_fixed128_64_partitionb_metadata),
-  .i_a(s_my_float_to_fixed_fixed_out[116:104]),
-  .i_a2(s_my_float_to_fixed_fixed_out[52:40]),
+  .i_a(s_my_float_to_fixed_fixed[116:104]),
+  .i_a2(s_my_float_to_fixed_fixed[52:40]),
   .o_exp_a64a(s_my_fixed128_64_partitionb_exp_a64a),
   .o_exp_a64b(s_my_fixed128_64_partitionb_exp_a64b),
   .o_exp_a128(s_my_fixed128_64_partitionb_exp_a128),
@@ -195,10 +197,10 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed128_64_partitionc_debug;
 fixed128_64_partitionc #() my_fixed128_64_partitionc (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_metadata(s_my_float_to_fixed_metadata_out),
+  .i_metadata(s_my_float_to_fixed_metadata),
   .o_metadata(s_my_fixed128_64_partitionc_metadata),
-  .i_a(s_my_float_to_fixed_fixed_out[103:91]),
-  .i_a2(s_my_float_to_fixed_fixed_out[39:27]),
+  .i_a(s_my_float_to_fixed_fixed[103:91]),
+  .i_a2(s_my_float_to_fixed_fixed[39:27]),
   .o_exp_a64a(s_my_fixed128_64_partitionc_exp_a64a),
   .o_exp_a64b(s_my_fixed128_64_partitionc_exp_a64b),
   .o_exp_a128(s_my_fixed128_64_partitionc_exp_a128),
@@ -222,7 +224,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed128_partitiond_debug;
 fixed128_partitiond #() my_fixed128_partitiond (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_d(s_my_float_to_fixed_fixed_out[90:78]),
+  .i_d(s_my_float_to_fixed_fixed[90:78]),
   .o_exp_d(s_my_fixed128_partitiond_exp_d128),
   .i_valid(s_my_float_to_fixed_o_valid),
   .o_valid(s_my_fixed128_partitiond_o_valid),
@@ -240,7 +242,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed128_partitione_debug;
 fixed128_partitione #() my_fixed128_partitione (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_e(s_my_float_to_fixed_fixed_out[77:65]),
+  .i_e(s_my_float_to_fixed_fixed[77:65]),
   .o_exp_e(s_my_fixed128_partitione_exp_d128),
   .i_valid(s_my_float_to_fixed_o_valid),
   .o_valid(s_my_fixed128_partitione_o_valid),
@@ -258,7 +260,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed128_partitionf_ts_debug;
 fixed128_partitionf_ts #() my_fixed128_partitionf_ts (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_f(s_my_float_to_fixed_fixed_out[64:0]),
+  .i_f(s_my_float_to_fixed_fixed[64:0]),
   .o_exp_f(s_my_fixed128_partitionf_ts_exp_f128),
   .i_valid(s_my_float_to_fixed_o_valid),
   .o_valid(s_my_fixed128_partitionf_ts_o_valid),
@@ -276,7 +278,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed64_partitionf_ts_a_debug;
 fixed64_partitionf_ts #() my_fixed64_partitionf_ts_a (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_f(s_my_float_to_fixed_fixed_out[90:64]),
+  .i_f(s_my_float_to_fixed_fixed[90:64]),
   .o_exp_f(s_my_fixed64_partitionf_ts_a_exp_f64a),
   .i_valid(s_my_float_to_fixed_o_valid),
   .o_valid(s_my_fixed64_partitionf_ts_a_o_valid),
@@ -294,7 +296,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed64_partitionf_ts_b_debug;
 fixed64_partitionf_ts #() my_fixed64_partitionf_ts_b (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_f(s_my_float_to_fixed_fixed_out[26:0]),
+  .i_f(s_my_float_to_fixed_fixed[26:0]),
   .o_exp_f(s_my_fixed64_partitionf_ts_b_exp_f64b),
   .i_valid(s_my_float_to_fixed_o_valid),
   .o_valid(s_my_fixed64_partitionf_ts_b_o_valid),
@@ -316,7 +318,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed32_partitiona_a_debug;
 fixed32_partitiona #() my_fixed32_partitiona_a (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_a(s_my_float_to_fixed_fixed_out[127:117]),
+  .i_a(s_my_float_to_fixed_fixed[127:117]),
   .o_exp_a(s_my_fixed32_partitiona_a_exp_a32a),
   .i_valid(s_my_float_to_fixed_o_valid),
   .o_valid(s_my_fixed32_partitiona_a_o_valid),
@@ -334,7 +336,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed32_partitiona_b_debug;
 fixed32_partitiona #() my_fixed32_partitiona_b (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_a(s_my_float_to_fixed_fixed_out[95:85]),
+  .i_a(s_my_float_to_fixed_fixed[95:85]),
   .o_exp_a(s_my_fixed32_partitiona_b_exp_a32b),
   .i_valid(s_my_float_to_fixed_o_valid),
   .o_valid(s_my_fixed32_partitiona_b_o_valid),
@@ -352,7 +354,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed32_partitiona_c_debug;
 fixed32_partitiona #() my_fixed32_partitiona_c (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_a(s_my_float_to_fixed_fixed_out[63:53]),
+  .i_a(s_my_float_to_fixed_fixed[63:53]),
   .o_exp_a(s_my_fixed32_partitiona_c_exp_a32c),
   .i_valid(s_my_float_to_fixed_o_valid),
   .o_valid(s_my_fixed32_partitiona_c_o_valid),
@@ -370,7 +372,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed32_partitiona_d_debug;
 fixed32_partitiona #() my_fixed32_partitiona_d (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_a(s_my_float_to_fixed_fixed_out[31:21]),
+  .i_a(s_my_float_to_fixed_fixed[31:21]),
   .o_exp_a(s_my_fixed32_partitiona_d_exp_a32d),
   .i_valid(s_my_float_to_fixed_o_valid),
   .o_valid(s_my_fixed32_partitiona_d_o_valid),
@@ -389,7 +391,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed32_partitionb_a_debug;
 fixed32_partitionb #() my_fixed32_partitionb_a (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_b(s_my_float_to_fixed_fixed_out[116:107]),
+  .i_b(s_my_float_to_fixed_fixed[116:107]),
   .o_exp_b(s_my_fixed32_partitionb_a_exp_d32a),
   .i_valid(s_my_float_to_fixed_o_valid),
   .o_valid(s_my_fixed32_partitionb_a_o_valid),
@@ -407,7 +409,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed32_partitionb_b_debug;
 fixed32_partitionb #() my_fixed32_partitionb_b (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_b(s_my_float_to_fixed_fixed_out[84:75]),
+  .i_b(s_my_float_to_fixed_fixed[84:75]),
   .o_exp_b(s_my_fixed32_partitionb_b_exp_d32b),
   .i_valid(s_my_float_to_fixed_o_valid),
   .o_valid(s_my_fixed32_partitionb_b_o_valid),
@@ -425,7 +427,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed32_partitionb_c_debug;
 fixed32_partitionb #() my_fixed32_partitionb_c (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_b(s_my_float_to_fixed_fixed_out[52:43]),
+  .i_b(s_my_float_to_fixed_fixed[52:43]),
   .o_exp_b(s_my_fixed32_partitionb_c_exp_d32c),
   .i_valid(s_my_float_to_fixed_o_valid),
   .o_valid(s_my_fixed32_partitionb_c_o_valid),
@@ -443,7 +445,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed32_partitionb_d_debug;
 fixed32_partitionb #() my_fixed32_partitionb_d (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_b(s_my_float_to_fixed_fixed_out[20:11]),
+  .i_b(s_my_float_to_fixed_fixed[20:11]),
   .o_exp_b(s_my_fixed32_partitionb_d_exp_d32d),
   .i_valid(s_my_float_to_fixed_o_valid),
   .o_valid(s_my_fixed32_partitionb_d_o_valid),
@@ -462,7 +464,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed32_partitionc_a_debug;
 fixed32_partitionc #() my_fixed32_partitionc_a (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_c(s_my_float_to_fixed_fixed_out[106:96]),
+  .i_c(s_my_float_to_fixed_fixed[106:96]),
   .o_exp_c(s_my_fixed32_partitionc_a_exp_c32a),
   .i_valid(s_my_float_to_fixed_o_valid),
   .o_valid(s_my_fixed32_partitionc_a_o_valid),
@@ -480,7 +482,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed32_partitionc_b_debug;
 fixed32_partitionc #() my_fixed32_partitionc_b (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_c(s_my_float_to_fixed_fixed_out[74:64]),
+  .i_c(s_my_float_to_fixed_fixed[74:64]),
   .o_exp_c(s_my_fixed32_partitionc_b_exp_c32b),
   .i_valid(s_my_float_to_fixed_o_valid),
   .o_valid(s_my_fixed32_partitionc_b_o_valid),
@@ -498,7 +500,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed32_partitionc_c_debug;
 fixed32_partitionc #() my_fixed32_partitionc_c (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_c(s_my_float_to_fixed_fixed_out[42:32]),
+  .i_c(s_my_float_to_fixed_fixed[42:32]),
   .o_exp_c(s_my_fixed32_partitionc_c_exp_c32c),
   .i_valid(s_my_float_to_fixed_o_valid),
   .o_valid(s_my_fixed32_partitionc_c_o_valid),
@@ -516,7 +518,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed32_partitionc_d_debug;
 fixed32_partitionc #() my_fixed32_partitionc_d (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_c(s_my_float_to_fixed_fixed_out[10:0]),
+  .i_c(s_my_float_to_fixed_fixed[10:0]),
   .o_exp_c(s_my_fixed32_partitionc_d_exp_c32d),
   .i_valid(s_my_float_to_fixed_o_valid),
   .o_valid(s_my_fixed32_partitionc_d_o_valid),
@@ -533,7 +535,7 @@ fixed32_partitionc #() my_fixed32_partitionc_d (
 logic [127:0] s_mux_0;
 logic         s_mux_0_valid;
 always_comb begin : mux_0
-  case (s_my_float_to_fixed_metadata_out.sp_mode)
+  case (s_my_float_to_fixed_metadata.sp_mode)
     SINGLE_MODE: begin
       s_mux_0       = s_my_fixed128_64_partitiona_exp_a128;
       s_mux_0_valid = s_my_fixed128_64_partitiona_o_valid128;
@@ -567,7 +569,7 @@ end
 logic [127:0] s_mux_1;
 logic         s_mux_1_valid;
 always_comb begin : mux_1
-  case (s_my_float_to_fixed_metadata_out.sp_mode)
+  case (s_my_float_to_fixed_metadata.sp_mode)
     SINGLE_MODE: begin
       s_mux_1       = s_my_fixed128_64_partitionb_exp_a128;
       s_mux_1_valid = s_my_fixed128_64_partitionb_o_valid128;
@@ -601,7 +603,7 @@ end
 logic [127:0] s_mux_2;
 logic         s_mux_2_valid;
 always_comb begin : mux_2
-  case (s_my_float_to_fixed_metadata_out.sp_mode)
+  case (s_my_float_to_fixed_metadata.sp_mode)
     SINGLE_MODE: begin
       s_mux_2       = s_my_fixed128_64_partitionc_exp_a128;
       s_mux_2_valid = s_my_fixed128_64_partitionc_o_valid128;
@@ -624,7 +626,7 @@ end
 logic [127:0] s_mux_3;
 logic         s_mux_3_valid;
 always_comb begin : mux_3
-  case (s_my_float_to_fixed_metadata_out.sp_mode)
+  case (s_my_float_to_fixed_metadata.sp_mode)
     SINGLE_MODE: begin
       s_mux_3       = s_my_fixed128_partitiond_exp_d128;
       s_mux_3_valid = s_my_fixed128_partitiond_o_valid;
@@ -660,7 +662,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_multiplier_0_debug;
 sp_multiplier #() my_sp_multiplier_0 (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_metadata(s_my_float_to_fixed_metadata_out),
+  .i_metadata(s_my_float_to_fixed_metadata),
   .o_metadata(s_gnd_metadata_0/*not like it is useful anyway*/),
   .i_in_anikin(s_mux_0),
   .i_in_force(s_mux_1),
@@ -707,7 +709,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_multiplier_1_debug;
 sp_multiplier #() my_sp_multiplier_1 (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_metadata(s_my_float_to_fixed_metadata_out),
+  .i_metadata(s_my_float_to_fixed_metadata),
   .o_metadata(s_gnd_metadata_1/*not like it is useful anyway*/),
   .i_in_anikin(s_mux_2),
   .i_in_force(s_mux_3),
@@ -754,7 +756,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_multiplier_2_debug;
 sp_multiplier #() my_sp_multiplier_2 (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_metadata(s_my_float_to_fixed_metadata_out),
+  .i_metadata(s_my_float_to_fixed_metadata),
   .o_metadata(s_gnd_metadata_2/*not like it is useful anyway*/),
   .i_in_anikin(s_my_fixed128_partitione_exp_d128),
   .i_in_force(s_my_fixed128_partitionf_ts_exp_f128),
@@ -788,7 +790,7 @@ sp_multiplier #() my_sp_multiplier_2 (
 logic [127:0] s_mux_4;
 logic         s_mux_4_valid;
 always_comb begin : mux_4
-  case (s_my_float_to_fixed_metadata_out.sp_mode)
+  case (s_my_float_to_fixed_metadata.sp_mode)
     SINGLE_MODE: begin
       s_mux_4       = s_my_sp_multiplier_1_jedi;
       s_mux_4_valid = s_my_sp_multiplier_1_valid128_jedi;
@@ -835,7 +837,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_multiplier_3_debug;
 sp_multiplier #() my_sp_multiplier_3 (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_metadata(s_my_float_to_fixed_metadata_out),
+  .i_metadata(s_my_float_to_fixed_metadata),
   .o_metadata(s_gnd_metadata_3/*not like it is useful anyway*/),
   .i_in_anikin(s_my_sp_multiplier_0_jedi),
   .i_in_force(s_mux_4),
@@ -882,7 +884,7 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_multiplier_4_debug;
 sp_multiplier #() my_sp_multiplier_4 (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_metadata(s_my_float_to_fixed_metadata_out),
+  .i_metadata(s_my_float_to_fixed_metadata),
   .o_metadata(s_gnd_metadata_4/*not like it is useful anyway*/),
   .i_in_anikin(s_my_sp_multiplier_3_jedi),
   .i_in_force(s_my_sp_multiplier_2_jedi),
@@ -913,21 +915,114 @@ sp_multiplier #() my_sp_multiplier_4 (
   .o_debug(s_my_sp_multiplier_4_debug)
 );
 
+// Finish line subnormal type processing
+`define S (s_my_float_to_fixed_metadata.sp_mode) // todo give this macro a better name
+`define SA (s_my_float_to_fixed_metadata.float_type_a) // todo give this macro a better name
+`define SB (s_my_float_to_fixed_metadata.float_type_b) // todo give this macro a better name
+`define SC (s_my_float_to_fixed_metadata.float_type_c) // todo give this macro a better name
+`define SD (s_my_float_to_fixed_metadata.float_type_d) // todo give this macro a better name
+`define BINARY128_POSZERO   (128'h0000_0000_0000_0000_0000_0000_0000_0000)
+`define BINARY128_ONE       (128'h3FFF_0000_0000_0000_0000_0000_0000_0000)
+`define BINARY128_POSINF    (128'h7FFF_0000_0000_0000_0000_0000_0000_0000)
+`define BINARY128_NAN_POS   (128'h7FFF_8000_0000_0000_0000_0000_0000_0001)
+`define BINARY64_POSZERO    (64'h0000_0000_0000_0000)
+`define BINARY64_ONE        (64'h3FF0_0000_0000_0000)
+`define BINARY64_POSINF     (64'h7FF0_0000_0000_0000)
+`define BINARY64_NAN_POS    (64'h7FF8_0000_0000_0001)
+`define BINARY32_POSZERO    (32'h0000_0000)
+`define BINARY32_ONE        (32'h3F80_0000)
+`define BINARY32_POSINF     (32'h7F80_0000)
+`define BINARY32_NAN_POS    (32'h7FC0_0001)
+logic [127:0] s_mul3_final_out;
+always_comb begin : finish_line_subnormal_type_processing_mul3
+  case (`S)
+    SINGLE_MODE: begin
+      s_mul3_final_out =  (`SA === ZERO) ?    `BINARY128_ONE :
+                          (`SA === POS_INF) ? `BINARY128_POSINF :
+                          (`SA === NEG_INF) ? `BINARY128_POSZERO :
+                          (`SA === NAN) ?     `BINARY128_NAN_POS :
+                          s_my_sp_multiplier_3_jedi;
+    end
+
+    TWO_SP_MODE: begin
+      s_mul3_final_out[127:64] =  (`SA === ZERO) ?    `BINARY64_ONE :
+                                  (`SA === POS_INF) ? `BINARY64_POSINF :
+                                  (`SA === NEG_INF) ? `BINARY64_POSZERO :
+                                  (`SA === NAN) ?     `BINARY64_NAN_POS :
+                                  s_my_sp_multiplier_3_jedi[127:64];
+      s_mul3_final_out[63:0]   =  (`SB === ZERO) ?    `BINARY64_ONE :
+                                  (`SB === POS_INF) ? `BINARY64_POSINF :
+                                  (`SB === NEG_INF) ? `BINARY64_POSZERO :
+                                  (`SB === NAN) ?     `BINARY64_NAN_POS :
+                                  s_my_sp_multiplier_3_jedi[63:0];
+    end
+
+    FOUR_SP_MODE: begin
+      s_mul3_final_out[127:96] =  (`SA === ZERO) ?    `BINARY32_ONE :
+                                  (`SA === POS_INF) ? `BINARY32_POSINF :
+                                  (`SA === NEG_INF) ? `BINARY32_POSZERO :
+                                  (`SA === NAN) ?     `BINARY32_NAN_POS :
+                                  s_my_sp_multiplier_3_jedi[127:96];
+
+      s_mul3_final_out[95:64] =   (`SA === ZERO) ?    `BINARY32_ONE :
+                                  (`SA === POS_INF) ? `BINARY32_POSINF :
+                                  (`SA === NEG_INF) ? `BINARY32_POSZERO :
+                                  (`SA === NAN) ?     `BINARY32_NAN_POS :
+                                  s_my_sp_multiplier_3_jedi[95:64];
+
+      s_mul3_final_out[63:32] =   (`SA === ZERO) ?    `BINARY32_ONE :
+                                  (`SA === POS_INF) ? `BINARY32_POSINF :
+                                  (`SA === NEG_INF) ? `BINARY32_POSZERO :
+                                  (`SA === NAN) ?     `BINARY32_NAN_POS :
+                                  s_my_sp_multiplier_3_jedi[63:32];
+
+      s_mul3_final_out[31:0] =    (`SA === ZERO) ?    `BINARY32_ONE :
+                                  (`SA === POS_INF) ? `BINARY32_POSINF :
+                                  (`SA === NEG_INF) ? `BINARY32_POSZERO :
+                                  (`SA === NAN) ?     `BINARY32_NAN_POS :
+                                  s_my_sp_multiplier_3_jedi[31:0];
+    end
+
+    default: begin
+      s_mul3_final_out = '0;
+    end
+  endcase
+end
+
+logic [127:0] s_mul4_final_out;
+always_comb begin : finish_line_subnormal_type_processing_mul4
+  case (`S)
+    SINGLE_MODE: begin
+      s_mul4_final_out =  (`SA === ZERO) ?    `BINARY128_ONE :
+                          (`SA === POS_INF) ? `BINARY128_POSINF :
+                          (`SA === NEG_INF) ? `BINARY128_POSZERO :
+                          (`SA === NAN) ?     `BINARY128_NAN_POS :
+                          // (`SA === POS_DENORMAL) ?     `BINARY128_ONE :
+                          // (`SA === NEG_DENORMAL) ?     `BINARY128_ONE :
+                          s_my_sp_multiplier_4_jedi;
+    end
+
+    default: begin
+      s_mul4_final_out = '0;
+    end
+  endcase
+end
+
 //=====================================================================================
 // Final assignment
 //=====================================================================================
-`define S (s_my_float_to_fixed_metadata_out.sp_mode)
-assign o_exp_x              = `S === SINGLE_MODE  ?  s_my_sp_multiplier_4_jedi :
-                              `S === TWO_SP_MODE  ?  s_my_sp_multiplier_3_jedi :
-                              `S === FOUR_SP_MODE ?  s_my_sp_multiplier_3_jedi :
+assign o_exp_x              = `S === SINGLE_MODE  ?  s_mul4_final_out :
+                              `S === TWO_SP_MODE  ?  s_mul3_final_out :
+                              `S === FOUR_SP_MODE ?  s_mul3_final_out :
                               '0;
 assign o_ready              = '1; //todo
+assign o_valid              = '1; //todo
 assign o_sanity_identifier  = MODULE_IDENTIFIER;
 assign o_error              = '0; //todo
 assign o_debug              = '0; //todo
 
 // Temp, maybe
-assign os_my_float_to_fixed_fixed_out = s_my_float_to_fixed_fixed_out;
+assign os_my_float_to_fixed_fixed = s_my_float_to_fixed_fixed;
 assign os_my_fixed128_64_partitiona_exp_a128 = s_my_fixed128_64_partitiona_exp_a128;
 assign os_my_fixed128_64_partitionb_exp_a128 = s_my_fixed128_64_partitionb_exp_a128;
 assign os_my_fixed128_64_partitionc_exp_a128 = s_my_fixed128_64_partitionc_exp_a128;

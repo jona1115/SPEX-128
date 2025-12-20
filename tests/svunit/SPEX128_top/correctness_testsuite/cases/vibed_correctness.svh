@@ -26,17 +26,27 @@
 // Spec 1 + 5/6/7: SINGLE_MODE specials
 // ---------------------------------------------------------
 `SVTEST(single_mode_specials_exact)
+  // $display(">>>>> s_o_exp_x=%x", s_o_exp_x);
+  // `PRINT_INTERMEDIATE_RESULTS
+
   // (no declarations)
   send_txn(Q_PZERO, CTRL_SINGLE);  await_and_check_no_error(); `FAIL_UNLESS_EQUAL(Q_ONE,  s_o_exp_x)
   send_txn(Q_NZERO, CTRL_SINGLE);  await_and_check_no_error(); `FAIL_UNLESS_EQUAL(Q_ONE,  s_o_exp_x)
   send_txn(Q_PDEN,  CTRL_SINGLE);  await_and_check_no_error(); `FAIL_UNLESS_EQUAL(Q_ONE,  s_o_exp_x)
   send_txn(Q_NDEN,  CTRL_SINGLE);  await_and_check_no_error(); `FAIL_UNLESS_EQUAL(Q_ONE,  s_o_exp_x)
-  send_txn(Q_NINF,  CTRL_SINGLE);  await_and_check_no_error(); `FAIL_UNLESS_EQUAL(Q_ONE,  s_o_exp_x)
+  send_txn(Q_NINF,  CTRL_SINGLE);  await_and_check_no_error(); `FAIL_UNLESS_EQUAL(Q_PZERO,  s_o_exp_x)
 
   send_txn(Q_PINF, CTRL_SINGLE);   await_and_check_no_error(); `FAIL_UNLESS(is_inf128(s_o_exp_x) && (s_o_exp_x[127]==1'b0))
 
   send_txn(Q_QNAN_P, CTRL_SINGLE); await_and_check_no_error(); `FAIL_UNLESS(is_nan128(s_o_exp_x) && (s_o_exp_x[127]==1'b0))
-  send_txn(Q_QNAN_N, CTRL_SINGLE); await_and_check_no_error(); `FAIL_UNLESS(is_nan128(s_o_exp_x) && (s_o_exp_x[127]==1'b1))
+
+  // Comment out because any NaN input outputs positive NaN
+  // send_txn(Q_QNAN_N, CTRL_SINGLE); 
+  // await_and_check_no_error();
+  // `FAIL_UNLESS(is_nan128(s_o_exp_x) && (s_o_exp_x[127]==1'b1))
+  send_txn(Q_QNAN_N, CTRL_SINGLE); 
+  await_and_check_no_error();
+  `FAIL_UNLESS(is_nan128(s_o_exp_x) && (s_o_exp_x[127]==1'b0))
 `SVTEST_END
 
 // ---------------------------------------------------------
