@@ -51,6 +51,7 @@ module SPEX128_top_unit_test;
   binary128_t s_my_fixed128_partitiond_exp_d128;
   binary128_t s_my_fixed128_partitione_exp_d128;
   binary128_t s_my_fixed128_partitionf_ts_exp_f128;
+  float_metadata_t s_my_float_to_fixed_metadata;
 
   //===================================
   // This is the UUT that we're 
@@ -91,7 +92,8 @@ module SPEX128_top_unit_test;
     .os_my_fixed128_64_partitionc_exp_a128(s_my_fixed128_64_partitionc_exp_a128),
     .os_my_fixed128_partitiond_exp_d128(s_my_fixed128_partitiond_exp_d128),
     .os_my_fixed128_partitione_exp_d128(s_my_fixed128_partitione_exp_d128),
-    .os_my_fixed128_partitionf_ts_exp_f128(s_my_fixed128_partitionf_ts_exp_f128)
+    .os_my_fixed128_partitionf_ts_exp_f128(s_my_fixed128_partitionf_ts_exp_f128),
+    .os_my_float_to_fixed_metadata(s_my_float_to_fixed_metadata)
   );
 
 
@@ -183,28 +185,33 @@ module SPEX128_top_unit_test;
     repeat (n) @(posedge s_i_clk) @(negedge s_i_clk);
   endtask
 
-  `define PRINT_INTERMEDIATE_RESULTS                                                                      \
-    $display("<<<<< =================== Intermediate results: ===================");                      \
-    $display("<<<<< ------------------------ Level 1 ------------------------");                          \
-    $display("<<<<< s_my_float_to_fixed_fixed = 0x%x", s_my_float_to_fixed_fixed);                        \
-    $display("<<<<< ------------------------ Level 2 ------------------------");                          \
-    $display("<<<<< s_my_fixed128_64_partitiona_exp_a128 = 0x%x", s_my_fixed128_64_partitiona_exp_a128);  \
-    $display("<<<<< s_my_fixed128_64_partitionb_exp_a128 = 0x%x", s_my_fixed128_64_partitionb_exp_a128);  \
-    $display("<<<<< s_my_fixed128_64_partitionc_exp_a128 = 0x%x", s_my_fixed128_64_partitionc_exp_a128);  \
-    $display("<<<<< s_my_fixed128_partitiond_exp_d128    = 0x%x", s_my_fixed128_partitiond_exp_d128);     \
-    $display("<<<<< s_my_fixed128_partitione_exp_d128    = 0x%x", s_my_fixed128_partitione_exp_d128);     \
-    $display("<<<<< s_my_fixed128_partitionf_ts_exp_f128 = 0x%x", s_my_fixed128_partitionf_ts_exp_f128);  \
-    $display("<<<<< ------------------------ Level 3 ------------------------");                          \
-    $display("<<<<< s_mux_0 = 0x%x", s_mux_0);                                                            \
-    $display("<<<<< s_mux_1 = 0x%x", s_mux_1);                                                            \
-    $display("<<<<< s_mux_2 = 0x%x", s_mux_2);                                                            \
-    $display("<<<<< s_mux_3 = 0x%x", s_mux_3);                                                            \
-    $display("<<<<< s_my_sp_multiplier_0_jedi = 0x%x", s_my_sp_multiplier_0_jedi);                        \
-    $display("<<<<< s_my_sp_multiplier_1_jedi = 0x%x", s_my_sp_multiplier_1_jedi);                        \
-    $display("<<<<< s_my_sp_multiplier_2_jedi = 0x%x", s_my_sp_multiplier_2_jedi);                        \
-    $display("<<<<< s_mux_4 = 0x%x", s_mux_4);                                                            \
-    $display("<<<<< s_my_sp_multiplier_3_jedi = 0x%x", s_my_sp_multiplier_3_jedi);                        \
-    $display("<<<<< s_my_sp_multiplier_4_jedi = 0x%x", s_my_sp_multiplier_4_jedi);                        \
+  `define PRINT_INTERMEDIATE_RESULTS                                                                            \
+    $display("<<<<< =================== Intermediate results: ===================");                            \
+    $display("<<<<< ------------------------ Level 1 ------------------------");                                \
+    $display("<<<<< s_my_float_to_fixed_fixed = 0x%x", s_my_float_to_fixed_fixed);                              \
+    $display("<<<<< s_my_float_to_fixed_metadata's float_type_a,b,c,d=%x,%x,%x,%x",                       \
+                                            s_my_float_to_fixed_metadata.float_type_a,                          \
+                                            s_my_float_to_fixed_metadata.float_type_b,                          \
+                                            s_my_float_to_fixed_metadata.float_type_c,                          \
+                                            s_my_float_to_fixed_metadata.float_type_d);                         \
+    $display("<<<<< ------------------------ Level 2 ------------------------");                                \
+    $display("<<<<< s_my_fixed128_64_partitiona_exp_a128 = 0x%x", s_my_fixed128_64_partitiona_exp_a128);        \
+    $display("<<<<< s_my_fixed128_64_partitionb_exp_a128 = 0x%x", s_my_fixed128_64_partitionb_exp_a128);        \
+    $display("<<<<< s_my_fixed128_64_partitionc_exp_a128 = 0x%x", s_my_fixed128_64_partitionc_exp_a128);        \
+    $display("<<<<< s_my_fixed128_partitiond_exp_d128    = 0x%x", s_my_fixed128_partitiond_exp_d128);           \
+    $display("<<<<< s_my_fixed128_partitione_exp_d128    = 0x%x", s_my_fixed128_partitione_exp_d128);           \
+    $display("<<<<< s_my_fixed128_partitionf_ts_exp_f128 = 0x%x", s_my_fixed128_partitionf_ts_exp_f128);        \
+    $display("<<<<< ------------------------ Level 3 ------------------------");                                \
+    $display("<<<<< s_mux_0 = 0x%x", s_mux_0);                                                                  \
+    $display("<<<<< s_mux_1 = 0x%x", s_mux_1);                                                                  \
+    $display("<<<<< s_mux_2 = 0x%x", s_mux_2);                                                                  \
+    $display("<<<<< s_mux_3 = 0x%x", s_mux_3);                                                                  \
+    $display("<<<<< s_my_sp_multiplier_0_jedi = 0x%x", s_my_sp_multiplier_0_jedi);                              \
+    $display("<<<<< s_my_sp_multiplier_1_jedi = 0x%x", s_my_sp_multiplier_1_jedi);                              \
+    $display("<<<<< s_my_sp_multiplier_2_jedi = 0x%x", s_my_sp_multiplier_2_jedi);                              \
+    $display("<<<<< s_mux_4 = 0x%x", s_mux_4);                                                                  \
+    $display("<<<<< s_my_sp_multiplier_3_jedi = 0x%x", s_my_sp_multiplier_3_jedi);                              \
+    $display("<<<<< s_my_sp_multiplier_4_jedi = 0x%x", s_my_sp_multiplier_4_jedi);                              \
     $display("<<<<< =================== End Intermediate Results ===================");
 
   // -------- Tunables --------------------------------------------------------

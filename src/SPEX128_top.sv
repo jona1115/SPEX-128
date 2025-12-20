@@ -79,7 +79,8 @@ module SPEX128_top #(
   output binary128_t os_my_fixed128_64_partitionc_exp_a128,
   output binary128_t os_my_fixed128_partitiond_exp_d128,
   output binary128_t os_my_fixed128_partitione_exp_d128,
-  output binary128_t os_my_fixed128_partitionf_ts_exp_f128
+  output binary128_t os_my_fixed128_partitionf_ts_exp_f128,
+  output float_metadata_t os_my_float_to_fixed_metadata
 );
 
 
@@ -936,50 +937,54 @@ sp_multiplier #() my_sp_multiplier_4 (
 logic [127:0] s_mul3_final_out;
 always_comb begin : finish_line_subnormal_type_processing_mul3
   case (`S)
-    SINGLE_MODE: begin
-      s_mul3_final_out =  (`SA === ZERO) ?    `BINARY128_ONE :
-                          (`SA === POS_INF) ? `BINARY128_POSINF :
-                          (`SA === NEG_INF) ? `BINARY128_POSZERO :
-                          (`SA === NAN) ?     `BINARY128_NAN_POS :
-                          s_my_sp_multiplier_3_jedi;
-    end
-
     TWO_SP_MODE: begin
-      s_mul3_final_out[127:64] =  (`SA === ZERO) ?    `BINARY64_ONE :
-                                  (`SA === POS_INF) ? `BINARY64_POSINF :
-                                  (`SA === NEG_INF) ? `BINARY64_POSZERO :
-                                  (`SA === NAN) ?     `BINARY64_NAN_POS :
+      s_mul3_final_out[127:64] =  (`SA === ZERO)          ? `BINARY64_ONE     :
+                                  (`SA === POS_INF)       ? `BINARY64_POSINF  :
+                                  (`SA === NEG_INF)       ? `BINARY64_POSZERO :
+                                  (`SA === NAN)           ? `BINARY64_NAN_POS :
+                                  (`SA === POS_DENORMAL)  ? `BINARY64_ONE     :
+                                  (`SA === NEG_DENORMAL)  ? `BINARY64_ONE     :
                                   s_my_sp_multiplier_3_jedi[127:64];
-      s_mul3_final_out[63:0]   =  (`SB === ZERO) ?    `BINARY64_ONE :
-                                  (`SB === POS_INF) ? `BINARY64_POSINF :
-                                  (`SB === NEG_INF) ? `BINARY64_POSZERO :
-                                  (`SB === NAN) ?     `BINARY64_NAN_POS :
+      s_mul3_final_out[63:0]   =  (`SB === ZERO)          ? `BINARY64_ONE     :
+                                  (`SB === POS_INF)       ? `BINARY64_POSINF  :
+                                  (`SB === NEG_INF)       ? `BINARY64_POSZERO :
+                                  (`SB === NAN)           ? `BINARY64_NAN_POS :
+                                  (`SB === POS_DENORMAL)  ? `BINARY64_ONE     :
+                                  (`SB === NEG_DENORMAL)  ? `BINARY64_ONE     :
                                   s_my_sp_multiplier_3_jedi[63:0];
     end
 
     FOUR_SP_MODE: begin
-      s_mul3_final_out[127:96] =  (`SA === ZERO) ?    `BINARY32_ONE :
-                                  (`SA === POS_INF) ? `BINARY32_POSINF :
-                                  (`SA === NEG_INF) ? `BINARY32_POSZERO :
-                                  (`SA === NAN) ?     `BINARY32_NAN_POS :
+      s_mul3_final_out[127:96] =  (`SA === ZERO)          ? `BINARY32_ONE     :
+                                  (`SA === POS_INF)       ? `BINARY32_POSINF  :
+                                  (`SA === NEG_INF)       ? `BINARY32_POSZERO :
+                                  (`SA === NAN)           ? `BINARY32_NAN_POS :
+                                  (`SA === POS_DENORMAL)  ? `BINARY32_ONE     :
+                                  (`SA === NEG_DENORMAL)  ? `BINARY32_ONE     :
                                   s_my_sp_multiplier_3_jedi[127:96];
 
-      s_mul3_final_out[95:64] =   (`SA === ZERO) ?    `BINARY32_ONE :
-                                  (`SA === POS_INF) ? `BINARY32_POSINF :
-                                  (`SA === NEG_INF) ? `BINARY32_POSZERO :
-                                  (`SA === NAN) ?     `BINARY32_NAN_POS :
+      s_mul3_final_out[95:64] =   (`SB === ZERO)          ? `BINARY32_ONE     :
+                                  (`SB === POS_INF)       ? `BINARY32_POSINF  :
+                                  (`SB === NEG_INF)       ? `BINARY32_POSZERO :
+                                  (`SB === NAN)           ? `BINARY32_NAN_POS :
+                                  (`SB === POS_DENORMAL)  ? `BINARY32_ONE     :
+                                  (`SB === NEG_DENORMAL)  ? `BINARY32_ONE     :
                                   s_my_sp_multiplier_3_jedi[95:64];
 
-      s_mul3_final_out[63:32] =   (`SA === ZERO) ?    `BINARY32_ONE :
-                                  (`SA === POS_INF) ? `BINARY32_POSINF :
-                                  (`SA === NEG_INF) ? `BINARY32_POSZERO :
-                                  (`SA === NAN) ?     `BINARY32_NAN_POS :
+      s_mul3_final_out[63:32] =   (`SC === ZERO)          ? `BINARY32_ONE     :
+                                  (`SC === POS_INF)       ? `BINARY32_POSINF  :
+                                  (`SC === NEG_INF)       ? `BINARY32_POSZERO :
+                                  (`SC === NAN)           ? `BINARY32_NAN_POS :
+                                  (`SC === POS_DENORMAL)  ? `BINARY32_ONE     :
+                                  (`SC === NEG_DENORMAL)  ? `BINARY32_ONE     :
                                   s_my_sp_multiplier_3_jedi[63:32];
 
-      s_mul3_final_out[31:0] =    (`SA === ZERO) ?    `BINARY32_ONE :
-                                  (`SA === POS_INF) ? `BINARY32_POSINF :
-                                  (`SA === NEG_INF) ? `BINARY32_POSZERO :
-                                  (`SA === NAN) ?     `BINARY32_NAN_POS :
+      s_mul3_final_out[31:0] =    (`SD === ZERO)          ? `BINARY32_ONE     :
+                                  (`SD === POS_INF)       ? `BINARY32_POSINF  :
+                                  (`SD === NEG_INF)       ? `BINARY32_POSZERO :
+                                  (`SD === NAN)           ? `BINARY32_NAN_POS :
+                                  (`SD === POS_DENORMAL)  ? `BINARY32_ONE     :
+                                  (`SD === NEG_DENORMAL)  ? `BINARY32_ONE     :
                                   s_my_sp_multiplier_3_jedi[31:0];
     end
 
@@ -993,12 +998,12 @@ logic [127:0] s_mul4_final_out;
 always_comb begin : finish_line_subnormal_type_processing_mul4
   case (`S)
     SINGLE_MODE: begin
-      s_mul4_final_out =  (`SA === ZERO) ?    `BINARY128_ONE :
-                          (`SA === POS_INF) ? `BINARY128_POSINF :
-                          (`SA === NEG_INF) ? `BINARY128_POSZERO :
-                          (`SA === NAN) ?     `BINARY128_NAN_POS :
-                          // (`SA === POS_DENORMAL) ?     `BINARY128_ONE :
-                          // (`SA === NEG_DENORMAL) ?     `BINARY128_ONE :
+      s_mul4_final_out =  (`SA === ZERO)          ? `BINARY128_ONE      :
+                          (`SA === POS_INF)       ? `BINARY128_POSINF   :
+                          (`SA === NEG_INF)       ? `BINARY128_POSZERO  :
+                          (`SA === NAN)           ? `BINARY128_NAN_POS  :
+                          (`SA === POS_DENORMAL)  ? `BINARY128_ONE      :  // For now we treat denormal as zero, todo
+                          (`SA === NEG_DENORMAL)  ? `BINARY128_ONE      :  // For now we treat denormal as zero, todo
                           s_my_sp_multiplier_4_jedi;
     end
 
@@ -1039,5 +1044,6 @@ assign os_my_sp_multiplier_2_jedi = s_my_sp_multiplier_2_jedi;
 assign os_mux_4 = s_mux_4;
 assign os_my_sp_multiplier_3_jedi = s_my_sp_multiplier_3_jedi;
 assign os_my_sp_multiplier_4_jedi = s_my_sp_multiplier_4_jedi;
+assign os_my_float_to_fixed_metadata = s_my_float_to_fixed_metadata;
 
 endmodule // module SPEX128_top #()
