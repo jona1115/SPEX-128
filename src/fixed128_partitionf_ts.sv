@@ -76,18 +76,28 @@ module fixed128_partitionf_ts #(
 // Module Body
 //=====================================================================================
 binary128_t s_o_exp_f;
-logic s_o_valid;
 always_ff @( posedge i_clk ) begin : blockhaha
   if (!i_rst_n) begin
     s_o_exp_f <= '0;
-    s_o_valid <= '0;
   end
   else begin
     if (i_valid) begin
       s_o_exp_f <= binary128_t'({1'b0, 15'h3FFF/*16383*/, 52'b0, i_f[64:5]});
-      s_o_valid <= i_valid;
     end // if (i_valid) begin
   end // else begin
+end // always_ff
+
+/**
+ * Register for the valid bit
+ */
+logic s_o_valid;
+always_ff @( posedge i_clk ) begin : valid_cit_register
+  if (!i_rst_n) begin
+    s_o_valid <= '0;
+  end
+  else begin
+    s_o_valid <= i_valid;
+  end
 end // always_ff
 
 
