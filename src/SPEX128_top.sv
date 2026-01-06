@@ -1034,7 +1034,32 @@ assign o_valid              = `S === SINGLE_MODE  ?  s_my_sp_multiplier_4_valid1
                                                      s_my_sp_multiplier_3_valid32d_jedi     :
                               '0;
 assign o_sanity_identifier  = MODULE_IDENTIFIER;
-assign o_error              = '0; //todo
+assign o_error              = s_my_float_to_fixed_error &
+                              s_my_fixed128_64_partitiona_error &
+                              s_my_fixed128_64_partitionb_error &
+                              s_my_fixed128_64_partitionc_error &
+                              s_my_fixed128_partitiond_error &
+                              s_my_fixed128_partitione_error &
+                              s_my_fixed128_partitionf_ts_error &
+                              s_my_fixed64_partitionf_ts_a_error &
+                              s_my_fixed64_partitionf_ts_b_error &
+                              s_my_fixed32_partitiona_a_error &
+                              s_my_fixed32_partitiona_b_error &
+                              s_my_fixed32_partitiona_c_error &
+                              s_my_fixed32_partitiona_d_error &
+                              s_my_fixed32_partitionb_a_error &
+                              s_my_fixed32_partitionb_b_error &
+                              s_my_fixed32_partitionb_c_error &
+                              s_my_fixed32_partitionb_d_error &
+                              s_my_fixed32_partitionc_a_error &
+                              s_my_fixed32_partitionc_b_error &
+                              s_my_fixed32_partitionc_c_error &
+                              s_my_fixed32_partitionc_d_error &
+                              s_my_sp_multiplier_0_error &
+                              s_my_sp_multiplier_1_error &
+                              s_my_sp_multiplier_2_error &
+                              s_my_sp_multiplier_3_error &
+                              s_my_sp_multiplier_4_error;
 assign o_debug              = '0; //todo
 
 // Temp, maybe
