@@ -240,6 +240,17 @@ module SPEX128_top_unit_test;
     return abs_int(e - a);
   endfunction
 
+  function automatic print_lsb_error(logic [127:0] expct, logic [127:0] act, int w);
+    int mask;
+    int e, a;
+    // Build a 32-bit mask with the lowest w bits set
+    mask = (w >= 32) ? 32'hFFFF_FFFF : ((1 << w) - 1);
+    // Take only the low 32 bits, then mask
+    e = int'($unsigned(expct[31:0])) & mask;
+    a = int'($unsigned(act[31:0])) & mask;
+    $display(">>>>> abs error:%d", abs_int(e - a));
+  endfunction
+
   function automatic int lsb_error_64_lane(logic [63:0] expct, logic [63:0] act, int w);
     int mask;
     int e, a;
@@ -388,7 +399,7 @@ module SPEX128_top_unit_test;
   //===================================
   `SVUNIT_TESTS_BEGIN
 
-// `define ISOLATE
+`define ISOLATE
 
 `ifndef ISOLATE
     `include "cases/handwritten_correctness.svh"
