@@ -399,7 +399,7 @@ module SPEX128_top_unit_test;
   //===================================
   `SVUNIT_TESTS_BEGIN
 
-`define ISOLATE
+// `define ISOLATE
 
 `ifndef ISOLATE
     `include "cases/handwritten_correctness.svh"

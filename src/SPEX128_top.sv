@@ -83,6 +83,10 @@ module SPEX128_top #(
   output float_metadata_t os_my_float_to_fixed_metadata
 );
 
+//=====================================================================================
+// Signal definitions
+//=====================================================================================
+logic s_GND;
 
 //=====================================================================================
 // Module body
@@ -721,21 +725,21 @@ sp_multiplier #() my_sp_multiplier_1 (
   .i_valid64a_force(s_mux_3_valid),
   .i_valid64b_anikin(s_mux_2_valid),
   .i_valid64b_force(s_mux_3_valid),
-  .i_valid32a_anikin(s_mux_2_valid),
-  .i_valid32a_force(s_mux_3_valid),
-  .i_valid32b_anikin(s_mux_2_valid),
-  .i_valid32b_force(s_mux_3_valid),
-  .i_valid32c_anikin(s_mux_2_valid),
-  .i_valid32c_force(s_mux_3_valid),
-  .i_valid32d_anikin(s_mux_2_valid),
-  .i_valid32d_force(s_mux_3_valid),
+  .i_valid32a_anikin('0),
+  .i_valid32a_force('0),
+  .i_valid32b_anikin('0),
+  .i_valid32b_force('0),
+  .i_valid32c_anikin('0),
+  .i_valid32c_force('0),
+  .i_valid32d_anikin('0),
+  .i_valid32d_force('0),
   .o_valid128_jedi(s_my_sp_multiplier_1_valid128_jedi),
   .o_valid64a_jedi(s_my_sp_multiplier_1_valid64a_jedi),
   .o_valid64b_jedi(s_my_sp_multiplier_1_valid64b_jedi),
-  .o_valid32a_jedi(s_my_sp_multiplier_1_valid32a_jedi),
-  .o_valid32b_jedi(s_my_sp_multiplier_1_valid32b_jedi),
-  .o_valid32c_jedi(s_my_sp_multiplier_1_valid32c_jedi),
-  .o_valid32d_jedi(s_my_sp_multiplier_1_valid32d_jedi),
+  // .o_valid32a_jedi(s_my_sp_multiplier_1_valid32a_jedi),
+  // .o_valid32b_jedi(s_my_sp_multiplier_1_valid32b_jedi),
+  // .o_valid32c_jedi(s_my_sp_multiplier_1_valid32c_jedi),
+  // .o_valid32d_jedi(s_my_sp_multiplier_1_valid32d_jedi),
   .o_sanity_identifier(s_my_sp_multiplier_1_identifier),
   .o_error(s_my_sp_multiplier_1_error),
   .o_debug(s_my_sp_multiplier_1_debug)
@@ -777,12 +781,12 @@ sp_multiplier #() my_sp_multiplier_2 (
   .i_valid32d_anikin('0),
   .i_valid32d_force('0),
   .o_valid128_jedi(s_my_sp_multiplier_2_valid128_jedi),
-  .o_valid64a_jedi(s_my_sp_multiplier_2_valid64a_jedi),
-  .o_valid64b_jedi(s_my_sp_multiplier_2_valid64b_jedi),
-  .o_valid32a_jedi(s_my_sp_multiplier_2_valid32a_jedi),
-  .o_valid32b_jedi(s_my_sp_multiplier_2_valid32b_jedi),
-  .o_valid32c_jedi(s_my_sp_multiplier_2_valid32c_jedi),
-  .o_valid32d_jedi(s_my_sp_multiplier_2_valid32d_jedi),
+  // .o_valid64a_jedi(s_my_sp_multiplier_2_valid64a_jedi),
+  // .o_valid64b_jedi(s_my_sp_multiplier_2_valid64b_jedi),
+  // .o_valid32a_jedi(s_my_sp_multiplier_2_valid32a_jedi),
+  // .o_valid32b_jedi(s_my_sp_multiplier_2_valid32b_jedi),
+  // .o_valid32c_jedi(s_my_sp_multiplier_2_valid32c_jedi),
+  // .o_valid32d_jedi(s_my_sp_multiplier_2_valid32d_jedi),
   .o_sanity_identifier(s_my_sp_multiplier_2_identifier),
   .o_error(s_my_sp_multiplier_2_error),
   .o_debug(s_my_sp_multiplier_2_debug)
@@ -892,25 +896,25 @@ sp_multiplier #() my_sp_multiplier_4 (
   .o_out_jedi(s_my_sp_multiplier_4_jedi),
   .i_valid128_anikin(s_my_sp_multiplier_3_valid128_jedi),
   .i_valid128_force(s_my_sp_multiplier_2_valid128_jedi),
-  .i_valid64a_anikin(s_my_sp_multiplier_3_valid64a_jedi),
-  .i_valid64a_force(s_my_sp_multiplier_2_valid64a_jedi),
-  .i_valid64b_anikin(s_my_sp_multiplier_3_valid64b_jedi),
-  .i_valid64b_force(s_my_sp_multiplier_2_valid64b_jedi),
-  .i_valid32a_anikin(s_my_sp_multiplier_3_valid32a_jedi),
-  .i_valid32a_force(s_my_sp_multiplier_2_valid32a_jedi),
-  .i_valid32b_anikin(s_my_sp_multiplier_3_valid32b_jedi),
-  .i_valid32b_force(s_my_sp_multiplier_2_valid32b_jedi),
-  .i_valid32c_anikin(s_my_sp_multiplier_3_valid32c_jedi),
-  .i_valid32c_force(s_my_sp_multiplier_2_valid32c_jedi),
-  .i_valid32d_anikin(s_my_sp_multiplier_3_valid32d_jedi),
-  .i_valid32d_force(s_my_sp_multiplier_2_valid32d_jedi),
+  .i_valid64a_anikin('0),
+  .i_valid64a_force('0),
+  .i_valid64b_anikin('0),
+  .i_valid64b_force('0),
+  .i_valid32a_anikin('0),
+  .i_valid32a_force('0),
+  .i_valid32b_anikin('0),
+  .i_valid32b_force('0),
+  .i_valid32c_anikin('0),
+  .i_valid32c_force('0),
+  .i_valid32d_anikin('0),
+  .i_valid32d_force('0),
   .o_valid128_jedi(s_my_sp_multiplier_4_valid128_jedi),
-  .o_valid64a_jedi(s_my_sp_multiplier_4_valid64a_jedi),
-  .o_valid64b_jedi(s_my_sp_multiplier_4_valid64b_jedi),
-  .o_valid32a_jedi(s_my_sp_multiplier_4_valid32a_jedi),
-  .o_valid32b_jedi(s_my_sp_multiplier_4_valid32b_jedi),
-  .o_valid32c_jedi(s_my_sp_multiplier_4_valid32c_jedi),
-  .o_valid32d_jedi(s_my_sp_multiplier_4_valid32d_jedi),
+  // .o_valid64a_jedi('0),
+  // .o_valid64b_jedi('0),
+  // .o_valid32a_jedi('0),
+  // .o_valid32b_jedi('0),
+  // .o_valid32c_jedi('0),
+  // .o_valid32d_jedi('0),
   .o_sanity_identifier(s_my_sp_multiplier_4_identifier),
   .o_error(s_my_sp_multiplier_4_error),
   .o_debug(s_my_sp_multiplier_4_debug)
@@ -1021,7 +1025,14 @@ assign o_exp_x              = `S === SINGLE_MODE  ?  s_mul4_final_out :
                               `S === FOUR_SP_MODE ?  s_mul3_final_out :
                               '0;
 assign o_ready              = '1; //todo
-assign o_valid              = '1; //todo
+assign o_valid              = `S === SINGLE_MODE  ?  s_my_sp_multiplier_4_valid128_jedi     :
+                              `S === TWO_SP_MODE  ?  s_my_sp_multiplier_3_valid64a_jedi &
+                                                     s_my_sp_multiplier_3_valid64b_jedi     :
+                              `S === FOUR_SP_MODE ?  s_my_sp_multiplier_3_valid32a_jedi &
+                                                     s_my_sp_multiplier_3_valid32b_jedi &
+                                                     s_my_sp_multiplier_3_valid32c_jedi &
+                                                     s_my_sp_multiplier_3_valid32d_jedi     :
+                              '0;
 assign o_sanity_identifier  = MODULE_IDENTIFIER;
 assign o_error              = '0; //todo
 assign o_debug              = '0; //todo
