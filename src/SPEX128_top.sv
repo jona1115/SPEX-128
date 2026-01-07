@@ -532,15 +532,30 @@ fixed32_partitionc #() my_fixed32_partitionc_d (
   .o_debug(s_my_fixed32_partitionc_d_debug)
 );
 
+// We also need to pass the metadata across level 2
+float_metadata_t s_level2_metadata;
+/**
+ * Register for the metadata
+ */
+always_ff @( posedge i_clk ) begin : level2_metadata_register
+  if (!i_rst_n) begin
+    s_level2_metadata <= '0;
+  end
+  else begin
+    s_level2_metadata <= s_my_float_to_fixed_metadata;
+  end
+end // always_ff
+
 /******************************************************************
  * 
  * Level 3
  * 
  *****************************************************************/
+`define S (s_level2_metadata.sp_mode) // todo give this macro a better name
 logic [127:0] s_mux_0;
 logic         s_mux_0_valid;
 always_comb begin : mux_0
-  case (s_my_float_to_fixed_metadata.sp_mode)
+  case (`S)
     SINGLE_MODE: begin
       s_mux_0       = s_my_fixed128_64_partitiona_exp_a128;
       s_mux_0_valid = s_my_fixed128_64_partitiona_o_valid128;
@@ -574,7 +589,7 @@ end
 logic [127:0] s_mux_1;
 logic         s_mux_1_valid;
 always_comb begin : mux_1
-  case (s_my_float_to_fixed_metadata.sp_mode)
+  case (`S)
     SINGLE_MODE: begin
       s_mux_1       = s_my_fixed128_64_partitionb_exp_a128;
       s_mux_1_valid = s_my_fixed128_64_partitionb_o_valid128;
@@ -608,7 +623,7 @@ end
 logic [127:0] s_mux_2;
 logic         s_mux_2_valid;
 always_comb begin : mux_2
-  case (s_my_float_to_fixed_metadata.sp_mode)
+  case (`S)
     SINGLE_MODE: begin
       s_mux_2       = s_my_fixed128_64_partitionc_exp_a128;
       s_mux_2_valid = s_my_fixed128_64_partitionc_o_valid128;
@@ -631,7 +646,7 @@ end
 logic [127:0] s_mux_3;
 logic         s_mux_3_valid;
 always_comb begin : mux_3
-  case (s_my_float_to_fixed_metadata.sp_mode)
+  case (`S)
     SINGLE_MODE: begin
       s_mux_3       = s_my_fixed128_partitiond_exp_d128;
       s_mux_3_valid = s_my_fixed128_partitiond_o_valid;
@@ -651,7 +666,7 @@ always_comb begin : mux_3
   endcase
 end
 
-float_metadata_t s_gnd_metadata_0;
+float_metadata_t unused_metadata_0;
 logic [127:0] s_my_sp_multiplier_0_jedi;
 logic s_my_sp_multiplier_0_valid128_jedi;
 logic s_my_sp_multiplier_0_valid64a_jedi;
@@ -667,8 +682,8 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_multiplier_0_debug;
 sp_multiplier #() my_sp_multiplier_0 (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_metadata(s_my_float_to_fixed_metadata),
-  .o_metadata(s_gnd_metadata_0/*not like it is useful anyway*/),
+  .i_metadata(s_level2_metadata),
+  .o_metadata(unused_metadata_0/*not like it is useful anyway*/),
   .i_in_anikin(s_mux_0),
   .i_in_force(s_mux_1),
   .o_out_jedi(s_my_sp_multiplier_0_jedi),
@@ -698,7 +713,7 @@ sp_multiplier #() my_sp_multiplier_0 (
   .o_debug(s_my_sp_multiplier_0_debug)
 );
 
-float_metadata_t s_gnd_metadata_1;
+float_metadata_t unused_metadata_1;
 logic [127:0] s_my_sp_multiplier_1_jedi;
 logic s_my_sp_multiplier_1_valid128_jedi;
 logic s_my_sp_multiplier_1_valid64a_jedi;
@@ -715,8 +730,8 @@ logic unused_mul1_1, unused_mul1_2, unused_mul1_3, unused_mul1_4;
 sp_multiplier #() my_sp_multiplier_1 (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_metadata(s_my_float_to_fixed_metadata),
-  .o_metadata(s_gnd_metadata_1/*not like it is useful anyway*/),
+  .i_metadata(s_level2_metadata),
+  .o_metadata(unused_metadata_1/*not like it is useful anyway*/),
   .i_in_anikin(s_mux_2),
   .i_in_force(s_mux_3),
   .o_out_jedi(s_my_sp_multiplier_1_jedi),
@@ -746,7 +761,7 @@ sp_multiplier #() my_sp_multiplier_1 (
   .o_debug(s_my_sp_multiplier_1_debug)
 );
 
-float_metadata_t s_gnd_metadata_2;
+float_metadata_t unused_metadata_2;
 logic [127:0] s_my_sp_multiplier_2_jedi;
 logic s_my_sp_multiplier_2_valid128_jedi;
 logic s_my_sp_multiplier_2_valid64a_jedi;
@@ -763,8 +778,8 @@ logic unused_mul2_1, unused_mul2_2, unused_mul2_3, unused_mul2_4, unused_mul2_5,
 sp_multiplier #() my_sp_multiplier_2 (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_metadata(s_my_float_to_fixed_metadata),
-  .o_metadata(s_gnd_metadata_2/*not like it is useful anyway*/),
+  .i_metadata(s_level2_metadata),
+  .o_metadata(unused_metadata_2/*not like it is useful anyway*/),
   .i_in_anikin(s_my_fixed128_partitione_exp_d128),
   .i_in_force(s_my_fixed128_partitionf_ts_exp_f128),
   .o_out_jedi(s_my_sp_multiplier_2_jedi),
@@ -797,7 +812,7 @@ sp_multiplier #() my_sp_multiplier_2 (
 logic [127:0] s_mux_4;
 logic         s_mux_4_valid;
 always_comb begin : mux_4
-  case (s_my_float_to_fixed_metadata.sp_mode)
+  case (`S)
     SINGLE_MODE: begin
       s_mux_4       = s_my_sp_multiplier_1_jedi;
       s_mux_4_valid = s_my_sp_multiplier_1_valid128_jedi;
@@ -828,7 +843,7 @@ always_comb begin : mux_4
   endcase
 end
 
-float_metadata_t s_gnd_metadata_3;
+float_metadata_t unused_metadata_3;
 logic [127:0] s_my_sp_multiplier_3_jedi;
 logic s_my_sp_multiplier_3_valid128_jedi;
 logic s_my_sp_multiplier_3_valid64a_jedi;
@@ -844,8 +859,8 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_multiplier_3_debug;
 sp_multiplier #() my_sp_multiplier_3 (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_metadata(s_my_float_to_fixed_metadata),
-  .o_metadata(s_gnd_metadata_3/*not like it is useful anyway*/),
+  .i_metadata(s_level2_metadata),
+  .o_metadata(unused_metadata_3/*not like it is useful anyway*/),
   .i_in_anikin(s_my_sp_multiplier_0_jedi),
   .i_in_force(s_mux_4),
   .o_out_jedi(s_my_sp_multiplier_3_jedi),
@@ -875,7 +890,7 @@ sp_multiplier #() my_sp_multiplier_3 (
   .o_debug(s_my_sp_multiplier_3_debug)
 );
 
-float_metadata_t s_gnd_metadata_4;
+float_metadata_t unused_metadata_4;
 logic [127:0] s_my_sp_multiplier_4_jedi;
 logic s_my_sp_multiplier_4_valid128_jedi;
 logic s_my_sp_multiplier_4_valid64a_jedi;
@@ -892,8 +907,8 @@ logic unused_mul4_1, unused_mul4_2, unused_mul4_3, unused_mul4_4, unused_mul4_5,
 sp_multiplier #() my_sp_multiplier_4 (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_metadata(s_my_float_to_fixed_metadata),
-  .o_metadata(s_gnd_metadata_4/*not like it is useful anyway*/),
+  .i_metadata(s_level2_metadata),
+  .o_metadata(unused_metadata_4/*not like it is useful anyway*/),
   .i_in_anikin(s_my_sp_multiplier_3_jedi),
   .i_in_force(s_my_sp_multiplier_2_jedi),
   .o_out_jedi(s_my_sp_multiplier_4_jedi),
@@ -924,11 +939,10 @@ sp_multiplier #() my_sp_multiplier_4 (
 );
 
 // Finish line subnormal type processing
-`define S (s_my_float_to_fixed_metadata.sp_mode) // todo give this macro a better name
-`define SA (s_my_float_to_fixed_metadata.float_type_a) // todo give this macro a better name
-`define SB (s_my_float_to_fixed_metadata.float_type_b) // todo give this macro a better name
-`define SC (s_my_float_to_fixed_metadata.float_type_c) // todo give this macro a better name
-`define SD (s_my_float_to_fixed_metadata.float_type_d) // todo give this macro a better name
+`define SA (s_level2_metadata.float_type_a) // todo give this macro a better name
+`define SB (s_level2_metadata.float_type_b) // todo give this macro a better name
+`define SC (s_level2_metadata.float_type_c) // todo give this macro a better name
+`define SD (s_level2_metadata.float_type_d) // todo give this macro a better name
 `define BINARY128_POSZERO   (128'h0000_0000_0000_0000_0000_0000_0000_0000)
 `define BINARY128_ONE       (128'h3FFF_0000_0000_0000_0000_0000_0000_0000)
 `define BINARY128_POSINF    (128'h7FFF_0000_0000_0000_0000_0000_0000_0000)
