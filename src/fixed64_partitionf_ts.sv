@@ -68,18 +68,28 @@ module fixed64_partitionf_ts #(
 // Module Body
 //=====================================================================================
 binary64_t s_o_exp_f;
-logic s_o_valid;
 always_ff @( posedge i_clk ) begin : blockhaha
   if (!i_rst_n) begin
     s_o_exp_f <= '0;
-    s_o_valid <= '0;
   end
   else begin
     if (i_valid) begin
       s_o_exp_f <= binary64_t'({1'b0, 15'h3FF/*1023*/, 26'b0, i_f[26:1]});
-      s_o_valid <= i_valid;
     end // if (i_valid) begin
   end // else begin
+end // always_ff
+
+/**
+ * Register for the valid bit
+ */
+logic s_o_valid;
+always_ff @( posedge i_clk ) begin : valid_cit_register
+  if (!i_rst_n) begin
+    s_o_valid <= '0;
+  end
+  else begin
+    s_o_valid <= i_valid;
+  end
 end // always_ff
 
 

@@ -53,7 +53,7 @@ module float_to_fixed #(
 
   // Handshake
   input   logic                                   i_valid,
-  // output  logic                                   o_ready,
+  output  logic                                   o_valid,
 
   // Module identifier
   output  logic [3:0]                             o_sanity_identifier,
@@ -302,6 +302,7 @@ end // always_ff
 /**
  * Stage 2
  */
+logic s_S2_valid;
 always_ff @( posedge i_clk ) begin : stage2_convert
   if (!i_rst_n) begin
     s_fixed128  <= '0;
@@ -311,9 +312,13 @@ always_ff @( posedge i_clk ) begin : stage2_convert
     s_fixed32_b <= '0;
     s_fixed32_c <= '0;
     s_fixed32_d <= '0;
+
+    s_S2_valid  <= '0;
   end
   else begin
     if (s_stage2_en) begin
+      s_S2_valid <= '1;
+      
       // assign the integer and frac
       case (s_current_sp)
         SINGLE_MODE: begin
@@ -342,6 +347,7 @@ always_ff @( posedge i_clk ) begin : stage2_convert
             end
           end
         end
+
         TWO_SP_MODE: begin
           if (s_shift_amount_a >= 0 && s_shift_amount_a <= 9) begin
             // Case a:
@@ -393,6 +399,7 @@ always_ff @( posedge i_clk ) begin : stage2_convert
             end
           end
         end
+
         FOUR_SP_MODE: begin
           if (s_shift_amount_a >= 0 && s_shift_amount_a <= 9) begin
             // Case a:
@@ -572,5 +579,7 @@ assign o_sanity_identifier      = 4'b0000;
 
 assign o_error = s_o_error;
 assign o_debug = s_o_debug;
+
+assign o_valid = s_S2_valid;
 
 endmodule // module float_to_fixed #()

@@ -829,11 +829,11 @@ always_ff @( posedge i_clk ) begin : stage3a_ex_man_normalization
               if ((`CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47]) && s_S2_32a_mult_out_full[24] === 1'b1) ||
                   (!(`CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47])) && s_S2_32a_mult_out_full[23] === 1'b1)) begin
                 s_S3_32a_potential_result <= (`CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47]) ?
-                                               s_S2_32a_mult_out_full[105:53] : s_S2_32a_mult_out_full[104:52]) + 1'b1;
+                                               s_S2_32a_mult_out_full[47:24] : s_S2_32a_mult_out_full[47:24]) + 1'b1;
               end
               else begin // s_S2_32a_mult_out_full[53/52] === 1'b0
                 s_S3_32a_potential_result <= (`CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47]) ?
-                                               s_S2_32a_mult_out_full[105:53] : s_S2_32a_mult_out_full[104:52]);
+                                               s_S2_32a_mult_out_full[47:24] : s_S2_32a_mult_out_full[47:24]);
               end
             end // R==0 && S==0
             else begin
@@ -855,11 +855,11 @@ always_ff @( posedge i_clk ) begin : stage3a_ex_man_normalization
               if ((`CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47]) && s_S2_32b_mult_out_full[24] === 1'b1) ||
                   (!(`CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47])) && s_S2_32b_mult_out_full[23] === 1'b1)) begin
                 s_S3_32b_potential_result <= (`CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47]) ?
-                                               s_S2_32b_mult_out_full[105:53] : s_S2_32b_mult_out_full[104:52]) + 1'b1;
+                                               s_S2_32b_mult_out_full[47:24] : s_S2_32b_mult_out_full[47:24]) + 1'b1;
               end
               else begin // s_S2_32b_mult_out_full[53/52] === 1'b0
                 s_S3_32b_potential_result <= (`CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47]) ?
-                                               s_S2_32b_mult_out_full[105:53] : s_S2_32b_mult_out_full[104:52]);
+                                               s_S2_32b_mult_out_full[47:24] : s_S2_32b_mult_out_full[47:24]);
               end
             end // R==0 && S==0
             else begin
@@ -881,11 +881,11 @@ always_ff @( posedge i_clk ) begin : stage3a_ex_man_normalization
               if ((`CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47]) && s_S2_32c_mult_out_full[24] === 1'b1) ||
                   (!(`CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47])) && s_S2_32c_mult_out_full[23] === 1'b1)) begin
                 s_S3_32c_potential_result <= (`CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47]) ?
-                                               s_S2_32c_mult_out_full[105:53] : s_S2_32c_mult_out_full[104:52]) + 1'b1;
+                                               s_S2_32c_mult_out_full[47:24] : s_S2_32c_mult_out_full[47:24]) + 1'b1;
               end
               else begin // s_S2_32c_mult_out_full[53/52] === 1'b0
                 s_S3_32c_potential_result <= (`CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47]) ?
-                                               s_S2_32c_mult_out_full[105:53] : s_S2_32c_mult_out_full[104:52]);
+                                               s_S2_32c_mult_out_full[47:24] : s_S2_32c_mult_out_full[47:24]);
               end
             end // R==0 && S==0
             else begin
@@ -907,11 +907,11 @@ always_ff @( posedge i_clk ) begin : stage3a_ex_man_normalization
               if ((`CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47]) && s_S2_32d_mult_out_full[24] === 1'b1) ||
                   (!(`CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47])) && s_S2_32d_mult_out_full[23] === 1'b1)) begin
                 s_S3_32d_potential_result <= (`CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47]) ?
-                                               s_S2_32d_mult_out_full[105:53] : s_S2_32d_mult_out_full[104:52]) + 1'b1;
+                                               s_S2_32d_mult_out_full[47:24] : s_S2_32d_mult_out_full[47:24]) + 1'b1;
               end
               else begin // s_S2_32d_mult_out_full[53/52] === 1'b0
                 s_S3_32d_potential_result <= (`CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47]) ?
-                                               s_S2_32d_mult_out_full[105:53] : s_S2_32d_mult_out_full[104:52]);
+                                               s_S2_32d_mult_out_full[47:24] : s_S2_32d_mult_out_full[47:24]);
               end
             end // R==0 && S==0
             else begin
