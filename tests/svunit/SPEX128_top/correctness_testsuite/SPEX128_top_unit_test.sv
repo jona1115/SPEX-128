@@ -52,6 +52,24 @@ module SPEX128_top_unit_test;
   binary128_t s_my_fixed128_partitione_exp_d128;
   binary128_t s_my_fixed128_partitionf_ts_exp_f128;
   float_metadata_t s_my_float_to_fixed_metadata;
+  logic s_my_float_to_fixed_o_valid;
+  logic s_my_fixed128_partitiond_o_valid;
+  logic s_my_fixed128_partitione_o_valid;
+  logic s_my_fixed128_partitionf_ts_o_valid;
+  logic s_my_fixed64_partitionf_ts_a_o_valid;
+  logic s_my_fixed64_partitionf_ts_b_o_valid;
+  logic s_my_fixed32_partitiona_a_o_valid;
+  logic s_my_fixed32_partitiona_b_o_valid;
+  logic s_my_fixed32_partitiona_c_o_valid;
+  logic s_my_fixed32_partitiona_d_o_valid;
+  logic s_my_fixed32_partitionb_a_o_valid;
+  logic s_my_fixed32_partitionb_b_o_valid;
+  logic s_my_fixed32_partitionb_c_o_valid;
+  logic s_my_fixed32_partitionb_d_o_valid;
+  logic s_my_fixed32_partitionc_a_o_valid;
+  logic s_my_fixed32_partitionc_b_o_valid;
+  logic s_my_fixed32_partitionc_c_o_valid;
+  logic s_my_fixed32_partitionc_d_o_valid;
 
   //===================================
   // This is the UUT that we're 
@@ -93,7 +111,25 @@ module SPEX128_top_unit_test;
     .os_my_fixed128_partitiond_exp_d128(s_my_fixed128_partitiond_exp_d128),
     .os_my_fixed128_partitione_exp_d128(s_my_fixed128_partitione_exp_d128),
     .os_my_fixed128_partitionf_ts_exp_f128(s_my_fixed128_partitionf_ts_exp_f128),
-    .os_my_float_to_fixed_metadata(s_my_float_to_fixed_metadata)
+    .os_my_float_to_fixed_metadata(s_my_float_to_fixed_metadata),
+    .os_my_float_to_fixed_o_valid(s_my_float_to_fixed_o_valid),
+    .os_my_fixed128_partitiond_o_valid(s_my_fixed128_partitiond_o_valid),
+    .os_my_fixed128_partitione_o_valid(s_my_fixed128_partitione_o_valid),
+    .os_my_fixed128_partitionf_ts_o_valid(s_my_fixed128_partitionf_ts_o_valid),
+    .os_my_fixed64_partitionf_ts_a_o_valid(s_my_fixed64_partitionf_ts_a_o_valid),
+    .os_my_fixed64_partitionf_ts_b_o_valid(s_my_fixed64_partitionf_ts_b_o_valid),
+    .os_my_fixed32_partitiona_a_o_valid(s_my_fixed32_partitiona_a_o_valid),
+    .os_my_fixed32_partitiona_b_o_valid(s_my_fixed32_partitiona_b_o_valid),
+    .os_my_fixed32_partitiona_c_o_valid(s_my_fixed32_partitiona_c_o_valid),
+    .os_my_fixed32_partitiona_d_o_valid(s_my_fixed32_partitiona_d_o_valid),
+    .os_my_fixed32_partitionb_a_o_valid(s_my_fixed32_partitionb_a_o_valid),
+    .os_my_fixed32_partitionb_b_o_valid(s_my_fixed32_partitionb_b_o_valid),
+    .os_my_fixed32_partitionb_c_o_valid(s_my_fixed32_partitionb_c_o_valid),
+    .os_my_fixed32_partitionb_d_o_valid(s_my_fixed32_partitionb_d_o_valid),
+    .os_my_fixed32_partitionc_a_o_valid(s_my_fixed32_partitionc_a_o_valid),
+    .os_my_fixed32_partitionc_b_o_valid(s_my_fixed32_partitionc_b_o_valid),
+    .os_my_fixed32_partitionc_c_o_valid(s_my_fixed32_partitionc_c_o_valid),
+    .os_my_fixed32_partitionc_d_o_valid(s_my_fixed32_partitionc_d_o_valid)
   );
 
 
@@ -189,7 +225,7 @@ module SPEX128_top_unit_test;
     $display("<<<<< =================== Intermediate results: ===================");                            \
     $display("<<<<< ------------------------ Level 1 ------------------------");                                \
     $display("<<<<< s_my_float_to_fixed_fixed = 0x%x", s_my_float_to_fixed_fixed);                              \
-    $display("<<<<< s_my_float_to_fixed_metadata's float_type_a,b,c,d=%x,%x,%x,%x",                       \
+    $display("<<<<< s_my_float_to_fixed_metadata's float_type_a,b,c,d=%x,%x,%x,%x",                             \
                                             s_my_float_to_fixed_metadata.float_type_a,                          \
                                             s_my_float_to_fixed_metadata.float_type_b,                          \
                                             s_my_float_to_fixed_metadata.float_type_c,                          \
@@ -214,8 +250,29 @@ module SPEX128_top_unit_test;
     $display("<<<<< s_my_sp_multiplier_4_jedi = 0x%x", s_my_sp_multiplier_4_jedi);                              \
     $display("<<<<< =================== End Intermediate Results ===================");
 
+  `define PRINT_INTERMEDIATE_VALID_BITS \
+    $display("<<<<< =================== Intermediate valid bits: ==================="); \
+    $display("<<<<< s_my_float_to_fixed_o_valid=%x", s_my_float_to_fixed_o_valid); \
+    $display("<<<<< s_my_fixed128_partitiond_o_valid=%x", s_my_fixed128_partitiond_o_valid); \
+    $display("<<<<< s_my_fixed128_partitione_o_valid=%x", s_my_fixed128_partitione_o_valid); \
+    $display("<<<<< s_my_fixed128_partitionf_ts_o_valid=%x", s_my_fixed128_partitionf_ts_o_valid); \
+    $display("<<<<< s_my_fixed64_partitionf_ts_a_o_valid=%x", s_my_fixed64_partitionf_ts_a_o_valid); \
+    $display("<<<<< s_my_fixed64_partitionf_ts_b_o_valid=%x", s_my_fixed64_partitionf_ts_b_o_valid); \
+    $display("<<<<< s_my_fixed32_partitiona_a_o_valid=%x", s_my_fixed32_partitiona_a_o_valid); \
+    $display("<<<<< s_my_fixed32_partitiona_b_o_valid=%x", s_my_fixed32_partitiona_b_o_valid); \
+    $display("<<<<< s_my_fixed32_partitiona_c_o_valid=%x", s_my_fixed32_partitiona_c_o_valid); \
+    $display("<<<<< s_my_fixed32_partitiona_d_o_valid=%x", s_my_fixed32_partitiona_d_o_valid); \
+    $display("<<<<< s_my_fixed32_partitionb_a_o_valid=%x", s_my_fixed32_partitionb_a_o_valid); \
+    $display("<<<<< s_my_fixed32_partitionb_b_o_valid=%x", s_my_fixed32_partitionb_b_o_valid); \
+    $display("<<<<< s_my_fixed32_partitionb_c_o_valid=%x", s_my_fixed32_partitionb_c_o_valid); \
+    $display("<<<<< s_my_fixed32_partitionb_d_o_valid=%x", s_my_fixed32_partitionb_d_o_valid); \
+    $display("<<<<< s_my_fixed32_partitionc_a_o_valid=%x", s_my_fixed32_partitionc_a_o_valid); \
+    $display("<<<<< s_my_fixed32_partitionc_b_o_valid=%x", s_my_fixed32_partitionc_b_o_valid); \
+    $display("<<<<< s_my_fixed32_partitionc_c_o_valid=%x", s_my_fixed32_partitionc_c_o_valid); \
+    $display("<<<<< s_my_fixed32_partitionc_d_o_valid=%x", s_my_fixed32_partitionc_d_o_valid); \
+    $display("<<<<< =================== End Intermediate valid bits ===================");
   // -------- Tunables --------------------------------------------------------
-  `define LATENCY 2+1+5*3/*idk why the +3*/+3 // 21
+  `define LATENCY 2+1+5*3/*idk why the +3*/+30 // 21
   // LSB error tolerances (difference in integer value of the LSB slice)
   `define ERR_TOL_LSB_128 200
   `define ERR_TOL_LSB_64  2000

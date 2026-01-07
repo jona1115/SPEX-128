@@ -80,7 +80,25 @@ module SPEX128_top #(
   output binary128_t os_my_fixed128_partitiond_exp_d128,
   output binary128_t os_my_fixed128_partitione_exp_d128,
   output binary128_t os_my_fixed128_partitionf_ts_exp_f128,
-  output float_metadata_t os_my_float_to_fixed_metadata
+  output float_metadata_t os_my_float_to_fixed_metadata,
+  output logic os_my_float_to_fixed_o_valid,
+  output logic os_my_fixed128_partitiond_o_valid,
+  output logic os_my_fixed128_partitione_o_valid,
+  output logic os_my_fixed128_partitionf_ts_o_valid,
+  output logic os_my_fixed64_partitionf_ts_a_o_valid,
+  output logic os_my_fixed64_partitionf_ts_b_o_valid,
+  output logic os_my_fixed32_partitiona_a_o_valid,
+  output logic os_my_fixed32_partitiona_b_o_valid,
+  output logic os_my_fixed32_partitiona_c_o_valid,
+  output logic os_my_fixed32_partitiona_d_o_valid,
+  output logic os_my_fixed32_partitionb_a_o_valid,
+  output logic os_my_fixed32_partitionb_b_o_valid,
+  output logic os_my_fixed32_partitionb_c_o_valid,
+  output logic os_my_fixed32_partitionb_d_o_valid,
+  output logic os_my_fixed32_partitionc_a_o_valid,
+  output logic os_my_fixed32_partitionc_b_o_valid,
+  output logic os_my_fixed32_partitionc_c_o_valid,
+  output logic os_my_fixed32_partitionc_d_o_valid
 );
 
 //=====================================================================================
@@ -1123,5 +1141,23 @@ assign os_mux_4 = s_mux_4;
 assign os_my_sp_multiplier_3_jedi = s_my_sp_multiplier_3_jedi;
 assign os_my_sp_multiplier_4_jedi = s_my_sp_multiplier_4_jedi;
 assign os_my_float_to_fixed_metadata = s_my_float_to_fixed_metadata;
+assign os_my_float_to_fixed_o_valid = s_my_float_to_fixed_o_valid;
+assign os_my_fixed128_partitiond_o_valid = s_my_fixed128_partitiond_o_valid;
+assign os_my_fixed128_partitione_o_valid = s_my_fixed128_partitione_o_valid;
+assign os_my_fixed128_partitionf_ts_o_valid = s_my_fixed128_partitionf_ts_o_valid;
+assign os_my_fixed64_partitionf_ts_a_o_valid = s_my_fixed64_partitionf_ts_a_o_valid;
+assign os_my_fixed64_partitionf_ts_b_o_valid = s_my_fixed64_partitionf_ts_b_o_valid;
+assign os_my_fixed32_partitiona_a_o_valid = s_my_fixed32_partitiona_a_o_valid;
+assign os_my_fixed32_partitiona_b_o_valid = s_my_fixed32_partitiona_b_o_valid;
+assign os_my_fixed32_partitiona_c_o_valid = s_my_fixed32_partitiona_c_o_valid;
+assign os_my_fixed32_partitiona_d_o_valid = s_my_fixed32_partitiona_d_o_valid;
+assign os_my_fixed32_partitionb_a_o_valid = s_my_fixed32_partitionb_a_o_valid;
+assign os_my_fixed32_partitionb_b_o_valid = s_my_fixed32_partitionb_b_o_valid;
+assign os_my_fixed32_partitionb_c_o_valid = s_my_fixed32_partitionb_c_o_valid;
+assign os_my_fixed32_partitionb_d_o_valid = s_my_fixed32_partitionb_d_o_valid;
+assign os_my_fixed32_partitionc_a_o_valid = s_my_fixed32_partitionc_a_o_valid;
+assign os_my_fixed32_partitionc_b_o_valid = s_my_fixed32_partitionc_b_o_valid;
+assign os_my_fixed32_partitionc_c_o_valid = s_my_fixed32_partitionc_c_o_valid;
+assign os_my_fixed32_partitionc_d_o_valid = s_my_fixed32_partitionc_d_o_valid;
 
 endmodule // module SPEX128_top #()
