@@ -16,6 +16,7 @@
 # - For every module, invokes: ../svunit_run.sh --ci --all [-s <sim>]
 # - Streams output to console and saves full log to <module>/regression.log
 # - Parses "SVUnit: X/Y tests passed; A/B suites passed; status=PASSED|FAILED"
+# - Cleans artifacts after each module by running: ../clean.sh
 # - Prints consolidated summary with totals, then exits 1 if any module failed
 
 set -euo pipefail
@@ -107,7 +108,7 @@ for mod in "${modules[@]}"; do
 
   # Run and stream output; keep going even if it fails
   set +e
-  { "${cmd[@]}" 2>&1 | tee regression.log ; } 
+  { "${cmd[@]}" 2>&1 | tee regression.log ; }
   rc=${PIPESTATUS[0]}
   set -e
 
@@ -129,6 +130,19 @@ for mod in "${modules[@]}"; do
 
   # Count failures by status or non-zero exit
   [[ "$status" == "FAILED" || $rc -ne 0 ]] && failures=$((failures + 1))
+
+  # --- CLEAN after each module run (best-effort) ---
+  if [[ -x ../clean.sh ]]; then
+    echo "Cleaning artifacts for ${mod} (../clean.sh)..."
+    set +e
+    ../clean.sh >> regression.log 2>&1
+    clean_rc=$?
+    set -e
+    [[ $clean_rc -ne 0 ]] && echo "Warning: clean.sh exited with $clean_rc (see regression.log)"
+  else
+    echo "Warning: ../clean.sh not found or not executable" | tee -a regression.log
+  fi
+  # --- end CLEAN ---
 
   report_mod+=("$mod")
   report_status+=("$status")
