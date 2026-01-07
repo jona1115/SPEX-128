@@ -711,6 +711,7 @@ logic s_my_sp_multiplier_1_valid32d_jedi;
 logic [3:0] s_my_sp_multiplier_1_identifier;
 logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_sp_multiplier_1_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_multiplier_1_debug;
+logic unused_mul1_1, unused_mul1_2, unused_mul1_3, unused_mul1_4;
 sp_multiplier #() my_sp_multiplier_1 (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
@@ -736,10 +737,10 @@ sp_multiplier #() my_sp_multiplier_1 (
   .o_valid128_jedi(s_my_sp_multiplier_1_valid128_jedi),
   .o_valid64a_jedi(s_my_sp_multiplier_1_valid64a_jedi),
   .o_valid64b_jedi(s_my_sp_multiplier_1_valid64b_jedi),
-  // .o_valid32a_jedi(s_my_sp_multiplier_1_valid32a_jedi),
-  // .o_valid32b_jedi(s_my_sp_multiplier_1_valid32b_jedi),
-  // .o_valid32c_jedi(s_my_sp_multiplier_1_valid32c_jedi),
-  // .o_valid32d_jedi(s_my_sp_multiplier_1_valid32d_jedi),
+  .o_valid32a_jedi(unused_mul1_1),
+  .o_valid32b_jedi(unused_mul1_2),
+  .o_valid32c_jedi(unused_mul1_3),
+  .o_valid32d_jedi(unused_mul1_4),
   .o_sanity_identifier(s_my_sp_multiplier_1_identifier),
   .o_error(s_my_sp_multiplier_1_error),
   .o_debug(s_my_sp_multiplier_1_debug)
@@ -758,6 +759,7 @@ logic s_my_sp_multiplier_2_valid32d_jedi;
 logic [3:0] s_my_sp_multiplier_2_identifier;
 logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_sp_multiplier_2_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_multiplier_2_debug;
+logic unused_mul2_1, unused_mul2_2, unused_mul2_3, unused_mul2_4, unused_mul2_5, unused_mul2_6;
 sp_multiplier #() my_sp_multiplier_2 (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
@@ -781,12 +783,12 @@ sp_multiplier #() my_sp_multiplier_2 (
   .i_valid32d_anikin('0),
   .i_valid32d_force('0),
   .o_valid128_jedi(s_my_sp_multiplier_2_valid128_jedi),
-  // .o_valid64a_jedi(s_my_sp_multiplier_2_valid64a_jedi),
-  // .o_valid64b_jedi(s_my_sp_multiplier_2_valid64b_jedi),
-  // .o_valid32a_jedi(s_my_sp_multiplier_2_valid32a_jedi),
-  // .o_valid32b_jedi(s_my_sp_multiplier_2_valid32b_jedi),
-  // .o_valid32c_jedi(s_my_sp_multiplier_2_valid32c_jedi),
-  // .o_valid32d_jedi(s_my_sp_multiplier_2_valid32d_jedi),
+  .o_valid64a_jedi(unused_mul2_1),
+  .o_valid64b_jedi(unused_mul2_2),
+  .o_valid32a_jedi(unused_mul2_3),
+  .o_valid32b_jedi(unused_mul2_4),
+  .o_valid32c_jedi(unused_mul2_5),
+  .o_valid32d_jedi(unused_mul2_6),
   .o_sanity_identifier(s_my_sp_multiplier_2_identifier),
   .o_error(s_my_sp_multiplier_2_error),
   .o_debug(s_my_sp_multiplier_2_debug)
@@ -886,6 +888,7 @@ logic s_my_sp_multiplier_4_valid32d_jedi;
 logic [3:0] s_my_sp_multiplier_4_identifier;
 logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_sp_multiplier_4_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_multiplier_4_debug;
+logic unused_mul4_1, unused_mul4_2, unused_mul4_3, unused_mul4_4, unused_mul4_5, unused_mul4_6;
 sp_multiplier #() my_sp_multiplier_4 (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
@@ -909,12 +912,12 @@ sp_multiplier #() my_sp_multiplier_4 (
   .i_valid32d_anikin('0),
   .i_valid32d_force('0),
   .o_valid128_jedi(s_my_sp_multiplier_4_valid128_jedi),
-  // .o_valid64a_jedi('0),
-  // .o_valid64b_jedi('0),
-  // .o_valid32a_jedi('0),
-  // .o_valid32b_jedi('0),
-  // .o_valid32c_jedi('0),
-  // .o_valid32d_jedi('0),
+  .o_valid64a_jedi(unused_mul4_1),
+  .o_valid64b_jedi(unused_mul4_2),
+  .o_valid32a_jedi(unused_mul4_3),
+  .o_valid32b_jedi(unused_mul4_4),
+  .o_valid32c_jedi(unused_mul4_5),
+  .o_valid32d_jedi(unused_mul4_6),
   .o_sanity_identifier(s_my_sp_multiplier_4_identifier),
   .o_error(s_my_sp_multiplier_4_error),
   .o_debug(s_my_sp_multiplier_4_debug)
@@ -1034,33 +1037,58 @@ assign o_valid              = `S === SINGLE_MODE  ?  s_my_sp_multiplier_4_valid1
                                                      s_my_sp_multiplier_3_valid32d_jedi     :
                               '0;
 assign o_sanity_identifier  = MODULE_IDENTIFIER;
-assign o_error              = s_my_float_to_fixed_error &
-                              s_my_fixed128_64_partitiona_error &
-                              s_my_fixed128_64_partitionb_error &
-                              s_my_fixed128_64_partitionc_error &
-                              s_my_fixed128_partitiond_error &
-                              s_my_fixed128_partitione_error &
-                              s_my_fixed128_partitionf_ts_error &
-                              s_my_fixed64_partitionf_ts_a_error &
-                              s_my_fixed64_partitionf_ts_b_error &
-                              s_my_fixed32_partitiona_a_error &
-                              s_my_fixed32_partitiona_b_error &
-                              s_my_fixed32_partitiona_c_error &
-                              s_my_fixed32_partitiona_d_error &
-                              s_my_fixed32_partitionb_a_error &
-                              s_my_fixed32_partitionb_b_error &
-                              s_my_fixed32_partitionb_c_error &
-                              s_my_fixed32_partitionb_d_error &
-                              s_my_fixed32_partitionc_a_error &
-                              s_my_fixed32_partitionc_b_error &
-                              s_my_fixed32_partitionc_c_error &
-                              s_my_fixed32_partitionc_d_error &
-                              s_my_sp_multiplier_0_error &
-                              s_my_sp_multiplier_1_error &
-                              s_my_sp_multiplier_2_error &
-                              s_my_sp_multiplier_3_error &
+assign o_error              = s_my_float_to_fixed_error |
+                              s_my_fixed128_64_partitiona_error |
+                              s_my_fixed128_64_partitionb_error |
+                              s_my_fixed128_64_partitionc_error |
+                              s_my_fixed128_partitiond_error |
+                              s_my_fixed128_partitione_error |
+                              s_my_fixed128_partitionf_ts_error |
+                              s_my_fixed64_partitionf_ts_a_error |
+                              s_my_fixed64_partitionf_ts_b_error |
+                              s_my_fixed32_partitiona_a_error |
+                              s_my_fixed32_partitiona_b_error |
+                              s_my_fixed32_partitiona_c_error |
+                              s_my_fixed32_partitiona_d_error |
+                              s_my_fixed32_partitionb_a_error |
+                              s_my_fixed32_partitionb_b_error |
+                              s_my_fixed32_partitionb_c_error |
+                              s_my_fixed32_partitionb_d_error |
+                              s_my_fixed32_partitionc_a_error |
+                              s_my_fixed32_partitionc_b_error |
+                              s_my_fixed32_partitionc_c_error |
+                              s_my_fixed32_partitionc_d_error |
+                              s_my_sp_multiplier_0_error |
+                              s_my_sp_multiplier_1_error |
+                              s_my_sp_multiplier_2_error |
+                              s_my_sp_multiplier_3_error |
                               s_my_sp_multiplier_4_error;
-assign o_debug              = '0; //todo
+assign o_debug              = s_my_float_to_fixed_debug |
+                              s_my_fixed128_64_partitiona_debug |
+                              s_my_fixed128_64_partitionb_debug |
+                              s_my_fixed128_64_partitionc_debug |
+                              s_my_fixed128_partitiond_debug |
+                              s_my_fixed128_partitione_debug |
+                              s_my_fixed128_partitionf_ts_debug |
+                              s_my_fixed64_partitionf_ts_a_debug |
+                              s_my_fixed64_partitionf_ts_b_debug |
+                              s_my_fixed32_partitiona_a_debug |
+                              s_my_fixed32_partitiona_b_debug |
+                              s_my_fixed32_partitiona_c_debug |
+                              s_my_fixed32_partitiona_d_debug |
+                              s_my_fixed32_partitionb_a_debug |
+                              s_my_fixed32_partitionb_b_debug |
+                              s_my_fixed32_partitionb_c_debug |
+                              s_my_fixed32_partitionb_d_debug |
+                              s_my_fixed32_partitionc_a_debug |
+                              s_my_fixed32_partitionc_b_debug |
+                              s_my_fixed32_partitionc_c_debug |
+                              s_my_fixed32_partitionc_d_debug |
+                              s_my_sp_multiplier_0_debug |
+                              s_my_sp_multiplier_1_debug |
+                              s_my_sp_multiplier_2_debug |
+                              s_my_sp_multiplier_3_debug |
+                              s_my_sp_multiplier_4_debug;
 
 // Temp, maybe
 assign os_my_float_to_fixed_fixed = s_my_float_to_fixed_fixed;

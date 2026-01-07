@@ -130,11 +130,7 @@ always_ff @( posedge i_clk ) begin : LUTs
       end // TWO_SP_MODE
 
       FOUR_SP_MODE: begin
-        assert (0) else begin
-            s_o_error[1] <= 1'b1;
-            // This is for simulator not synthesis
-            // $fatal(1, "Four SP mode detected in fixed_128_64_partitiona, should never happen except during test"); 
-          end
+        // Do nothing
       end // FOUR_SP_MODE
 
       default: begin
