@@ -41,7 +41,7 @@ The specification of fixed128_64_32_partitiona:
 9. If the module is disabled: The exp outputs (o_exp_a128, o_exp_a64a, o_exp_a64b, 
    o_exp_a32a, o_exp_a32b, o_exp_a32c, o_exp_a32d) will hold whatever previous 
    value it stored (0 if it was previously reset), all valid bits will also be 0, 
-   metadata will hold previous outputs.
+   metadata will hold previous outputs (this last part is not strictly followed).
 */
 
 // ----------------------------------------------------------------------
