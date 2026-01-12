@@ -150,7 +150,7 @@ always_comb begin : stage_en_control
 
   unique case (s_curr_state)
     S0_IDLE: begin
-      if (i_valid128 |
+      if ( i_valid128 |
           (i_valid64a & i_valid64b) |                           // "all-or-nothing" rule
           (i_valid32a & i_valid32b & i_valid32c & i_valid32d)   // "all-or-nothing" rule
          ) begin
@@ -159,12 +159,12 @@ always_comb begin : stage_en_control
     end
     S1: begin
       s_S1_en = 1'b1;
-      if (i_metadata.sp_mode === FOUR_SP_MODE) begin
+      // if (i_metadata.sp_mode === FOUR_SP_MODE) begin
         s_next_state = S2;
-      end // if (i_metadata.sp_mode === FOUR_SP_MODE)
-      else begin
-        s_next_state = S0_IDLE;
-      end // else
+      // end // if (i_metadata.sp_mode === FOUR_SP_MODE)
+      // else begin
+      //   s_next_state = S0_IDLE;
+      // end // else
     end
     S2: begin
       s_S2_en = 1'b1;
@@ -298,16 +298,16 @@ always_ff @( posedge i_clk ) begin : stage1b
     s_stage1b_metadata <= '0;
   end
   else begin
-    if (s_S1_en) begin
-      s_stage1b_valid128 <= i_valid128;
-      s_stage1b_valid64a <= i_valid64a;
-      s_stage1b_valid64b <= i_valid64b;
-      s_stage1b_valid32a <= i_valid32a;
-      s_stage1b_valid32b <= i_valid32b;
-      s_stage1b_valid32c <= i_valid32c;
-      s_stage1b_valid32d <= i_valid32d;
+    // if (s_S1_en) begin
+      s_stage1b_valid128 <= s_S1_en & i_valid128; // & with s_S1_en meaning if system is valid, output will be propogated, else after anding will be 0
+      s_stage1b_valid64a <= s_S1_en & i_valid64a;
+      s_stage1b_valid64b <= s_S1_en & i_valid64b;
+      s_stage1b_valid32a <= s_S1_en & i_valid32a;
+      s_stage1b_valid32b <= s_S1_en & i_valid32b;
+      s_stage1b_valid32c <= s_S1_en & i_valid32c;
+      s_stage1b_valid32d <= s_S1_en & i_valid32d;
       s_stage1b_metadata <= i_metadata;
-    end // if (s_S1_en)
+    // end // if (s_S1_en)
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
 
@@ -317,12 +317,14 @@ end // always_ff @( posedge i_clk )
 //=====================================================================================
 logic[127:0]  s_stage2a_exp_a32c;
 logic[127:0]  s_stage2a_exp_a32d;
+binary128_t   s_stage2a_exp_a128;
 binary64_t    s_stage2a_exp_a64a;
 binary64_t    s_stage2a_exp_a64b;
 binary32_t    s_stage2a_exp_a32a;
 binary32_t    s_stage2a_exp_a32b;
 always_ff @( posedge i_clk ) begin : stage2a
   if (!i_rst_n) begin
+    s_stage2a_exp_a128  <= '0;
     s_stage2a_exp_a64a  <= '0;
     s_stage2a_exp_a64b  <= '0;
     s_stage2a_exp_a32c  <= '0;
@@ -334,7 +336,8 @@ always_ff @( posedge i_clk ) begin : stage2a
     if (s_S2_en) begin
       case (s_stage1b_metadata.sp_mode)
         SINGLE_MODE: begin
-          // nop
+          // passthrough
+          s_stage2a_exp_a128 <= binary128_t'(s_stage1a_exp_a128);
         end // SINGLE_MODE
 
         TWO_SP_MODE: begin
@@ -403,7 +406,7 @@ always_ff @( posedge i_clk ) begin : stage2b
     s_stage2b_metadata <= '0;
   end
   else begin
-    if (s_S2_en) begin
+    // if (s_S2_en) begin
       s_stage2b_valid128 <= s_stage1b_valid128;
       s_stage2b_valid64a <= s_stage1b_valid64a;
       s_stage2b_valid64b <= s_stage1b_valid64b;
@@ -412,15 +415,15 @@ always_ff @( posedge i_clk ) begin : stage2b
       s_stage2b_valid32c <= s_stage1b_valid32c;
       s_stage2b_valid32d <= s_stage1b_valid32d;
       s_stage2b_metadata <= s_stage1b_metadata;
-    end // if (s_S2_en)
+    // end // if (s_S2_en)
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
 
 //=====================================================================================
 // Final assignment
 //=====================================================================================
-assign o_metadata = s_stage1b_metadata;
-assign o_exp_a128 = s_stage1a_exp_a128;
+assign o_metadata = s_stage2b_metadata;
+assign o_exp_a128 = s_stage2a_exp_a128;
 assign o_exp_a64a = s_stage2a_exp_a64a;
 assign o_exp_a64b = s_stage2a_exp_a64b;
 assign o_exp_a32a = s_stage2a_exp_a32a;

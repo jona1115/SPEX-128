@@ -163,7 +163,7 @@ end
   endtask
 
   // todo other helper, localparam, macros etc.
-  localparam int LATENCY = 2;
+  localparam int LATENCY = 3;
 
   localparam string A128_POS_FILE = my_fixed128_64_32_partitiona.INIT_128a_POS_FILE;
   localparam string A128_NEG_FILE = my_fixed128_64_32_partitiona.INIT_128a_NEG_FILE;
@@ -343,17 +343,26 @@ end
         tag, lane[9:0], exp, s_o_exp_a32d))
   endtask
 
-  task automatic expect_all_zero_outputs(input string tag = "");
-    `FAIL_IF_LOG(s_o_metadata !== '0,
-      $sformatf(">>>>> %s: o_metadata not 0 when disabled", tag))
+  task automatic expect_disabled_outputs_hold(input float_metadata_t exp_meta,
+                                              input binary128_t exp128,
+                                              input binary64_t exp64a,
+                                              input binary64_t exp64b,
+                                              input binary32_t exp32a,
+                                              input binary32_t exp32b,
+                                              input binary32_t exp32c,
+                                              input binary32_t exp32d,
+                                              input string tag = ""
+                                              );
+    `FAIL_IF_LOG(s_o_metadata !== exp_meta,
+      $sformatf(">>>>> %s: o_metadata not held when disabled", tag))
     `FAIL_IF_LOG(s_o_valid128 !== 1'b0 || s_o_valid64a !== 1'b0 || s_o_valid64b !== 1'b0 ||
                  s_o_valid32a !== 1'b0 || s_o_valid32b !== 1'b0 || s_o_valid32c !== 1'b0 ||
                  s_o_valid32d !== 1'b0,
       $sformatf(">>>>> %s: o_valid* not all 0 when disabled", tag))
-    `FAIL_IF_LOG(s_o_exp_a128 !== '0 || s_o_exp_a64a !== '0 || s_o_exp_a64b !== '0 ||
-                 s_o_exp_a32a !== '0 || s_o_exp_a32b !== '0 || s_o_exp_a32c !== '0 ||
-                 s_o_exp_a32d !== '0,
-      $sformatf(">>>>> %s: o_exp_* not all 0 when disabled", tag))
+    `FAIL_IF_LOG(s_o_exp_a128 !== exp128 || s_o_exp_a64a !== exp64a || s_o_exp_a64b !== exp64b ||
+                 s_o_exp_a32a !== exp32a || s_o_exp_a32b !== exp32b || s_o_exp_a32c !== exp32c ||
+                 s_o_exp_a32d !== exp32d,
+      $sformatf(">>>>> %s: o_exp_* not held when disabled", tag))
     `FAIL_IF_LOG(s_o_error !== '0,
       $sformatf(">>>>> %s: o_error not 0", tag))
   endtask
@@ -378,7 +387,13 @@ end
   //===================================
   `SVUNIT_TESTS_BEGIN
 
+// `define ISOLATE
+
+`ifndef ISOLATE
     `include "cases/correctness.svh"
+`else
+    `include "cases/isolate.svh"
+`endif
 
   `SVUNIT_TESTS_END
 

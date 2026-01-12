@@ -38,9 +38,10 @@ The specification of fixed128_64_32_partitiona:
    the content of the line is exp(i_lane_a/b/c/d[9:0]).
 7. LATENCY is 2.
 8. No bits in o_error should ever be set at any time.
-9. If the module is disabled: The exp outputs (o_exp_a128, o_exp_a64a, 
-   o_exp_a64b, o_exp_a32a, o_exp_a32b, o_exp_a32c, o_exp_a32d) will output 0, 
-   all valid bits will also be 0, metadata is also 0.
+9. If the module is disabled: The exp outputs (o_exp_a128, o_exp_a64a, o_exp_a64b, 
+   o_exp_a32a, o_exp_a32b, o_exp_a32c, o_exp_a32d) will hold whatever previous 
+   value it stored (0 if it was previously reset), all valid bits will also be 0, 
+   metadata is also 0.
 */
 
 // ----------------------------------------------------------------------
@@ -117,43 +118,61 @@ The specification of fixed128_64_32_partitiona:
 `SVTEST_END
 
 // ----------------------------------------------------------------------
-// Spec 1/9/8: partial TWO_SP_MODE valid disables module and forces zeros
+// Spec 1/9/8: partial TWO_SP_MODE valid disables module and holds prior outputs
 // ----------------------------------------------------------------------
 `SVTEST(partial_valid64_disables_outputs)
   float_metadata_t meta = mk_meta(TWO_SP_MODE, POS_INF, NEG_DENORMAL, NA, ZERO);
+  float_metadata_t meta_hold = meta;
   logic [10:0] lane_a = 11'b0_0000001010;
   logic [10:0] lane_b = 11'b1_0000001011;
   logic [10:0] lane_c = 11'b0_0000001100;
   logic [10:0] lane_d = 11'b1_0000001101;
+  binary128_t exp128 = '0;
+  binary64_t  exp64a = '0;
+  binary64_t  exp64b = '0;
+  binary32_t  exp32a = '0;
+  binary32_t  exp32b = '0;
+  binary32_t  exp32c = '0;
+  binary32_t  exp32d = '0;
 
   drive_meta(meta.sp_mode, meta.float_type_a, meta.float_type_b, meta.float_type_c, meta.float_type_d);
   drive_lanes(lane_a, lane_b, lane_c, lane_d);
   drive_valids(1'b0, 1'b1, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0);
   wait_n_ticks(LATENCY);
-  expect_all_zero_outputs("partial64 disable");
+  expect_disabled_outputs_hold(meta_hold, exp128, exp64a, exp64b, exp32a, exp32b, exp32c, exp32d,
+                               "partial64 disable");
 `SVTEST_END
 
 // ----------------------------------------------------------------------
-// Spec 1/9/8: partial FOUR_SP_MODE valid disables module and forces zeros
+// Spec 1/9/8: partial FOUR_SP_MODE valid disables module and holds prior outputs
 // ----------------------------------------------------------------------
 `SVTEST(partial_valid32_disables_outputs)
   float_metadata_t meta = mk_meta(FOUR_SP_MODE, NEG_INF, POS_DENORMAL, NORMAL, NORMAL);
+  float_metadata_t meta_hold = meta;
   logic [10:0] lane_a = 11'b0_0000010001;
   logic [10:0] lane_b = 11'b1_0000010010;
   logic [10:0] lane_c = 11'b0_0000010011;
   logic [10:0] lane_d = 11'b1_0000010100;
+  binary128_t exp128 = '0;
+  binary64_t  exp64a = '0;
+  binary64_t  exp64b = '0;
+  binary32_t  exp32a = '0;
+  binary32_t  exp32b = '0;
+  binary32_t  exp32c = '0;
+  binary32_t  exp32d = '0;
 
   drive_meta(meta.sp_mode, meta.float_type_a, meta.float_type_b, meta.float_type_c, meta.float_type_d);
   drive_lanes(lane_a, lane_b, lane_c, lane_d);
   drive_valids(1'b0, 1'b0, 1'b0, 1'b1, 1'b1, 1'b0, 1'b1);
   wait_n_ticks(LATENCY);
-  expect_all_zero_outputs("partial32 disable");
+  expect_disabled_outputs_hold(meta_hold, exp128, exp64a, exp64b, exp32a, exp32b, exp32c, exp32d,
+                               "partial32 disable");
 `SVTEST_END
 
 // ----------------------------------------------------------------------
-// Spec 9/8: disabled input clears outputs to zero even after an enabled transaction
+// Spec 9/8: disabled input holds outputs and clears valids after enable
 // ----------------------------------------------------------------------
-`SVTEST(disabled_clears_outputs_after_enable)
+`SVTEST(disabled_holds_outputs_after_enable)
   float_metadata_t meta_on  = mk_meta(SINGLE_MODE, NORMAL, NORMAL, NORMAL, NORMAL);
   float_metadata_t meta_off = mk_meta(FOUR_SP_MODE, POS_INF, NEG_INF, NA, ZERO);
   logic [10:0] lane_on  = 11'b0_0000001111;
@@ -161,6 +180,14 @@ The specification of fixed128_64_32_partitiona:
   logic [10:0] lane_b   = 11'b0_0000000010;
   logic [10:0] lane_c   = 11'b1_0000000011;
   logic [10:0] lane_d   = 11'b0_0000000100;
+  float_metadata_t hold_meta;
+  binary128_t hold128;
+  binary64_t  hold64a;
+  binary64_t  hold64b;
+  binary32_t  hold32a;
+  binary32_t  hold32b;
+  binary32_t  hold32c;
+  binary32_t  hold32d;
 
   drive_meta(meta_on.sp_mode, meta_on.float_type_a, meta_on.float_type_b, meta_on.float_type_c, meta_on.float_type_d);
   drive_lanes(lane_on, lane_b, lane_c, lane_d);
@@ -170,12 +197,21 @@ The specification of fixed128_64_32_partitiona:
   expect_valids(1'b1, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, "enabled valids");
   expect_exp128(lane_on, "enabled exp128");
   expect_no_error("enabled no error");
+  hold_meta = s_o_metadata;
+  hold128 = s_o_exp_a128;
+  hold64a = s_o_exp_a64a;
+  hold64b = s_o_exp_a64b;
+  hold32a = s_o_exp_a32a;
+  hold32b = s_o_exp_a32b;
+  hold32c = s_o_exp_a32c;
+  hold32d = s_o_exp_a32d;
 
   drive_meta(meta_off.sp_mode, meta_off.float_type_a, meta_off.float_type_b, meta_off.float_type_c, meta_off.float_type_d);
   drive_lanes(lane_off, lane_b, lane_c, lane_d);
   drive_valids(1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0);
   wait_n_ticks(LATENCY);
-  expect_all_zero_outputs("disabled clears");
+  expect_disabled_outputs_hold(hold_meta, hold128, hold64a, hold64b, hold32a, hold32b, hold32c, hold32d,
+                               "disabled holds");
 `SVTEST_END
 
 // ----------------------------------------------------------------------
