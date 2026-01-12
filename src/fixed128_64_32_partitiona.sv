@@ -17,9 +17,8 @@
  * my_fixed32_partitiona_a,b,c,d. The idea for this module now is to
  * combine them all into one module for all partitiona's computation.
  * 
- * The idea is that for SINGLE and TWO SP modes, the latency will be 
- * 1; and for FOUR SP mode, the latency will be 2. This is because of
- * the dual port property of BRAM on FPGA and SRAM on ASIC.
+ * The implementation is to optimize for the dual port property of 
+ * BRAMs on FPGAs and SRAMs on ASICs.
  * 
  ********************************************************************
  * 
@@ -120,10 +119,10 @@ end
  * FSM
  */
 typedef enum logic [1:0] { 
-  S0_IDLE     = 3'b00,
-  S1          = 3'b01,
-  S2          = 3'b10,
-  S3          = 3'b11
+  S0_IDLE     = 2'b00,
+  S1          = 2'b01,
+  S2          = 2'b10,
+  S3          = 2'b11
 } state_t;
 state_t s_curr_state, s_next_state;
 always_ff @( posedge i_clk ) begin : float_to_fixed_FSM
@@ -164,7 +163,7 @@ always_comb begin : stage_en_control
         s_next_state = S2;
       end // if (i_metadata.sp_mode === FOUR_SP_MODE)
       else begin
-        s_next_state = S0_IDLE
+        s_next_state = S0_IDLE;
       end // else
     end
     S2: begin
@@ -333,7 +332,7 @@ always_ff @( posedge i_clk ) begin : stage2a
   end
   else begin
     if (s_S2_en) begin
-      case (i_metadata.sp_mode)
+      case (s_stage1b_metadata.sp_mode)
         SINGLE_MODE: begin
           // nop
         end // SINGLE_MODE
@@ -426,8 +425,8 @@ assign o_exp_a64a = s_stage2a_exp_a64a;
 assign o_exp_a64b = s_stage2a_exp_a64b;
 assign o_exp_a32a = s_stage2a_exp_a32a;
 assign o_exp_a32b = s_stage2a_exp_a32b;
-assign o_exp_a32c = binary128_to_binary32_rne(s_stage1a_exp_a32c);
-assign o_exp_a32d = binary128_to_binary32_rne(s_stage1a_exp_a32d);
+assign o_exp_a32c = binary128_to_binary32_rne(s_stage2a_exp_a32c);
+assign o_exp_a32d = binary128_to_binary32_rne(s_stage2a_exp_a32d);
 assign o_valid128 = s_stage2b_valid128;
 assign o_valid64a = s_stage2b_valid64a;
 assign o_valid64b = s_stage2b_valid64b;

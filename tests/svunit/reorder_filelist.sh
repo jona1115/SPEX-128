@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # Reorder filelist:
-#  1) float_metadata_pkg.sv(h) -> last in packages block
-#  2) <top>.sv                 -> last line overall (basename match)
+#  1) Packages block order:
+#       - all other packages
+#       - float_metadata_pkg.sv(h)          (second-to-last in packages)
+#       - binary128_convert_pkg.sv(h)       (last in packages)
+#  2) <top>.sv -> last line overall (basename match)
 #
 # Usage:
 #   ./reorder_filelist.sh [--top TOP_BASENAME] [<filelist.f>] [--dry-run]
 # Defaults:
 #   - TOP_BASENAME = SPEX128_top.sv
-#   - filelist.f = ./filelist.f (in CWD) if not provided
+#   - filelist.f   = ./filelist.f (in CWD) if not provided
 
 set -euo pipefail
 
@@ -42,28 +45,27 @@ if [[ -z "$FILE" ]]; then
 fi
 [[ -f "$FILE" ]] || { echo "No such file: ${FILE}" >&2; exit 2; }
 
-# tmp
 TMP="$(mktemp "${FILE}.XXXXXX")"
 
 # Do the reorder in one awk pass:
 # - Files are those ending with .sv or .svh
 # - Packages are paths containing /packages/
-# - float_metadata_pkg.* is special and emitted at end of the package block
+# - float_metadata_pkg.* is emitted right before convert_pkg block
+# - binary128_convert_pkg.* is emitted as the last line of the packages block
 # - Top is matched by BASENAME at end of the path (whitespace allowed after)
 awk -v top_base="$TOP_NAME" '
-  function is_file(s)    { return (s ~ /\.sv(h)?([[:space:]]*)$/) }
-  function is_pkg(s)     { return (s ~ /\/packages\//) }
-  function is_meta(s)    { return (s ~ /\/packages\/float_metadata_pkg\.sv(h)?([[:space:]]*)$/) }
-  function is_top(s)     {
-    # basename match of top_base at end (allow trailing spaces)
-    # e.g., .../SPEX128_top.sv
-    gsub(/[[:space:]]+$/, "", s)     # strip trailing spaces for safe compare
+  function is_file(s)     { return (s ~ /\.sv(h)?([[:space:]]*)$/) }
+  function is_pkg(s)      { return (s ~ /\/packages\//) }
+  function is_meta(s)     { return (s ~ /\/packages\/float_metadata_pkg\.sv(h)?([[:space:]]*)$/) }
+  function is_convert(s)  { return (s ~ /\/packages\/binary128_convert_pkg\.sv(h)?([[:space:]]*)$/) }
+  function is_top(s)      {
+    gsub(/[[:space:]]+$/, "", s)
     n = split(s, parts, "/")
     return (parts[n] == top_base)
   }
 
   BEGIN {
-    nh=0; np=0; nmeta=0; nm=0; nt=0; ntail=0
+    nh=0; np=0; nmeta=0; nconv=0; nm=0; nt=0; ntail=0
     files_seen=0
   }
 
@@ -71,8 +73,9 @@ awk -v top_base="$TOP_NAME" '
     if (is_file($0)) {
       files_seen=1
       if (is_pkg($0)) {
-        if (is_meta($0)) meta[++nmeta] = $0
-        else             pkgs[++np]   = $0
+        if      (is_convert($0)) conv[++nconv] = $0
+        else if (is_meta($0))    meta[++nmeta] = $0
+        else                     pkgs[++np]    = $0
       } else {
         if (is_top($0))  top[++nt] = $0
         else             mods[++nm] = $0
@@ -86,15 +89,17 @@ awk -v top_base="$TOP_NAME" '
   END {
     # header
     for (i=1;i<=nh;i++) print header[i]
-    # packages (excluding meta)
+    # packages (excluding meta & convert)
     for (i=1;i<=np;i++) print pkgs[i]
-    # meta at the very end of packages block
+    # meta right before convert (if any)
     for (i=1;i<=nmeta;i++) print meta[i]
+    # convert pkg LAST in packages block (if any)
+    for (i=1;i<=nconv;i++) print conv[i]
     # non-package files (excluding top)
     for (i=1;i<=nm;i++) print mods[i]
-    # anything that appeared after files started but wasnt a file (keep position near end)
+    # any non-file lines that appeared after files started
     for (i=1;i<=ntail;i++) print tail[i]
-    # last occurrence of top wins, print as absolute last line
+    # top last overall (last occurrence wins)
     if (nt > 0) print top[nt]
   }
 ' "$FILE" > "$TMP"
