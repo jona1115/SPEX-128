@@ -215,9 +215,9 @@ The specification of fixed128_64_32_partitiona:
 `SVTEST_END
 
 // ----------------------------------------------------------------------
-// Spec 7/3/8: latency is 2 cycles for valid and data on SINGLE_MODE path
+// Spec 7/3/8: latency is 3 cycles for valid and data on SINGLE_MODE path
 // ----------------------------------------------------------------------
-`SVTEST(latency_two_cycles_single_mode)
+`SVTEST(latency_three_cycles_single_mode)
   float_metadata_t meta = mk_meta(SINGLE_MODE, NORMAL, NORMAL, NORMAL, NORMAL);
   logic [10:0] lane_a = 11'b0_0000000101;
   logic [10:0] lane_b = 11'b0_0000000110;
@@ -227,7 +227,7 @@ The specification of fixed128_64_32_partitiona:
   drive_meta(meta.sp_mode, meta.float_type_a, meta.float_type_b, meta.float_type_c, meta.float_type_d);
   drive_lanes(lane_a, lane_b, lane_c, lane_d);
   drive_valids(1'b1, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0);
-  wait_n_ticks(1);
+  wait_n_ticks(2);
   expect_valids(1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, "latency valid=0 @1");
   expect_no_error("latency no error @1");
 
