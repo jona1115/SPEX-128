@@ -344,40 +344,134 @@ fixed_partition_sp #(
   .o_debug(s_my_fixed_partition_sp_par_c_debug)
 );
 
-binary128_t s_my_fixed128_partitiond_exp_d128;
-logic       s_my_fixed128_partitiond_o_valid;
+logic             unused_my_fixed_partition_sp_par_d_0,
+                  unused_my_fixed_partition_sp_par_d_1,
+                  unused_my_fixed_partition_sp_par_d_2,
+                  unused_my_fixed_partition_sp_par_d_3,
+                  unused_my_fixed_partition_sp_par_d_4,
+                  unused_my_fixed_partition_sp_par_d_5;
+binary64_t        unused_my_fixed_partition_sp_par_d_64_0,
+                  unused_my_fixed_partition_sp_par_d_64_1;
+binary32_t        unused_my_fixed_partition_sp_par_d_32_0,
+                  unused_my_fixed_partition_sp_par_d_32_1,
+                  unused_my_fixed_partition_sp_par_d_32_2,
+                  unused_my_fixed_partition_sp_par_d_32_3;
+float_metadata_t  s_my_fixed_partition_sp_par_d_metadata;
+binary128_t       s_my_fixed_partition_sp_par_d_exp_a128;
+logic             s_my_fixed_partition_sp_par_d_o_valid128;
 // Metadata
-logic [3:0] s_my_fixed128_partitiond_identifier;
-logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed128_partitiond_error;
-logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed128_partitiond_debug;
-fixed128_partitiond #() my_fixed128_partitiond (
+logic [3:0] s_my_fixed_partition_sp_par_d_identifier;
+logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed_partition_sp_par_d_error;
+logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed_partition_sp_par_d_debug;
+fixed_partition_sp #(
+  .HAS_SIGN(1'b0),
+  .USE_128_FOR_64(1'b0),
+  .USE_128_FOR_32(1'b0),
+  .ENABLE_64(1'b0),
+  .ENABLE_32(1'b0),
+  .ADDR_BITS_128(13),
+  .INIT_128_FILE("fixed128_d_partition.hex")
+) my_fixed_partition_sp_par_d (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_d(s_my_float_to_fixed_fixed[90:78]),
-  .o_exp_d(s_my_fixed128_partitiond_exp_d128),
-  .i_valid(s_my_float_to_fixed_o_valid),
-  .o_valid(s_my_fixed128_partitiond_o_valid),
-  .o_sanity_identifier(s_my_fixed128_partitiond_identifier),
-  .o_error(s_my_fixed128_partitiond_error),
-  .o_debug(s_my_fixed128_partitiond_debug)
+  .i_metadata(s_my_float_to_fixed_metadata),
+  .o_metadata(s_my_fixed_partition_sp_par_d_metadata),
+  .i_lane_128(s_my_float_to_fixed_fixed[90:78]),
+  .i_lane_64a('0),
+  .i_lane_64b('0),
+  .i_lane_32a('0),
+  .i_lane_32b('0),
+  .i_lane_32c('0),
+  .i_lane_32d('0),
+  .o_exp_a128(s_my_fixed_partition_sp_par_d_exp_a128),
+  .o_exp_a64a(unused_my_fixed_partition_sp_par_d_64_0),
+  .o_exp_a64b(unused_my_fixed_partition_sp_par_d_64_1),
+  .o_exp_a32a(unused_my_fixed_partition_sp_par_d_32_0),
+  .o_exp_a32b(unused_my_fixed_partition_sp_par_d_32_1),
+  .o_exp_a32c(unused_my_fixed_partition_sp_par_d_32_2),
+  .o_exp_a32d(unused_my_fixed_partition_sp_par_d_32_3),
+  .i_valid128(s_my_float_to_fixed_o_valid),
+  .i_valid64a('0),
+  .i_valid64b('0),
+  .i_valid32a('0),
+  .i_valid32b('0),
+  .i_valid32c('0),
+  .i_valid32d('0),
+  .o_valid128(s_my_fixed_partition_sp_par_d_o_valid128),
+  .o_valid64a(unused_my_fixed_partition_sp_par_d_0),
+  .o_valid64b(unused_my_fixed_partition_sp_par_d_1),
+  .o_valid32a(unused_my_fixed_partition_sp_par_d_2),
+  .o_valid32b(unused_my_fixed_partition_sp_par_d_3),
+  .o_valid32c(unused_my_fixed_partition_sp_par_d_4),
+  .o_valid32d(unused_my_fixed_partition_sp_par_d_5),
+  .o_sanity_identifier(s_my_fixed_partition_sp_par_d_identifier),
+  .o_error(s_my_fixed_partition_sp_par_d_error),
+  .o_debug(s_my_fixed_partition_sp_par_d_debug)
 );
 
-binary128_t s_my_fixed128_partitione_exp_d128;
-logic       s_my_fixed128_partitione_o_valid;
+logic             unused_my_fixed_partition_sp_par_e_0,
+                  unused_my_fixed_partition_sp_par_e_1,
+                  unused_my_fixed_partition_sp_par_e_2,
+                  unused_my_fixed_partition_sp_par_e_3,
+                  unused_my_fixed_partition_sp_par_e_4,
+                  unused_my_fixed_partition_sp_par_e_5;
+binary64_t        unused_my_fixed_partition_sp_par_e_64_0,
+                  unused_my_fixed_partition_sp_par_e_64_1;
+binary32_t        unused_my_fixed_partition_sp_par_e_32_0,
+                  unused_my_fixed_partition_sp_par_e_32_1,
+                  unused_my_fixed_partition_sp_par_e_32_2,
+                  unused_my_fixed_partition_sp_par_e_32_3;
+float_metadata_t  s_my_fixed_partition_sp_par_e_metadata;
+binary128_t       s_my_fixed_partition_sp_par_e_exp_a128;
+logic             s_my_fixed_partition_sp_par_e_o_valid128;
 // Metadata
-logic [3:0] s_my_fixed128_partitione_identifier;
-logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed128_partitione_error;
-logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed128_partitione_debug;
-fixed128_partitione #() my_fixed128_partitione (
+logic [3:0] s_my_fixed_partition_sp_par_e_identifier;
+logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed_partition_sp_par_e_error;
+logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed_partition_sp_par_e_debug;
+fixed_partition_sp #(
+  .HAS_SIGN(1'b0),
+  .USE_128_FOR_64(1'b0),
+  .USE_128_FOR_32(1'b0),
+  .ENABLE_64(1'b0),
+  .ENABLE_32(1'b0),
+  .ADDR_BITS_128(13),
+  .INIT_128_FILE("fixed128_e_partition.hex")
+) my_fixed_partition_sp_par_e (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
-  .i_e(s_my_float_to_fixed_fixed[77:65]),
-  .o_exp_e(s_my_fixed128_partitione_exp_d128),
-  .i_valid(s_my_float_to_fixed_o_valid),
-  .o_valid(s_my_fixed128_partitione_o_valid),
-  .o_sanity_identifier(s_my_fixed128_partitione_identifier),
-  .o_error(s_my_fixed128_partitione_error),
-  .o_debug(s_my_fixed128_partitione_debug)
+  .i_metadata(s_my_float_to_fixed_metadata),
+  .o_metadata(s_my_fixed_partition_sp_par_e_metadata),
+  .i_lane_128(s_my_float_to_fixed_fixed[77:65]),
+  .i_lane_64a('0),
+  .i_lane_64b('0),
+  .i_lane_32a('0),
+  .i_lane_32b('0),
+  .i_lane_32c('0),
+  .i_lane_32d('0),
+  .o_exp_a128(s_my_fixed_partition_sp_par_e_exp_a128),
+  .o_exp_a64a(unused_my_fixed_partition_sp_par_e_64_0),
+  .o_exp_a64b(unused_my_fixed_partition_sp_par_e_64_1),
+  .o_exp_a32a(unused_my_fixed_partition_sp_par_e_32_0),
+  .o_exp_a32b(unused_my_fixed_partition_sp_par_e_32_1),
+  .o_exp_a32c(unused_my_fixed_partition_sp_par_e_32_2),
+  .o_exp_a32d(unused_my_fixed_partition_sp_par_e_32_3),
+  .i_valid128(s_my_float_to_fixed_o_valid),
+  .i_valid64a('0),
+  .i_valid64b('0),
+  .i_valid32a('0),
+  .i_valid32b('0),
+  .i_valid32c('0),
+  .i_valid32d('0),
+  .o_valid128(s_my_fixed_partition_sp_par_e_o_valid128),
+  .o_valid64a(unused_my_fixed_partition_sp_par_e_0),
+  .o_valid64b(unused_my_fixed_partition_sp_par_e_1),
+  .o_valid32a(unused_my_fixed_partition_sp_par_e_2),
+  .o_valid32b(unused_my_fixed_partition_sp_par_e_3),
+  .o_valid32c(unused_my_fixed_partition_sp_par_e_4),
+  .o_valid32d(unused_my_fixed_partition_sp_par_e_5),
+  .o_sanity_identifier(s_my_fixed_partition_sp_par_e_identifier),
+  .o_error(s_my_fixed_partition_sp_par_e_error),
+  .o_debug(s_my_fixed_partition_sp_par_e_debug)
 );
 
 binary128_t s_my_fixed128_partitionf_ts_exp_f128;
@@ -551,8 +645,8 @@ logic         s_mux_3_valid;
 always_comb begin : mux_3
   case (`S)
     SINGLE_MODE: begin
-      s_mux_3       = s_my_fixed128_partitiond_exp_d128;
-      s_mux_3_valid = s_my_fixed128_partitiond_o_valid;
+      s_mux_3       = s_my_fixed_partition_sp_par_d_exp_a128;
+      s_mux_3_valid = s_my_fixed_partition_sp_par_d_o_valid128;
     end // SINGLE_MODE
 
     TWO_SP_MODE: begin
@@ -683,10 +777,10 @@ sp_multiplier #() my_sp_multiplier_2 (
   .i_rst_n(i_rst_n),
   .i_metadata(s_level2_metadata),
   .o_metadata(unused_metadata_2/*not like it is useful anyway*/),
-  .i_in_anikin(s_my_fixed128_partitione_exp_d128),
+  .i_in_anikin(s_my_fixed_partition_sp_par_e_exp_a128),
   .i_in_force(s_my_fixed128_partitionf_ts_exp_f128),
   .o_out_jedi(s_my_sp_multiplier_2_jedi),
-  .i_valid128_anikin(s_my_fixed128_partitione_o_valid),
+  .i_valid128_anikin(s_my_fixed_partition_sp_par_e_o_valid128),
   .i_valid128_force(s_my_fixed128_partitionf_ts_o_valid),
   .i_valid64a_anikin('0),
   .i_valid64a_force('0),
@@ -1012,8 +1106,8 @@ assign os_my_float_to_fixed_fixed = s_my_float_to_fixed_fixed;
 assign os_my_fixed128_64_partitiona_exp_a128 = s_my_fixed_partition_sp_par_a_exp_a128;
 assign os_my_fixed128_64_partitionb_exp_a128 = s_my_fixed_partition_sp_par_b_exp_a128;
 assign os_my_fixed128_64_partitionc_exp_a128 = s_my_fixed_partition_sp_par_c_exp_a128;
-assign os_my_fixed128_partitiond_exp_d128 = s_my_fixed128_partitiond_exp_d128;
-assign os_my_fixed128_partitione_exp_d128 = s_my_fixed128_partitione_exp_d128;
+assign os_my_fixed128_partitiond_exp_d128 = s_my_fixed_partition_sp_par_d_exp_a128;
+assign os_my_fixed128_partitione_exp_d128 = s_my_fixed_partition_sp_par_e_exp_a128;
 assign os_my_fixed128_partitionf_ts_exp_f128 = s_my_fixed128_partitionf_ts_exp_f128;
 assign os_mux_0 = s_mux_0;
 assign os_mux_1 = s_mux_1;
@@ -1027,8 +1121,8 @@ assign os_my_sp_multiplier_3_jedi = s_my_sp_multiplier_3_jedi;
 assign os_my_sp_multiplier_4_jedi = s_my_sp_multiplier_4_jedi;
 assign os_my_float_to_fixed_metadata = s_my_float_to_fixed_metadata;
 assign os_my_float_to_fixed_o_valid = s_my_float_to_fixed_o_valid;
-assign os_my_fixed128_partitiond_o_valid = s_my_fixed128_partitiond_o_valid;
-assign os_my_fixed128_partitione_o_valid = s_my_fixed128_partitione_o_valid;
+assign os_my_fixed128_partitiond_o_valid = s_my_fixed_partition_sp_par_d_o_valid128;
+assign os_my_fixed128_partitione_o_valid = s_my_fixed_partition_sp_par_e_o_valid128;
 assign os_my_fixed128_partitionf_ts_o_valid = s_my_fixed128_partitionf_ts_o_valid;
 assign os_my_fixed64_partitionf_ts_a_o_valid = s_my_fixed64_partitionf_ts_a_o_valid;
 assign os_my_fixed64_partitionf_ts_b_o_valid = s_my_fixed64_partitionf_ts_b_o_valid;
