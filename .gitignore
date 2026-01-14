@@ -15,3 +15,5 @@ filelist.f
 
 # But keep .git*
 !.git*
+
+trash/
