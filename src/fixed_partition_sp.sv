@@ -35,6 +35,18 @@ import fixed128_pkg::*;
 import fixed64_pkg::*;
 import fixed32_pkg::*;
 
+/**
+ * Some parts of this module is written in a way that make this module highly reusable
+ * whether you want to use 128 reusable LUT or not, and those parts are gated by parameters
+ * which the synthesizer should be smart enough to exclude when compiling, as long as you
+ * set the correct parameter flags. But to be safe this macro gates the compilation of those
+ * parts if needed.
+ * 
+ * When this macro is set, those lines of code will be excluded by the compilation like a c
+ * macro and will not be included in the synthesized hardware, hence "hardware" "blockout".
+ */
+// `define HARDWARE_BLOCKOUT
+
 module fixed_partition_sp #(
   // Behavior controls
   parameter bit HAS_SIGN          = 1'b0, // MSB is sign bit when set
@@ -199,10 +211,12 @@ end
 //=====================================================================================
 (* rom_style = "block" *) binary128_t mem128_pos  [0:DEPTH_128-1];
 (* rom_style = "block" *) binary128_t mem128_neg  [0:DEPTH_128-1];
+`ifndef HARDWARE_BLOCKOUT
 (* rom_style = "block" *) binary64_t  mem64_pos   [0:DEPTH_64-1];
 (* rom_style = "block" *) binary64_t  mem64_neg   [0:DEPTH_64-1];
 (* rom_style = "block" *) binary32_t  mem32_pos   [0:DEPTH_32-1];
 (* rom_style = "block" *) binary32_t  mem32_neg   [0:DEPTH_32-1];
+`endif
 
 initial begin
   if (HAS_SIGN) begin
@@ -214,6 +228,7 @@ initial begin
   end
 end
 
+`ifndef HARDWARE_BLOCKOUT
 generate
   if (ENABLE_64) begin : init64
     initial begin
@@ -241,6 +256,7 @@ generate
     end
   end
 endgenerate
+`endif
 
 //=====================================================================================
 // Stage 1: Read LUTs
@@ -310,6 +326,7 @@ always_ff @( posedge i_clk ) begin : stage1a
               end
             end
             else begin
+`ifndef HARDWARE_BLOCKOUT
               if (HAS_SIGN) begin
                 if (i_lane_64a[LANE_BITS_64-1] === 1'b0) begin
                   s_stage1a_exp_a64a_64 <= mem64_pos[i_lane_64a[ADDR_BITS_64-1:0]];
@@ -329,6 +346,7 @@ always_ff @( posedge i_clk ) begin : stage1a
                 s_stage1a_exp_a64a_64 <= mem64_pos[i_lane_64a[ADDR_BITS_64-1:0]];
                 s_stage1a_exp_a64b_64 <= mem64_pos[i_lane_64b[ADDR_BITS_64-1:0]];
               end
+`endif
             end
           end
         end // TWO_SP_MODE
@@ -359,6 +377,7 @@ always_ff @( posedge i_clk ) begin : stage1a
               end
             end
             else begin
+`ifndef HARDWARE_BLOCKOUT
               if (HAS_SIGN) begin
                 if (i_lane_32a[LANE_BITS_32-1] === 1'b0) begin
                   s_stage1a_exp_a32a_32 <= mem32_pos[i_lane_32a[ADDR_BITS_32-1:0]];
@@ -378,6 +397,7 @@ always_ff @( posedge i_clk ) begin : stage1a
                 s_stage1a_exp_a32a_32 <= mem32_pos[i_lane_32a[ADDR_BITS_32-1:0]];
                 s_stage1a_exp_a32b_32 <= mem32_pos[i_lane_32b[ADDR_BITS_32-1:0]];
               end
+`endif
             end
           end
         end // FOUR_SP_MODE
@@ -497,6 +517,7 @@ always_ff @( posedge i_clk ) begin : stage2a
               end
             end
             else begin
+`ifndef HARDWARE_BLOCKOUT
               if (HAS_SIGN) begin
                 if (i_lane_32c[LANE_BITS_32-1] === 1'b0) begin
                   s_stage2a_exp_a32c_32 <= mem32_pos[i_lane_32c[ADDR_BITS_32-1:0]];
@@ -516,6 +537,7 @@ always_ff @( posedge i_clk ) begin : stage2a
                 s_stage2a_exp_a32c_32 <= mem32_pos[i_lane_32c[ADDR_BITS_32-1:0]];
                 s_stage2a_exp_a32d_32 <= mem32_pos[i_lane_32d[ADDR_BITS_32-1:0]];
               end
+`endif
             end
           end
 
