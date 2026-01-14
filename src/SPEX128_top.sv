@@ -817,8 +817,8 @@ always_comb begin : mux_4
 
     TWO_SP_MODE: begin
       s_mux_4       = s_my_sp_multiplier_1_jedi;
-      s_mux_4_valid = s_my_sp_multiplier_2_valid64a_jedi &
-                      s_my_sp_multiplier_2_valid64b_jedi;
+      s_mux_4_valid = s_my_sp_multiplier_1_valid64a_jedi &
+                      s_my_sp_multiplier_1_valid64b_jedi;
     end // TWO_SP_MODE
 
     FOUR_SP_MODE: begin
@@ -1048,58 +1048,21 @@ assign o_valid              = `S === SINGLE_MODE  ?  s_my_sp_multiplier_4_valid1
                                                      s_my_sp_multiplier_3_valid32d_jedi     :
                               '0;
 assign o_sanity_identifier  = MODULE_IDENTIFIER;
-assign o_error              = '0/*s_my_float_to_fixed_error |
-                              s_my_fixed128_64_32_partitiona_0_error |
-                              s_my_fixed128_64_partitionb_error |
-                              s_my_fixed_partition_sp_par_b_error |
-                              s_my_fixed128_partitiond_error |
-                              s_my_fixed128_partitione_error |
-                              s_my_fixed128_partitionf_ts_error |
-                              s_my_fixed64_partitionf_ts_a_error |
-                              s_my_fixed64_partitionf_ts_b_error |
-                              // s_my_fixed32_partitiona_a_error |
-                              // s_my_fixed32_partitiona_b_error |
-                              // s_my_fixed32_partitiona_c_error |
-                              // s_my_fixed32_partitiona_d_error |
-                              s_my_fixed32_partitionb_a_error |
-                              s_my_fixed32_partitionb_b_error |
-                              s_my_fixed32_partitionb_c_error |
-                              s_my_fixed32_partitionb_d_error |
-                              s_my_fixed32_partitionc_a_error |
-                              s_my_fixed32_partitionc_b_error |
-                              s_my_fixed32_partitionc_c_error |
-                              s_my_fixed32_partitionc_d_error |
-                              s_my_sp_multiplier_0_error |
-                              s_my_sp_multiplier_1_error |
-                              s_my_sp_multiplier_2_error |
-                              s_my_sp_multiplier_3_error |
-                              s_my_sp_multiplier_4_error*/;
-assign o_debug              = '0/*s_my_float_to_fixed_debug |
-                              s_my_fixed128_64_32_partitiona_0_debug |
-                              s_my_fixed_partition_sp_par_b_debug |
-                              s_my_fixed128_64_partitionc_debug |
-                              s_my_fixed128_partitiond_debug |
-                              s_my_fixed128_partitione_debug |
-                              s_my_fixed128_partitionf_ts_debug |
-                              s_my_fixed64_partitionf_ts_a_debug |
-                              s_my_fixed64_partitionf_ts_b_debug |
-                              // s_my_fixed32_partitiona_a_debug |
-                              // s_my_fixed32_partitiona_b_debug |
-                              // s_my_fixed32_partitiona_c_debug |
-                              // s_my_fixed32_partitiona_d_debug |
-                              s_my_fixed32_partitionb_a_debug |
-                              s_my_fixed32_partitionb_b_debug |
-                              s_my_fixed32_partitionb_c_debug |
-                              s_my_fixed32_partitionb_d_debug |
-                              s_my_fixed32_partitionc_a_debug |
-                              s_my_fixed32_partitionc_b_debug |
-                              s_my_fixed32_partitionc_c_debug |
-                              s_my_fixed32_partitionc_d_debug |
-                              s_my_sp_multiplier_0_debug |
-                              s_my_sp_multiplier_1_debug |
-                              s_my_sp_multiplier_2_debug |
-                              s_my_sp_multiplier_3_debug |
-                              s_my_sp_multiplier_4_debug*/;
+assign o_error              = s_my_float_to_fixed_error &
+                              s_my_fixed_partition_sp_par_a_error &
+                              s_my_fixed_partition_sp_par_b_error &
+                              s_my_fixed_partition_sp_par_c_error &
+                              s_my_fixed_partition_sp_par_d_error &
+                              s_my_fixed_partition_sp_par_e_error &
+                              s_my_fixed128_partitionf_ts_error &
+                              s_my_fixed64_partitionf_ts_a_error &
+                              s_my_fixed64_partitionf_ts_b_error &
+                              s_my_sp_multiplier_0_error &
+                              s_my_sp_multiplier_1_error &
+                              s_my_sp_multiplier_2_error &
+                              s_my_sp_multiplier_3_error &
+                              s_my_sp_multiplier_4_error;
+assign o_debug              = '0;
 
 // Temp, maybe
 assign os_my_float_to_fixed_fixed = s_my_float_to_fixed_fixed;
@@ -1126,10 +1089,10 @@ assign os_my_fixed128_partitione_o_valid = s_my_fixed_partition_sp_par_e_o_valid
 assign os_my_fixed128_partitionf_ts_o_valid = s_my_fixed128_partitionf_ts_o_valid;
 assign os_my_fixed64_partitionf_ts_a_o_valid = s_my_fixed64_partitionf_ts_a_o_valid;
 assign os_my_fixed64_partitionf_ts_b_o_valid = s_my_fixed64_partitionf_ts_b_o_valid;
-assign os_my_fixed32_partitiona_a_o_valid = s_my_fixed_partition_sp_par_a_exp_a32a; // todo rename lhs
-assign os_my_fixed32_partitiona_b_o_valid = s_my_fixed_partition_sp_par_a_exp_a32b; // todo rename lhs
-assign os_my_fixed32_partitiona_c_o_valid = s_my_fixed_partition_sp_par_a_exp_a32c; // todo rename lhs
-assign os_my_fixed32_partitiona_d_o_valid = s_my_fixed_partition_sp_par_a_exp_a32d; // todo rename lhs
+assign os_my_fixed32_partitiona_a_o_valid = s_my_fixed_partition_sp_par_a_o_valid32a; // todo rename lhs
+assign os_my_fixed32_partitiona_b_o_valid = s_my_fixed_partition_sp_par_a_o_valid32b; // todo rename lhs
+assign os_my_fixed32_partitiona_c_o_valid = s_my_fixed_partition_sp_par_a_o_valid32c; // todo rename lhs
+assign os_my_fixed32_partitiona_d_o_valid = s_my_fixed_partition_sp_par_a_o_valid32d; // todo rename lhs
 assign os_my_fixed32_partitionb_a_o_valid = s_my_fixed_partition_sp_par_b_o_valid32a; // todo rename lhs
 assign os_my_fixed32_partitionb_b_o_valid = s_my_fixed_partition_sp_par_b_o_valid32b; // todo rename lhs
 assign os_my_fixed32_partitionb_c_o_valid = s_my_fixed_partition_sp_par_b_o_valid32c; // todo rename lhs
