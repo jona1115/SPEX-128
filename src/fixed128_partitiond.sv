@@ -81,7 +81,7 @@ binary128_t s_o_exp_d;
 /**
  * The LUT part of it
  */
-(* rom_style = "block" *) binary128_t mem [0:8191]; // Infer a BRAM
+(* rom_style = "block" *) logic [127:0] mem [0:8191]; // Infer a BRAM
 initial $readmemh(INIT_FILE, mem);
 always_ff @( posedge i_clk ) begin : LUT
   if (!i_rst_n) begin
@@ -89,7 +89,7 @@ always_ff @( posedge i_clk ) begin : LUT
   end
   else begin
     if (i_valid) begin // The hope is that this will infer a en signal into the BRAM
-      s_o_exp_d <= mem[i_d];
+      s_o_exp_d <= binary128_t'(mem[i_d]);
     end // if (i_valid) begin
   end // else begin
 end // always_ff

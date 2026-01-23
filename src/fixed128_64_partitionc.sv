@@ -107,8 +107,8 @@ end
 /**
  * The LUT part of it
  */
-(* rom_style = "block" *) binary128_t mem128  [0:8191]; // Infer a BRAM
-(* rom_style = "block" *) binary64_t  mem64   [0:8191]; // Infer a BRAM
+(* rom_style = "block" *) logic [127:0] mem128  [0:8191]; // Infer a BRAM
+(* rom_style = "block" *) logic [63:0]  mem64   [0:8191]; // Infer a BRAM
 initial $readmemh(INIT_128_FILE, mem128);
 initial $readmemh(INIT_64_FILE, mem64);
 always_ff @( posedge i_clk ) begin : LUTs
@@ -121,14 +121,14 @@ always_ff @( posedge i_clk ) begin : LUTs
     case (i_metadata.sp_mode)
       SINGLE_MODE: begin
         if (i_valid128 === 1'b1) begin
-          s_o_exp_a128 <= mem128[i_a];
+          s_o_exp_a128 <= binary128_t'(mem128[i_a]);
         end // if (i_valid128 === 1'b1)
       end // SINGLE_MODE
 
       TWO_SP_MODE: begin
         if (i_valid64a === 1'b1 && i_valid64b === 1'b1) begin // To keep output in sync, both has to be valid 
-          s_o_exp_a64a <= mem64[i_a];                    // to proceed
-          s_o_exp_a64b <= mem64[i_a2];
+          s_o_exp_a64a <= binary64_t'(mem64[i_a]);                    // to proceed
+          s_o_exp_a64b <= binary64_t'(mem64[i_a2]);
         end // if (i_valid64a === 1'b1 && i_valid64b === 1'b1)
       end // TWO_SP_MODE
 

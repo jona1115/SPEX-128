@@ -106,10 +106,10 @@ end
 /**
  * The LUT part of it
  */
-(* rom_style = "block" *) binary128_t mempos128  [0:1023]; // Infer a BRAM
-(* rom_style = "block" *) binary128_t memneg128  [0:1023]; // Infer a BRAM
-(* rom_style = "block" *) binary64_t  mempos64   [0:1023]; // Infer a BRAM
-(* rom_style = "block" *) binary64_t  memneg64   [0:1023]; // Infer a BRAM
+(* rom_style = "block" *) logic [127:0] mempos128  [0:1023]; // Infer a BRAM
+(* rom_style = "block" *) logic [127:0] memneg128  [0:1023]; // Infer a BRAM
+(* rom_style = "block" *) logic [63:0]  mempos64   [0:1023]; // Infer a BRAM
+(* rom_style = "block" *) logic [63:0]  memneg64   [0:1023]; // Infer a BRAM
 initial $readmemh(INIT_128a_POS_FILE, mempos128);
 initial $readmemh(INIT_128a_NEG_FILE, memneg128);
 initial $readmemh(INIT_64a_POS_FILE, mempos64);
@@ -126,11 +126,11 @@ always_ff @( posedge i_clk ) begin : LUTs
         if (i_valid128 === 1'b1) begin
           if (i_a[10] === 1'b0) begin
             // Positive input a
-            s_o_exp_a128 <= mempos128[i_a[9:0]];
+            s_o_exp_a128 <= binary128_t'(mempos128[i_a[9:0]]);
           end
           else begin
             // Negative input a
-            s_o_exp_a128 <= memneg128[i_a[9:0]];
+            s_o_exp_a128 <= binary128_t'(memneg128[i_a[9:0]]);
           end
         end // if (i_valid128 === 1'b1)
       end // SINGLE_MODE
@@ -139,20 +139,20 @@ always_ff @( posedge i_clk ) begin : LUTs
         if (i_valid64a === 1'b1 && i_valid64b === 1'b1) begin // To keep output in sync, both has to be valid 
           if (i_a[10] === 1'b0) begin                         // to proceed
             // Positive input a(a)
-            s_o_exp_a64a <= mempos64[i_a[9:0]];
+            s_o_exp_a64a <= binary64_t'(mempos64[i_a[9:0]]);
           end
           else begin
             // Negative input a(a)
-            s_o_exp_a64a <= memneg64[i_a[9:0]];
+            s_o_exp_a64a <= binary64_t'(memneg64[i_a[9:0]]);
           end
 
           if (i_a2[10] === 1'b0) begin
             // Positive input a(b)
-            s_o_exp_a64b <= mempos64[i_a2[9:0]];
+            s_o_exp_a64b <= binary64_t'(mempos64[i_a2[9:0]]);
           end
           else begin
             // Negative input a(b)
-            s_o_exp_a64b <= memneg64[i_a2[9:0]];
+            s_o_exp_a64b <= binary64_t'(memneg64[i_a2[9:0]]);
           end
         end // if (i_valid64a === 1'b1 && i_valid64b === 1'b1)
       end // TWO_SP_MODE
