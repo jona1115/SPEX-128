@@ -53,6 +53,9 @@ runSVUnit -s verilator -f path/to/filelist.f # If you want to run svunit manuall
 ### Test Driven Development (TDD)
 I want to dedicate this section to describing my testing/developing philosophy. I use TDD, it works, and in my opinion, creates a positive feedback loop of self-documenting, and self-testing code. Not to mention easier to CI. So when you are reading the code, maybe take time to also look over the test. This is because the code is derived by the tests, not the other way around.
 
+# Vivado
+I use Vivado to synthesize for FPGA.
+It tends to throw this error because of how big the ROM is for level 2 LUT, run this command to make Vivado happy: `set_param synth.elaboration.rodinMoreOptions "rt::set_parameter var_size_limit 1048576"`
 
 # Installation of Tools
 ## SVUnit (no need to install, see ["After cloning"](https://github.com/jona1115/SPEX-128?tab=readme-ov-file#after-cloning))
