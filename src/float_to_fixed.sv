@@ -304,14 +304,29 @@ end // always_ff
  */
 logic s_S2_valid;
 always_ff @( posedge i_clk ) begin : stage2_convert
+  logic [NUM_BITS_128-1:0] fixed128_shifted;
+  logic [NUM_BITS_64-1:0] fixed64_a_shifted;
+  logic [NUM_BITS_64-1:0] fixed64_b_shifted;
+  logic [NUM_BITS_32-1:0] fixed32_a_shifted;
+  logic [NUM_BITS_32-1:0] fixed32_b_shifted;
+  logic [NUM_BITS_32-1:0] fixed32_c_shifted;
+  logic [NUM_BITS_32-1:0] fixed32_d_shifted;
+
   if (!i_rst_n) begin
-    s_fixed128  <= '0;
-    s_fixed64_a <= '0;
-    s_fixed64_b <= '0;
-    s_fixed32_a <= '0;
-    s_fixed32_b <= '0;
-    s_fixed32_c <= '0;
-    s_fixed32_d <= '0;
+    s_fixed128.int_portion  <= '0;
+    s_fixed128.frac_portion <= '0;
+    s_fixed64_a.int_portion  <= '0;
+    s_fixed64_a.frac_portion <= '0;
+    s_fixed64_b.int_portion  <= '0;
+    s_fixed64_b.frac_portion <= '0;
+    s_fixed32_a.int_portion  <= '0;
+    s_fixed32_a.frac_portion <= '0;
+    s_fixed32_b.int_portion  <= '0;
+    s_fixed32_b.frac_portion <= '0;
+    s_fixed32_c.int_portion  <= '0;
+    s_fixed32_c.frac_portion <= '0;
+    s_fixed32_d.int_portion  <= '0;
+    s_fixed32_d.frac_portion <= '0;
 
     s_S2_valid  <= '0;
   end
@@ -324,182 +339,203 @@ always_ff @( posedge i_clk ) begin : stage2_convert
         SINGLE_MODE: begin
           if (s_shift_amount_a >= 0 && s_shift_amount_a <= 9) begin
             // Case a:
-            s_fixed128 <= s_fixed128_temp << s_shift_amount_a; // Infer barrel shifter
+            fixed128_shifted = s_fixed128_temp << s_shift_amount_a;
           end
           else if (s_shift_amount_a < 0) begin
             // Case b: (s_shift_amount_a >= -4 && s_shift_amount_a < 0)
             // Case d: (s_shift_amount_a < -4)
             // This else if statement combines both
-            s_fixed128 <= s_fixed128_temp >> -s_shift_amount_a; // Infer barrel shifter, the "-" take the twos complement
+            fixed128_shifted = s_fixed128_temp >> -s_shift_amount_a;
           end
           else if (s_shift_amount_a > 9) begin
             // Case c:
             // In this case, we have a overflow in the int part, an overflow in the int part
             // is an overflow in the overall value, so fill everything with 1s. (well, except
             // the sign bit but that will be dealt with in stage 3).
-            s_fixed128 <= '1;
+            fixed128_shifted = '1;
           end
           else begin
             // Should never be the case
+            fixed128_shifted = '0;
             assert (0) else begin
               s_o_error[0] <= 1'b1;
               // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
           end
+          s_fixed128.int_portion  <= fixed128_shifted[126:117];
+          s_fixed128.frac_portion <= fixed128_shifted[116:0];
         end
 
         TWO_SP_MODE: begin
           if (s_shift_amount_a >= 0 && s_shift_amount_a <= 9) begin
             // Case a:
-            s_fixed64_a <= s_fixed64_a_temp << s_shift_amount_a; // Infer barrel shifter
+            fixed64_a_shifted = s_fixed64_a_temp << s_shift_amount_a;
           end
           else if (s_shift_amount_a < 0) begin
             // Case b: (s_shift_amount_a >= -4 && s_shift_amount_a < 0)
             // Case d: (s_shift_amount_a < -4)
             // This else if statement combines both
-            s_fixed64_a <= s_fixed64_a_temp >> -s_shift_amount_a; // Infer barrel shifter, the "-" take the twos complement
+            fixed64_a_shifted = s_fixed64_a_temp >> -s_shift_amount_a;
           end
           else if (s_shift_amount_a > 9) begin
             // Case c:
             // In this case, we have a overflow in the int part, an overflow in the int part
             // is an overflow in the overall value, so fill everything with 1s. (well, except
             // the sign bit but that will be dealt with in stage 3).
-            s_fixed64_a <= '1;
+            fixed64_a_shifted = '1;
           end
           else begin
             // Should never be the case
+            fixed64_a_shifted = '0;
             assert (0) else begin
               s_o_error[0] <= 1'b1;
               // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
           end
+          s_fixed64_a.int_portion  <= fixed64_a_shifted[62:52];
+          s_fixed64_a.frac_portion <= fixed64_a_shifted[51:0];
 
           if (s_shift_amount_b >= 0 && s_shift_amount_b <= 9) begin
             // Case a:
-            s_fixed64_b <= s_fixed64_b_temp << s_shift_amount_b; // Infer barrel shifter
+            fixed64_b_shifted = s_fixed64_b_temp << s_shift_amount_b;
           end
           else if (s_shift_amount_b < 0) begin
             // Case b: (s_shift_amount_b >= -4 && s_shift_amount_b < 0)
             // Case d: (s_shift_amount_b < -4)
             // This else if statement combines both
-            s_fixed64_b <= s_fixed64_b_temp >> -s_shift_amount_b; // Infer barrel shifter, the "-" take the twos complement
+            fixed64_b_shifted = s_fixed64_b_temp >> -s_shift_amount_b;
           end
           else if (s_shift_amount_b > 9) begin
             // Case c:
             // In this case, we have a overflow in the int part, an overflow in the int part
             // is an overflow in the overall value, so fill everything with 1s. (well, except
             // the sign bit but that will be dealt with in stage 3).
-            s_fixed64_b <= '1;
+            fixed64_b_shifted = '1;
           end
           else begin
             // Should never be the case
+            fixed64_b_shifted = '0;
             assert (0) else begin
               s_o_error[0] <= 1'b1;
               // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
           end
+          s_fixed64_b.int_portion  <= fixed64_b_shifted[62:52];
+          s_fixed64_b.frac_portion <= fixed64_b_shifted[51:0];
         end
 
         FOUR_SP_MODE: begin
           if (s_shift_amount_a >= 0 && s_shift_amount_a <= 9) begin
             // Case a:
-            s_fixed32_a <= s_fixed32_a_temp << s_shift_amount_a; // Infer barrel shifter
+            fixed32_a_shifted = s_fixed32_a_temp << s_shift_amount_a;
           end
           else if (s_shift_amount_a < 0) begin
             // Case b: (s_shift_amount_a >= -4 && s_shift_amount_a < 0)
             // Case d: (s_shift_amount_a < -4)
             // This else if statement combines both
-            s_fixed32_a <= s_fixed32_a_temp >> -s_shift_amount_a; // Infer barrel shifter, the "-" take the twos complement
+            fixed32_a_shifted = s_fixed32_a_temp >> -s_shift_amount_a;
           end
           else if (s_shift_amount_a > 9) begin
             // Case c:
             // In this case, we have a overflow in the int part, an overflow in the int part
             // is an overflow in the overall value, so fill everything with 1s. (well, except
             // the sign bit but that will be dealt with in stage 3).
-            s_fixed32_a <= '1;
+            fixed32_a_shifted = '1;
           end
           else begin
             // Should never be the case
+            fixed32_a_shifted = '0;
             assert (0) else begin
               s_o_error[0] <= 1'b1;
               // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
           end
+          s_fixed32_a.int_portion  <= fixed32_a_shifted[30:21];
+          s_fixed32_a.frac_portion <= fixed32_a_shifted[20:0];
 
           if (s_shift_amount_b >= 0 && s_shift_amount_b <= 9) begin
             // Case a:
-            s_fixed32_b <= s_fixed32_b_temp << s_shift_amount_b; // Infer barrel shifter
+            fixed32_b_shifted = s_fixed32_b_temp << s_shift_amount_b;
           end
           else if (s_shift_amount_b < 0) begin
             // Case b: (s_shift_amount_b >= -4 && s_shift_amount_b < 0)
             // Case d: (s_shift_amount_b < -4)
             // This else if statement combines both
-            s_fixed32_b <= s_fixed32_b_temp >> -s_shift_amount_b; // Infer barrel shifter, the "-" take the twos complement
+            fixed32_b_shifted = s_fixed32_b_temp >> -s_shift_amount_b;
           end
           else if (s_shift_amount_b > 9) begin
             // Case c:
             // In this case, we have a overflow in the int part, an overflow in the int part
             // is an overflow in the overall value, so fill everything with 1s. (well, except
             // the sign bit but that will be dealt with in stage 3).
-            s_fixed32_b <= '1;
+            fixed32_b_shifted = '1;
           end
           else begin
             // Should never be the case
+            fixed32_b_shifted = '0;
             assert (0) else begin
               s_o_error[0] <= 1'b1;
               // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
           end
+          s_fixed32_b.int_portion  <= fixed32_b_shifted[30:21];
+          s_fixed32_b.frac_portion <= fixed32_b_shifted[20:0];
 
           if (s_shift_amount_c >= 0 && s_shift_amount_c <= 9) begin
             // Case a:
-            s_fixed32_c <= s_fixed32_c_temp << s_shift_amount_c; // Infer barrel shifter
+            fixed32_c_shifted = s_fixed32_c_temp << s_shift_amount_c;
           end
           else if (s_shift_amount_c < 0) begin
             // Case b: (s_shift_amount_c >= -4 && s_shift_amount_c < 0)
             // Case d: (s_shift_amount_c < -4)
             // This else if statement combines both
-            s_fixed32_c <= s_fixed32_c_temp >> -s_shift_amount_c; // Infer barrel shifter, the "-" take the twos complement
+            fixed32_c_shifted = s_fixed32_c_temp >> -s_shift_amount_c;
           end
           else if (s_shift_amount_c > 9) begin
             // Case c:
             // In this case, we have a overflow in the int part, an overflow in the int part
             // is an overflow in the overall value, so fill everything with 1s. (well, except
             // the sign bit but that will be dealt with in stage 3).
-            s_fixed32_c <= '1;
+            fixed32_c_shifted = '1;
           end
           else begin
             // Should never be the case
+            fixed32_c_shifted = '0;
             assert (0) else begin
               s_o_error[0] <= 1'b1;
               // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
           end
+          s_fixed32_c.int_portion  <= fixed32_c_shifted[30:21];
+          s_fixed32_c.frac_portion <= fixed32_c_shifted[20:0];
 
           if (s_shift_amount_d >= 0 && s_shift_amount_d <= 9) begin
             // Case a:
-            s_fixed32_d <= s_fixed32_d_temp << s_shift_amount_d; // Infer barrel shifter
+            fixed32_d_shifted = s_fixed32_d_temp << s_shift_amount_d;
           end
           else if (s_shift_amount_d < 0) begin
             // Case b: (s_shift_amount_d >= -4 && s_shift_amount_d < 0)
             // Case d: (s_shift_amount_d < -4)
             // This else if statement combines both
-            s_fixed32_d <= s_fixed32_d_temp >> -s_shift_amount_d; // Infer barrel shifter, the "-" take the twos complement
+            fixed32_d_shifted = s_fixed32_d_temp >> -s_shift_amount_d;
           end
           else if (s_shift_amount_d > 9) begin
             // Case c:
             // In this case, we have a overflow in the int part, an overflow in the int part
             // is an overflow in the overall value, so fill everything with 1s. (well, except
             // the sign bit but that will be dealt with in stage 3).
-            s_fixed32_d <= '1;
+            fixed32_d_shifted = '1;
           end
           else begin
             // Should never be the case
+            fixed32_d_shifted = '0;
             assert (0) else begin
               s_o_error[0] <= 1'b1;
               // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
           end
+          s_fixed32_d.int_portion  <= fixed32_d_shifted[30:21];
+          s_fixed32_d.frac_portion <= fixed32_d_shifted[20:0];
         end
         default: begin
 
@@ -515,6 +551,13 @@ end // always_ff
  */
 always_ff @( posedge i_clk ) begin : stage3_finalize
   if (!i_rst_n) begin
+    s_fixed128.sign_portion <= 1'b0;
+    s_fixed64_a.sign_portion <= 1'b0;
+    s_fixed64_b.sign_portion <= 1'b0;
+    s_fixed32_a.sign_portion <= 1'b0;
+    s_fixed32_b.sign_portion <= 1'b0;
+    s_fixed32_c.sign_portion <= 1'b0;
+    s_fixed32_d.sign_portion <= 1'b0;
   end
   else begin
     if (s_stage3_en) begin
