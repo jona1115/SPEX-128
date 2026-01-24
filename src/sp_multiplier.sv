@@ -357,9 +357,11 @@ binary32_t  s_S1_32b_jedi;
 binary32_t  s_S1_32c_jedi;
 binary32_t  s_S1_32d_jedi;
 /**
- * Stage 1a block: Deal with sign bit
+ * Stage 1 block: Deal with sign bit and exponent in one block to avoid multi-driven nets
  */
-always_ff @( posedge i_clk ) begin : stage1a_sign_stuff
+// This is basically a max(x, 0) function
+`define MAX_0(x, y, b) ($signed($signed((x)) + $signed((y)) - (b)) < 0 ? '0 : ((x) + (y) - (b)))
+always_ff @( posedge i_clk ) begin : stage1_sign_and_exp
   if (!i_rst_n) begin
     s_S1_128_jedi <= '0;
     s_S1_64a_jedi <= '0;
@@ -369,23 +371,29 @@ always_ff @( posedge i_clk ) begin : stage1a_sign_stuff
     s_S1_32c_jedi <= '0;
     s_S1_32d_jedi <= '0;
     s_o_error[1]  <= 1'b0;
+    s_o_error[2]  <= 1'b0;
     s_o_error[5]  <= 1'b0;
+    s_o_error[6]  <= 1'b0;
   end
   else begin
     if (s_S1_en) begin
-      assert (s_S0_metadata_anikin.sp_mode === s_S0_metadata_force.sp_mode) else begin
+      if (!(s_S0_metadata_anikin.sp_mode === s_S0_metadata_force.sp_mode)) begin
         s_o_error[5] <= 1'b1;
+        s_o_error[6] <= 1'b1;
         // $fatal(1, "Bad things had happened, (s_S0_metadata_anikin.sp_mode === s_S0_metadata_force.sp_mode) is false.");
       end
 
       case (s_S0_metadata_anikin.sp_mode)
         SINGLE_MODE: begin
           s_S1_128_jedi.sign <= s_S0_128_anikin.sign ^ s_S0_128_force.sign; // Reminder: ^ is xor
+          s_S1_128_jedi.exp  <= `MAX_0({1'b0, s_S0_128_anikin.exp}, {1'b0, s_S0_128_force.exp}, 16'sd16383);
         end
 
         TWO_SP_MODE: begin
           s_S1_64a_jedi.sign <= s_S0_64a_anikin.sign ^ s_S0_64a_force.sign;
           s_S1_64b_jedi.sign <= s_S0_64b_anikin.sign ^ s_S0_64b_force.sign;
+          s_S1_64a_jedi.exp  <= `MAX_0({5'b0, s_S0_64a_anikin.exp}, {5'b0, s_S0_64a_force.exp}, 15'sd1023);
+          s_S1_64b_jedi.exp  <= `MAX_0({5'b0, s_S0_64b_anikin.exp}, {5'b0, s_S0_64b_force.exp}, 15'sd1023);
         end
 
         FOUR_SP_MODE: begin
@@ -393,64 +401,15 @@ always_ff @( posedge i_clk ) begin : stage1a_sign_stuff
           s_S1_32b_jedi.sign <= s_S0_32b_anikin.sign ^ s_S0_32b_force.sign;
           s_S1_32c_jedi.sign <= s_S0_32c_anikin.sign ^ s_S0_32c_force.sign;
           s_S1_32d_jedi.sign <= s_S0_32d_anikin.sign ^ s_S0_32d_force.sign;
+          s_S1_32a_jedi.exp  <= `MAX_0({8'b0, s_S0_32a_anikin.exp}, {8'b0, s_S0_32a_force.exp}, 15'sd127);
+          s_S1_32b_jedi.exp  <= `MAX_0({8'b0, s_S0_32b_anikin.exp}, {8'b0, s_S0_32b_force.exp}, 15'sd127);
+          s_S1_32c_jedi.exp  <= `MAX_0({8'b0, s_S0_32c_anikin.exp}, {8'b0, s_S0_32c_force.exp}, 15'sd127);
+          s_S1_32d_jedi.exp  <= `MAX_0({8'b0, s_S0_32d_anikin.exp}, {8'b0, s_S0_32d_force.exp}, 15'sd127);
         end
 
         default: begin
           assert (0) else begin
             s_o_error[1] <= 1'b1;
-          end
-        end
-      endcase // case (i_metadata.sp_mode)
-    end // if (s_S1_en)
-  end // !i_rst_n else begin
-end // always_ff @( posedge i_clk )
-
-/**
- * Stage 1b block: Add exp of anikin and force, then unbias it
- */
-// This is basically a max(x, 0) function
-`define MAX_0(x, y, b) ($signed($signed((x)) + $signed((y)) - (b)) < 0 ? '0 : ((x) + (y) - (b)))
-always_ff @( posedge i_clk ) begin : stage1b_add_the_two_exp
-  if (!i_rst_n) begin
-    s_S1_128_jedi.exp <= '0;
-    s_S1_64a_jedi.exp <= '0;
-    s_S1_64b_jedi.exp <= '0;
-    s_S1_32a_jedi.exp <= '0;
-    s_S1_32b_jedi.exp <= '0;
-    s_S1_32c_jedi.exp <= '0;
-    s_S1_32d_jedi.exp <= '0;
-    s_o_error[2]      <= 1'b0;
-    s_o_error[6]      <= 1'b0;
-  end
-  else begin
-    if (s_S1_en) begin
-      assert (s_S0_metadata_anikin.sp_mode === s_S0_metadata_force.sp_mode) else begin
-        s_o_error[6] <= 1'b1;
-        // $fatal(1, "Bad things had happened, (s_S0_metadata_anikin.sp_mode === s_S0_metadata_force.sp_mode) is false.");
-      end
-      
-      case (s_S0_metadata_anikin.sp_mode)
-        SINGLE_MODE: begin
-          s_S1_128_jedi.exp <=  `MAX_0({1'b0, s_S0_128_anikin.exp}, {1'b0, s_S0_128_force.exp}, 16'sd16383);
-                                // This fancy shit to detect underflow to zero
-                                // I wonder what this will be inferred into, like will there be two addition checks or just one
-                                // Jones will not be too happy about this
-        end
-
-        TWO_SP_MODE: begin
-          s_S1_64a_jedi.exp <=  `MAX_0({5'b0, s_S0_64a_anikin.exp}, {5'b0, s_S0_64a_force.exp}, 15'sd1023);
-          s_S1_64b_jedi.exp <=  `MAX_0({5'b0, s_S0_64b_anikin.exp}, {5'b0, s_S0_64b_force.exp}, 15'sd1023);
-        end
-
-        FOUR_SP_MODE: begin
-          s_S1_32a_jedi.exp <=  `MAX_0({8'b0, s_S0_32a_anikin.exp}, {8'b0, s_S0_32a_force.exp}, 15'sd127);
-          s_S1_32b_jedi.exp <=  `MAX_0({8'b0, s_S0_32b_anikin.exp}, {8'b0, s_S0_32b_force.exp}, 15'sd127);
-          s_S1_32c_jedi.exp <=  `MAX_0({8'b0, s_S0_32c_anikin.exp}, {8'b0, s_S0_32c_force.exp}, 15'sd127);
-          s_S1_32d_jedi.exp <=  `MAX_0({8'b0, s_S0_32d_anikin.exp}, {8'b0, s_S0_32d_force.exp}, 15'sd127);
-        end
-
-        default: begin
-          assert (0) else begin
             s_o_error[2] <= 1'b1;
           end
         end
