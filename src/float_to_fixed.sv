@@ -166,7 +166,6 @@ assign s_binary32_d_mantissa_extended = {1'b1, s_binary32_d.mantissa};
 // Default stuff out
 always_ff @( posedge i_clk ) begin : defaulter
   if (!i_rst_n) begin
-    s_o_error <= '0;
     s_o_debug <= '0;
   end
   // else begin // commented out because there are drivers of these signals in other always_ff blocks, but by commenting this part out might lead to infer latches
@@ -261,6 +260,8 @@ always_ff @( posedge i_clk ) begin : stage1_get_shift_amount
     s_fixed32_b_temp <= '0;
     s_fixed32_c_temp <= '0;
     s_fixed32_d_temp <= '0;
+    s_o_error[1]     <= 1'b0;
+    s_o_error[ERROR_SIGNAL_NUM_BITS-1:2] <= '0;
   end
   else begin
     if (s_stage1_en) begin
@@ -329,6 +330,7 @@ always_ff @( posedge i_clk ) begin : stage2_convert
     s_fixed32_d.frac_portion <= '0;
 
     s_S2_valid  <= '0;
+    s_o_error[0] <= 1'b0;
   end
   else begin
     if (s_stage2_en) begin

@@ -99,7 +99,6 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0]   s_o_debug;
 // Default stuff out
 always_ff @( posedge i_clk ) begin : defaulter
   if (!i_rst_n) begin
-    s_o_error <= '0;
     s_o_debug <= '0;
   end
 end
@@ -116,6 +115,7 @@ always_ff @( posedge i_clk ) begin : LUTs
     s_o_exp_a128  <= '0;
     s_o_exp_a64a  <= '0;
     s_o_exp_a64b  <= '0;
+    s_o_error     <= '0;
   end
   else begin
     case (i_metadata.sp_mode)

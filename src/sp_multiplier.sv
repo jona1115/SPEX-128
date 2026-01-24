@@ -131,7 +131,6 @@ assign s_S0_32d_force  = binary32_t'(i_in_force[31:0]);
 // Default stuff out
 always_ff @( posedge i_clk ) begin : defaulter
   if (!i_rst_n) begin
-    s_o_error <= '0;
     s_o_debug <= '0;
   end
   // else begin // commented out because there are drivers of these signals in other always_ff blocks, but by commenting this part out might lead to infer latches
@@ -227,12 +226,22 @@ always_comb begin : valid_bit_decoder
       end
     end // FOUR_SP_MODE
 
-    default: begin
-      assert (0) else begin
-          s_o_error[0] <= 1'b1;
-        end
-    end
+    // default: begin
+    //   assert (0);
+    // end
   endcase // case (i_metadata.sp_mode)
+end
+
+always_ff @( posedge i_clk ) begin : error_invalid_sp_mode
+  if (!i_rst_n) begin
+    s_o_error[0] <= 1'b0;
+    s_o_error[ERROR_SIGNAL_NUM_BITS-1:20] <= '0;
+  end
+  else if (!(i_metadata.sp_mode == SINGLE_MODE ||
+             i_metadata.sp_mode == TWO_SP_MODE ||
+             i_metadata.sp_mode == FOUR_SP_MODE)) begin
+    s_o_error[0] <= 1'b1;
+  end
 end
 
 /**
@@ -359,6 +368,8 @@ always_ff @( posedge i_clk ) begin : stage1a_sign_stuff
     s_S1_32b_jedi <= '0;
     s_S1_32c_jedi <= '0;
     s_S1_32d_jedi <= '0;
+    s_o_error[1]  <= 1'b0;
+    s_o_error[5]  <= 1'b0;
   end
   else begin
     if (s_S1_en) begin
@@ -408,6 +419,8 @@ always_ff @( posedge i_clk ) begin : stage1b_add_the_two_exp
     s_S1_32b_jedi.exp <= '0;
     s_S1_32c_jedi.exp <= '0;
     s_S1_32d_jedi.exp <= '0;
+    s_o_error[2]      <= 1'b0;
+    s_o_error[6]      <= 1'b0;
   end
   else begin
     if (s_S1_en) begin
@@ -549,6 +562,8 @@ always_ff @( posedge i_clk ) begin : stage2a_extended_mantissa_mult
     s_S2_32b_mult_out_full  <= '0;
     s_S2_32c_mult_out_full  <= '0;
     s_S2_32d_mult_out_full  <= '0;
+    s_o_error[3]            <= 1'b0;
+    s_o_error[7]            <= 1'b0;
   end
   else begin
     if (s_S2_en) begin
@@ -723,6 +738,8 @@ always_ff @( posedge i_clk ) begin : stage3a_ex_man_normalization
     s_S3_32b_potential_result <= '0;
     s_S3_32c_potential_result <= '0;
     s_S3_32d_potential_result <= '0;
+    s_o_error[4]              <= 1'b0;
+    s_o_error[8]              <= 1'b0;
   end
   else begin
     if (s_S3_en) begin
@@ -1051,6 +1068,8 @@ always_ff @( posedge i_clk ) begin : stage4a_renormalize
     s_S4_32b_potential_result <= '0;
     s_S4_32c_potential_result <= '0;
     s_S4_32d_potential_result <= '0;
+    s_o_error[9]              <= 1'b0;
+    s_o_error[10]             <= 1'b0;
   end
   else begin
     if (s_S4_en) begin
@@ -1253,6 +1272,15 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
     s_S5_32b_jedi <= '0;
     s_S5_32c_jedi <= '0;
     s_S5_32d_jedi <= '0;
+    s_o_error[11] <= 1'b0;
+    s_o_error[12] <= 1'b0;
+    s_o_error[13] <= 1'b0;
+    s_o_error[14] <= 1'b0;
+    s_o_error[15] <= 1'b0;
+    s_o_error[16] <= 1'b0;
+    s_o_error[17] <= 1'b0;
+    s_o_error[18] <= 1'b0;
+    s_o_error[19] <= 1'b0;
   end
   else begin
     if (s_S5_en) begin
