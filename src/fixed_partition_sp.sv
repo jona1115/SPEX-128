@@ -209,13 +209,13 @@ end
 //=====================================================================================
 // LUTs
 //=====================================================================================
-(* rom_style = "block" *) binary128_t mem128_pos  [0:DEPTH_128-1];
-(* rom_style = "block" *) binary128_t mem128_neg  [0:DEPTH_128-1];
+(* rom_style = "block" *) logic [127:0] mem128_pos  [0:DEPTH_128-1];
+(* rom_style = "block" *) logic [127:0] mem128_neg  [0:DEPTH_128-1];
 `ifndef HARDWARE_BLOCKOUT
-(* rom_style = "block" *) binary64_t  mem64_pos   [0:DEPTH_64-1];
-(* rom_style = "block" *) binary64_t  mem64_neg   [0:DEPTH_64-1];
-(* rom_style = "block" *) binary32_t  mem32_pos   [0:DEPTH_32-1];
-(* rom_style = "block" *) binary32_t  mem32_neg   [0:DEPTH_32-1];
+(* rom_style = "block" *) logic [63:0]  mem64_pos   [0:DEPTH_64-1];
+(* rom_style = "block" *) logic [63:0]  mem64_neg   [0:DEPTH_64-1];
+(* rom_style = "block" *) logic [31:0]  mem32_pos   [0:DEPTH_32-1];
+(* rom_style = "block" *) logic [31:0]  mem32_neg   [0:DEPTH_32-1];
 `endif
 
 initial begin
@@ -290,14 +290,14 @@ always_ff @( posedge i_clk ) begin : stage1a
           if (i_valid128 === 1'b1) begin
             if (HAS_SIGN) begin
               if (i_lane_128[LANE_BITS_128-1] === 1'b0) begin
-                s_stage1a_exp_a128 <= mem128_pos[i_lane_128[ADDR_BITS_128-1:0]];
+                s_stage1a_exp_a128 <= binary128_t'(mem128_pos[i_lane_128[ADDR_BITS_128-1:0]]);
               end
               else begin
-                s_stage1a_exp_a128 <= mem128_neg[i_lane_128[ADDR_BITS_128-1:0]];
+                s_stage1a_exp_a128 <= binary128_t'(mem128_neg[i_lane_128[ADDR_BITS_128-1:0]]);
               end
             end
             else begin
-              s_stage1a_exp_a128 <= mem128_pos[i_lane_128[ADDR_BITS_128-1:0]];
+              s_stage1a_exp_a128 <= binary128_t'(mem128_pos[i_lane_128[ADDR_BITS_128-1:0]]);
             end
           end
         end // SINGLE_MODE
@@ -307,44 +307,44 @@ always_ff @( posedge i_clk ) begin : stage1a
             if (USE_128_FOR_64) begin
               if (HAS_SIGN) begin
                 if (i_lane_64a[LANE_BITS_64-1] === 1'b0) begin
-                  s_stage1a_exp_a64a_128 <= mem128_pos[i_lane_64a[ADDR_BITS_128-1:0]];
+                  s_stage1a_exp_a64a_128 <= binary128_t'(mem128_pos[i_lane_64a[ADDR_BITS_128-1:0]]);
                 end
                 else begin
-                  s_stage1a_exp_a64a_128 <= mem128_neg[i_lane_64a[ADDR_BITS_128-1:0]];
+                  s_stage1a_exp_a64a_128 <= binary128_t'(mem128_neg[i_lane_64a[ADDR_BITS_128-1:0]]);
                 end
 
                 if (i_lane_64b[LANE_BITS_64-1] === 1'b0) begin
-                  s_stage1a_exp_a64b_128 <= mem128_pos[i_lane_64b[ADDR_BITS_128-1:0]];
+                  s_stage1a_exp_a64b_128 <= binary128_t'(mem128_pos[i_lane_64b[ADDR_BITS_128-1:0]]);
                 end
                 else begin
-                  s_stage1a_exp_a64b_128 <= mem128_neg[i_lane_64b[ADDR_BITS_128-1:0]];
+                  s_stage1a_exp_a64b_128 <= binary128_t'(mem128_neg[i_lane_64b[ADDR_BITS_128-1:0]]);
                 end
               end
               else begin
-                s_stage1a_exp_a64a_128 <= mem128_pos[i_lane_64a[ADDR_BITS_128-1:0]];
-                s_stage1a_exp_a64b_128 <= mem128_pos[i_lane_64b[ADDR_BITS_128-1:0]];
+                s_stage1a_exp_a64a_128 <= binary128_t'(mem128_pos[i_lane_64a[ADDR_BITS_128-1:0]]);
+                s_stage1a_exp_a64b_128 <= binary128_t'(mem128_pos[i_lane_64b[ADDR_BITS_128-1:0]]);
               end
             end
             else begin
 `ifndef HARDWARE_BLOCKOUT
               if (HAS_SIGN) begin
                 if (i_lane_64a[LANE_BITS_64-1] === 1'b0) begin
-                  s_stage1a_exp_a64a_64 <= mem64_pos[i_lane_64a[ADDR_BITS_64-1:0]];
+                  s_stage1a_exp_a64a_64 <= binary64_t'(mem64_pos[i_lane_64a[ADDR_BITS_64-1:0]]);
                 end
                 else begin
-                  s_stage1a_exp_a64a_64 <= mem64_neg[i_lane_64a[ADDR_BITS_64-1:0]];
+                  s_stage1a_exp_a64a_64 <= binary64_t'(mem64_neg[i_lane_64a[ADDR_BITS_64-1:0]]);
                 end
 
                 if (i_lane_64b[LANE_BITS_64-1] === 1'b0) begin
-                  s_stage1a_exp_a64b_64 <= mem64_pos[i_lane_64b[ADDR_BITS_64-1:0]];
+                  s_stage1a_exp_a64b_64 <= binary64_t'(mem64_pos[i_lane_64b[ADDR_BITS_64-1:0]]);
                 end
                 else begin
-                  s_stage1a_exp_a64b_64 <= mem64_neg[i_lane_64b[ADDR_BITS_64-1:0]];
+                  s_stage1a_exp_a64b_64 <= binary64_t'(mem64_neg[i_lane_64b[ADDR_BITS_64-1:0]]);
                 end
               end
               else begin
-                s_stage1a_exp_a64a_64 <= mem64_pos[i_lane_64a[ADDR_BITS_64-1:0]];
-                s_stage1a_exp_a64b_64 <= mem64_pos[i_lane_64b[ADDR_BITS_64-1:0]];
+                s_stage1a_exp_a64a_64 <= binary64_t'(mem64_pos[i_lane_64a[ADDR_BITS_64-1:0]]);
+                s_stage1a_exp_a64b_64 <= binary64_t'(mem64_pos[i_lane_64b[ADDR_BITS_64-1:0]]);
               end
 `endif
             end
@@ -358,44 +358,44 @@ always_ff @( posedge i_clk ) begin : stage1a
             if (USE_128_FOR_32) begin
               if (HAS_SIGN) begin
                 if (i_lane_32a[LANE_BITS_32-1] === 1'b0) begin
-                  s_stage1a_exp_a32a_128 <= mem128_pos[i_lane_32a[ADDR_BITS_128-1:0]];
+                  s_stage1a_exp_a32a_128 <= binary128_t'(mem128_pos[i_lane_32a[ADDR_BITS_128-1:0]]);
                 end
                 else begin
-                  s_stage1a_exp_a32a_128 <= mem128_neg[i_lane_32a[ADDR_BITS_128-1:0]];
+                  s_stage1a_exp_a32a_128 <= binary128_t'(mem128_neg[i_lane_32a[ADDR_BITS_128-1:0]]);
                 end
 
                 if (i_lane_32b[LANE_BITS_32-1] === 1'b0) begin
-                  s_stage1a_exp_a32b_128 <= mem128_pos[i_lane_32b[ADDR_BITS_128-1:0]];
+                  s_stage1a_exp_a32b_128 <= binary128_t'(mem128_pos[i_lane_32b[ADDR_BITS_128-1:0]]);
                 end
                 else begin
-                  s_stage1a_exp_a32b_128 <= mem128_neg[i_lane_32b[ADDR_BITS_128-1:0]];
+                  s_stage1a_exp_a32b_128 <= binary128_t'(mem128_neg[i_lane_32b[ADDR_BITS_128-1:0]]);
                 end
               end
               else begin
-                s_stage1a_exp_a32a_128 <= mem128_pos[i_lane_32a[ADDR_BITS_128-1:0]];
-                s_stage1a_exp_a32b_128 <= mem128_pos[i_lane_32b[ADDR_BITS_128-1:0]];
+                s_stage1a_exp_a32a_128 <= binary128_t'(mem128_pos[i_lane_32a[ADDR_BITS_128-1:0]]);
+                s_stage1a_exp_a32b_128 <= binary128_t'(mem128_pos[i_lane_32b[ADDR_BITS_128-1:0]]);
               end
             end
             else begin
 `ifndef HARDWARE_BLOCKOUT
               if (HAS_SIGN) begin
                 if (i_lane_32a[LANE_BITS_32-1] === 1'b0) begin
-                  s_stage1a_exp_a32a_32 <= mem32_pos[i_lane_32a[ADDR_BITS_32-1:0]];
+                  s_stage1a_exp_a32a_32 <= binary32_t'(mem32_pos[i_lane_32a[ADDR_BITS_32-1:0]]);
                 end
                 else begin
-                  s_stage1a_exp_a32a_32 <= mem32_neg[i_lane_32a[ADDR_BITS_32-1:0]];
+                  s_stage1a_exp_a32a_32 <= binary32_t'(mem32_neg[i_lane_32a[ADDR_BITS_32-1:0]]);
                 end
 
                 if (i_lane_32b[LANE_BITS_32-1] === 1'b0) begin
-                  s_stage1a_exp_a32b_32 <= mem32_pos[i_lane_32b[ADDR_BITS_32-1:0]];
+                  s_stage1a_exp_a32b_32 <= binary32_t'(mem32_pos[i_lane_32b[ADDR_BITS_32-1:0]]);
                 end
                 else begin
-                  s_stage1a_exp_a32b_32 <= mem32_neg[i_lane_32b[ADDR_BITS_32-1:0]];
+                  s_stage1a_exp_a32b_32 <= binary32_t'(mem32_neg[i_lane_32b[ADDR_BITS_32-1:0]]);
                 end
               end
               else begin
-                s_stage1a_exp_a32a_32 <= mem32_pos[i_lane_32a[ADDR_BITS_32-1:0]];
-                s_stage1a_exp_a32b_32 <= mem32_pos[i_lane_32b[ADDR_BITS_32-1:0]];
+                s_stage1a_exp_a32a_32 <= binary32_t'(mem32_pos[i_lane_32a[ADDR_BITS_32-1:0]]);
+                s_stage1a_exp_a32b_32 <= binary32_t'(mem32_pos[i_lane_32b[ADDR_BITS_32-1:0]]);
               end
 `endif
             end
@@ -498,44 +498,44 @@ always_ff @( posedge i_clk ) begin : stage2a
             if (USE_128_FOR_32) begin
               if (HAS_SIGN) begin
                 if (i_lane_32c[LANE_BITS_32-1] === 1'b0) begin
-                  s_stage2a_exp_a32c_128 <= mem128_pos[i_lane_32c[ADDR_BITS_128-1:0]];
+                  s_stage2a_exp_a32c_128 <= binary128_t'(mem128_pos[i_lane_32c[ADDR_BITS_128-1:0]]);
                 end
                 else begin
-                  s_stage2a_exp_a32c_128 <= mem128_neg[i_lane_32c[ADDR_BITS_128-1:0]];
+                  s_stage2a_exp_a32c_128 <= binary128_t'(mem128_neg[i_lane_32c[ADDR_BITS_128-1:0]]);
                 end
 
                 if (i_lane_32d[LANE_BITS_32-1] === 1'b0) begin
-                  s_stage2a_exp_a32d_128 <= mem128_pos[i_lane_32d[ADDR_BITS_128-1:0]];
+                  s_stage2a_exp_a32d_128 <= binary128_t'(mem128_pos[i_lane_32d[ADDR_BITS_128-1:0]]);
                 end
                 else begin
-                  s_stage2a_exp_a32d_128 <= mem128_neg[i_lane_32d[ADDR_BITS_128-1:0]];
+                  s_stage2a_exp_a32d_128 <= binary128_t'(mem128_neg[i_lane_32d[ADDR_BITS_128-1:0]]);
                 end
               end
               else begin
-                s_stage2a_exp_a32c_128 <= mem128_pos[i_lane_32c[ADDR_BITS_128-1:0]];
-                s_stage2a_exp_a32d_128 <= mem128_pos[i_lane_32d[ADDR_BITS_128-1:0]];
+                s_stage2a_exp_a32c_128 <= binary128_t'(mem128_pos[i_lane_32c[ADDR_BITS_128-1:0]]);
+                s_stage2a_exp_a32d_128 <= binary128_t'(mem128_pos[i_lane_32d[ADDR_BITS_128-1:0]]);
               end
             end
             else begin
 `ifndef HARDWARE_BLOCKOUT
               if (HAS_SIGN) begin
                 if (i_lane_32c[LANE_BITS_32-1] === 1'b0) begin
-                  s_stage2a_exp_a32c_32 <= mem32_pos[i_lane_32c[ADDR_BITS_32-1:0]];
+                  s_stage2a_exp_a32c_32 <= binary32_t'(mem32_pos[i_lane_32c[ADDR_BITS_32-1:0]]);
                 end
                 else begin
-                  s_stage2a_exp_a32c_32 <= mem32_neg[i_lane_32c[ADDR_BITS_32-1:0]];
+                  s_stage2a_exp_a32c_32 <= binary32_t'(mem32_neg[i_lane_32c[ADDR_BITS_32-1:0]]);
                 end
 
                 if (i_lane_32d[LANE_BITS_32-1] === 1'b0) begin
-                  s_stage2a_exp_a32d_32 <= mem32_pos[i_lane_32d[ADDR_BITS_32-1:0]];
+                  s_stage2a_exp_a32d_32 <= binary32_t'(mem32_pos[i_lane_32d[ADDR_BITS_32-1:0]]);
                 end
                 else begin
-                  s_stage2a_exp_a32d_32 <= mem32_neg[i_lane_32d[ADDR_BITS_32-1:0]];
+                  s_stage2a_exp_a32d_32 <= binary32_t'(mem32_neg[i_lane_32d[ADDR_BITS_32-1:0]]);
                 end
               end
               else begin
-                s_stage2a_exp_a32c_32 <= mem32_pos[i_lane_32c[ADDR_BITS_32-1:0]];
-                s_stage2a_exp_a32d_32 <= mem32_pos[i_lane_32d[ADDR_BITS_32-1:0]];
+                s_stage2a_exp_a32c_32 <= binary32_t'(mem32_pos[i_lane_32c[ADDR_BITS_32-1:0]]);
+                s_stage2a_exp_a32d_32 <= binary32_t'(mem32_pos[i_lane_32d[ADDR_BITS_32-1:0]]);
               end
 `endif
             end
