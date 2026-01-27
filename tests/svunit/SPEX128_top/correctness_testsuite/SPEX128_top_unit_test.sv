@@ -427,8 +427,8 @@ module SPEX128_top_unit_test;
   `define LATENCY 2+1+5*3/*idk why the +3*/+30 // 21
   // LSB error tolerances (difference in integer value of the LSB slice)
   `define ERR_TOL_LSB_128 200
-  `define ERR_TOL_LSB_64  2000
-  `define ERR_TOL_LSB_32  2000
+  `define ERR_TOL_LSB_64  200
+  `define ERR_TOL_LSB_32  200
   // Width of the LSB window to compare
   `define LSB_WINDOW 16
   // --------------------------------------------------------------------------
@@ -611,10 +611,10 @@ module SPEX128_top_unit_test;
 // `define ISOLATE
 
 `ifndef ISOLATE
-    // `include "cases/handwritten_correctness_SINGLE.svh"
+    `include "cases/handwritten_correctness_SINGLE.svh"
     `include "cases/handwritten_correctness_TWO_SP.svh"
-    // `include "cases/handwritten_correctness_FOUR_SP.svh"
-    // `include "cases/vibed_correctness.svh"
+    `include "cases/handwritten_correctness_FOUR_SP.svh"
+    `include "cases/vibed_correctness.svh"
 `else
     `include "cases/isolate.svh"
 `endif
