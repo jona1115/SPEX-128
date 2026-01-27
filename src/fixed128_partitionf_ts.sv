@@ -49,7 +49,7 @@ module fixed128_partitionf_ts #(
   input   logic                                   i_rst_n, // Synchronous
 
   // Metadata stuff
-  // input   float_metadata_t                        i_metadata,
+  input   var float_metadata_t                    i_metadata,
   // output  float_metadata_t                        o_metadata,
 
   // Data
@@ -96,7 +96,12 @@ always_ff @( posedge i_clk ) begin : valid_cit_register
     s_o_valid <= '0;
   end
   else begin
-    s_o_valid <= i_valid;
+    if (i_metadata.sp_mode == SINGLE_MODE) begin
+      s_o_valid <= i_valid;
+    end
+    else begin
+      s_o_valid <= '0;
+    end
   end
 end // always_ff
 
