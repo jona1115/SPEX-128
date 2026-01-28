@@ -152,13 +152,14 @@ module sp_fpmultiplier_unit_test;
   task teardown();
     svunit_ut.teardown();
     /* Place Teardown Code Here */
-
   endtask
 
   // Hex file file names
   string HEX_A_128 = "anikin_128b.hex";
   string HEX_B_128 = "force_128b.hex";
   string HEX_C_128 = "jedi_128b.hex";
+
+  `define LATENCY 6
 
   // ----------------------------------
   // Helpers
@@ -315,7 +316,13 @@ module sp_fpmultiplier_unit_test;
   //===================================
   `SVUNIT_TESTS_BEGIN
 
+// `define ISOLATE
+
+`ifndef ISOLATE
     `include "cases/correctness.svh"
+`else
+    `include "cases/isolate.svh"
+`endif
 
   `SVUNIT_TESTS_END
 

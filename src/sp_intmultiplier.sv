@@ -110,7 +110,6 @@ end
  * 
  */
 logic s_S0_en, s_S1_en, s_S2_en, s_S3_en, s_S4_en, s_S5_en, s_S6_en, s_S7_en;
-logic s_done;
 always_comb begin : stage_en_control
   // Defaults
   s_next_state = s_curr_state;
@@ -123,9 +122,6 @@ always_comb begin : stage_en_control
   s_S6_en = '0;
   s_S7_en = '0;
 
-  // Done signal
-  s_done  = '0;
-
   unique case (s_curr_state)
     S0_IDLE: begin
       s_next_state = S1;
@@ -134,8 +130,6 @@ always_comb begin : stage_en_control
       if (i_valid_anikin === 1'b1 && i_valid_force=== 1'b1) begin // "All or nothing"
         s_S1_en = 1'b1;
         s_next_state = S0_IDLE;
-
-        s_done = 1'b1;
       end
     end
     S2: begin
@@ -172,12 +166,16 @@ end
 // Stage 1
 //=====================================================================================
 logic [225:0] s_S1_jedi;
+logic s_S1_valid;
 always_ff @( posedge i_clk ) begin : stage1a
   if (!i_rst_n) begin
-    s_S1_jedi <= '0;
+    s_S1_jedi   <= '0;
+    s_S1_valid  <= '0;
   end
   else begin
     if (s_S1_en) begin
+      s_S1_valid <= '1;
+      
       case (i_metadata.sp_mode)
         SINGLE_MODE: begin
           s_S1_jedi             <= i_anikin * i_force;
@@ -190,10 +188,10 @@ always_ff @( posedge i_clk ) begin : stage1a
           s_S1_jedi[225:212]    <= '0;
         end
         FOUR_SP_MODE: begin
-          s_S1_jedi[191:144]    <= i_anikin[91:69]  * i_force[91:69];
-          s_S1_jedi[143:96]     <= i_anikin[68:46]  * i_force[68:46];
-          s_S1_jedi[95:48]      <= i_anikin[45:23]  * i_force[45:23];
-          s_S1_jedi[47:0]       <= i_anikin[22:0]   * i_force[22:0];
+          s_S1_jedi[191:144]    <= i_anikin[95:72]  * i_force[95:72];
+          s_S1_jedi[143:96]     <= i_anikin[71:48]  * i_force[71:48];
+          s_S1_jedi[95:48]      <= i_anikin[47:24]  * i_force[47:24];
+          s_S1_jedi[47:0]       <= i_anikin[23:0]   * i_force[23:0];
 
           // Pad with 0s
           s_S1_jedi[225:192]    <= '0;
@@ -206,6 +204,9 @@ always_ff @( posedge i_clk ) begin : stage1a
         end
       endcase // case (i_metadata.sp_mode)
     end // if (s_S1_en)
+    else begin
+      s_S1_valid <= '0;
+    end
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
 
@@ -214,7 +215,7 @@ end // always_ff @( posedge i_clk )
 // Final assignment
 //=====================================================================================
 assign o_jedi = s_S1_jedi;
-assign o_valid_jedi = s_done;
+assign o_valid_jedi = s_S1_valid;
 assign o_sanity_identifier = MODULE_IDENTIFIER;
 assign o_error = s_o_error;
 assign o_debug = '0; // todo

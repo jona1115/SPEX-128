@@ -536,17 +536,17 @@ sp_intmultiplier #() my_sp_intmultiplier (
   .i_metadata(s_S1_metadata_anikin),
   .i_anikin(s_S1_metadata_anikin.sp_mode === SINGLE_MODE ? hs_S1_128_anikin_mantissa_extended                                           :
             s_S1_metadata_anikin.sp_mode === TWO_SP_MODE ? {'0, hs_S1_64a_anikin_mantissa_extended, hs_S1_64b_anikin_mantissa_extended} :
-                                                           {'0, hs_S1_32a_anikin_mantissa_extended, hs_S1_32b_anikin_mantissa_extended, 
+                                        /*FOUR_SP_MODE*/   {'0, hs_S1_32a_anikin_mantissa_extended, hs_S1_32b_anikin_mantissa_extended, 
                                                             hs_S1_32c_anikin_mantissa_extended, hs_S1_32d_anikin_mantissa_extended}
             ),
   .i_force(s_S1_metadata_anikin.sp_mode === SINGLE_MODE ? hs_S1_128_force_mantissa_extended                                             :
            s_S1_metadata_anikin.sp_mode === TWO_SP_MODE ? {'0, hs_S1_64a_force_mantissa_extended, hs_S1_64b_force_mantissa_extended}    :
-                                                          {'0, hs_S1_32a_force_mantissa_extended, hs_S1_32b_force_mantissa_extended, 
+                                       /*FOUR_SP_MODE*/   {'0, hs_S1_32a_force_mantissa_extended, hs_S1_32b_force_mantissa_extended, 
                                                           hs_S1_32c_force_mantissa_extended, hs_S1_32d_force_mantissa_extended}
             ),
   .o_jedi(s_sp_intmultiplier_jedi),
-  .i_valid_anikin(s_S2_en & s_S1_valid128_jedi),
-  .i_valid_force(s_S2_en & s_S1_valid128_jedi),
+  .i_valid_anikin(s_S2_en/* & s_S1_valid128_jedi*/),
+  .i_valid_force(s_S2_en/* & s_S1_valid128_jedi*/),
   .o_valid_jedi(s_sp_intmultiplier_valid),
   .o_sanity_identifier(unused_sp_intmultiplier_sanity_identifier),
   .o_error(unused_sp_intmultiplier_error),
@@ -572,13 +572,13 @@ always_ff @( posedge i_clk ) begin : stage2a_extended_mantissa_mult
       end
 
       // todo we need to split s_sp_intmultiplier_jedi into:
-      // s_S2_128_mult_out_full
-      // s_S2_64a_mult_out_full
-      // s_S2_64b_mult_out_full
-      // s_S2_32a_mult_out_full
-      // s_S2_32b_mult_out_full
-      // s_S2_32c_mult_out_full
-      // s_S2_32d_mult_out_full
+      s_S2_128_mult_out_full <= s_sp_intmultiplier_jedi;
+      s_S2_64a_mult_out_full <= s_sp_intmultiplier_jedi[211:106];
+      s_S2_64b_mult_out_full <= s_sp_intmultiplier_jedi[105:0];
+      s_S2_32a_mult_out_full <= s_sp_intmultiplier_jedi[191:144];
+      s_S2_32b_mult_out_full <= s_sp_intmultiplier_jedi[143:96];
+      s_S2_32c_mult_out_full <= s_sp_intmultiplier_jedi[95:48];
+      s_S2_32d_mult_out_full <= s_sp_intmultiplier_jedi[47:0];
       
       // case (s_S1_metadata_anikin.sp_mode)
       //   SINGLE_MODE: begin
