@@ -1,16 +1,25 @@
-// todo add header comments after file is done
-// Naming convension: anikin * force = jedi
-// Working on this module made me want to rewatch star wars (clone wars, and revenge of the sith) so bad! todo
-// signal naming: s_Sn_xxxxx: This is the output of stage n
-// signal prefix: s_ is for signals, hs_ for helper signal
-
-// Also, for now we are not going to deal with denormal types reason:
-// 1. The output from the lookup table are mostly normal
-// 2. Denormals only happen after some negative a input in the two and four sp mode
-// 3. For now it is just not worth the time to implement that imo, aside from the normalization part, we also need 
-//    to figure out, in hardware, if the output should also be a denormal. And that is just too much work, at
-//    least for now
-// 4. So for now, in stage 5, we treat denormals as ZEROs
+/********************************************************************
+ * 
+ * Originator   : Jonathan Tan
+ * Date         : 11/27/2025
+ * 
+ ********************************************************************
+ * 
+ * Description:
+ * This a wrapper for SPEX-128 components. x comes in, e^x goes out.
+ * 
+ * The whole thing is seperated into three "lavels". See the diagram
+ * here: https://github.com/jona1115/SPEX-128/issues/20#issuecomment-3544661227
+ * 
+ ********************************************************************
+ * 
+ * Modification history:
+ *    Ver   |  Who       |  Date	    |  Changes
+ *  ------- + ---------- + ------------ + --------------------------
+ *    1.00  |  Jonathan  |  11/27/2025   |  Birth of this file
+ *    1.01  |  Jonathan  |  1/27/2026    |  Renamed file from sp_multiplier.sv to sp_fpmultiplier.sv
+ * 
+ *******************************************************************/
 
 import float_flag_pkg::*;
 import sp_mode_pkg::*;
@@ -23,7 +32,7 @@ import fixed64_pkg::*;
 import fixed32_pkg::*;
 import unbiasing_pkg::*;
 
-module sp_multiplier #(
+module sp_fpmultiplier #(
   parameter int NUM_BITS_128  = 128,
   parameter int NUM_BITS_64   = 64,
   parameter int NUM_BITS_32   = 32,
@@ -1670,4 +1679,4 @@ assign o_error              = s_o_error;
 assign o_debug              = s_o_debug;
 
 
-endmodule // module sp_multiplier #()
+endmodule // module sp_fpmultiplier #()

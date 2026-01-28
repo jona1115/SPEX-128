@@ -6,7 +6,7 @@
 `define ERROR_SIGNAL_NUM_BITS 32
 `define DEBUG_SIGNAL_NUM_BITS 32
 
-module sp_multiplier_unit_test;
+module sp_fpmultiplier_unit_test;
 
   import svunit_pkg::svunit_testcase;
 
@@ -18,7 +18,7 @@ module sp_multiplier_unit_test;
   import binary32_pkg::*;
 
 
-  string name = "sp_multiplier_ut";
+  string name = "sp_fpmultiplier_ut";
   svunit_testcase svunit_ut;
 
   // DUT IO
@@ -58,13 +58,13 @@ module sp_multiplier_unit_test;
   // This is the UUT that we're 
   // running the Unit Tests on
   //===================================
-  sp_multiplier #(
+  sp_fpmultiplier #(
     .NUM_BITS_128(`NUM_BITS_128),
     .NUM_BITS_64(`NUM_BITS_64),
     .NUM_BITS_32(`NUM_BITS_32),
     .ERROR_SIGNAL_NUM_BITS(`ERROR_SIGNAL_NUM_BITS),
     .DEBUG_SIGNAL_NUM_BITS(`DEBUG_SIGNAL_NUM_BITS)
-  ) my_sp_multiplier(
+  ) my_sp_fpmultiplier(
     .i_clk(s_i_clk),
     .i_rst_n(s_i_rst_n),
     .i_metadata(s_i_metadata),
