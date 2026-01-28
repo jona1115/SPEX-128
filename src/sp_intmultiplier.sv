@@ -39,6 +39,9 @@ module sp_intmultiplier #(
   parameter int EX_MAN_BITS_64    = 53,     // EXtended MANtissa number of BITS for fp128
   parameter int EX_MAN_BITS_32    = 23,     // EXtended MANtissa number of BITS for fp128
 
+  // Multiplier pipeline latency (cycles from valid in to valid out)
+  parameter int MUL_LATENCY       = 1,
+
   // Error and debug parameters
   parameter int ERROR_SIGNAL_NUM_BITS = 32,
   parameter int DEBUG_SIGNAL_NUM_BITS = 32,
