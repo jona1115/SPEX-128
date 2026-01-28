@@ -6,10 +6,8 @@
  ********************************************************************
  * 
  * Description:
- * This a wrapper for SPEX-128 components. x comes in, e^x goes out.
- * 
- * The whole thing is seperated into three "lavels". See the diagram
- * here: https://github.com/jona1115/SPEX-128/issues/20#issuecomment-3544661227
+ * This is a subword parallel floating point multiplier. IEEE-754
+ * compliant (almost).
  * 
  ********************************************************************
  * 
@@ -98,6 +96,7 @@ logic [NUM_BITS_128-1:0]            s_o_out_jedi;
 logic                               s_o_sanity_identifier;
 logic [ERROR_SIGNAL_NUM_BITS-1:0]   s_o_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0]   s_o_debug;
+logic                               s_sp_intmultiplier_valid;
 
 
 //=====================================================================================
@@ -326,7 +325,12 @@ always_comb begin : stage_en_control
     end
     S2: begin
       s_S2_en = 1'b1;
-      s_next_state = S3;
+      if (s_sp_intmultiplier_valid) begin
+        s_next_state = S3;
+      end
+      else begin // redundant statement but just to be explicit
+        s_next_state = S2;
+      end
     end
     S3: begin
       s_S3_en = 1'b1;
@@ -521,6 +525,33 @@ assign hs_S1_32d_force_mantissa_extended  = {`NOT_DENORMAL(s_S1_metadata_force.f
 logic [225:0] s_S2_128_mult_out_full;
 logic [105:0] s_S2_64a_mult_out_full, s_S2_64b_mult_out_full;
 logic [47:0]  s_S2_32a_mult_out_full, s_S2_32b_mult_out_full, s_S2_32c_mult_out_full, s_S2_32d_mult_out_full;
+
+logic [225:0] s_sp_intmultiplier_jedi;
+logic [3:0]   unused_sp_intmultiplier_sanity_identifier;
+logic [ERROR_SIGNAL_NUM_BITS-1:0] unused_sp_intmultiplier_error;
+logic [DEBUG_SIGNAL_NUM_BITS-1:0] unused_sp_intmultiplier_debug;
+sp_intmultiplier #() my_sp_intmultiplier (
+  .i_clk(i_clk),
+  .i_rst_n(i_rst_n),
+  .i_metadata(s_S1_metadata_anikin),
+  .i_anikin(s_S1_metadata_anikin.sp_mode === SINGLE_MODE ? hs_S1_128_anikin_mantissa_extended                                           :
+            s_S1_metadata_anikin.sp_mode === TWO_SP_MODE ? {'0, hs_S1_64a_anikin_mantissa_extended, hs_S1_64b_anikin_mantissa_extended} :
+                                                           {'0, hs_S1_32a_anikin_mantissa_extended, hs_S1_32b_anikin_mantissa_extended, 
+                                                            hs_S1_32c_anikin_mantissa_extended, hs_S1_32d_anikin_mantissa_extended}
+            ),
+  .i_force(s_S1_metadata_anikin.sp_mode === SINGLE_MODE ? hs_S1_128_force_mantissa_extended                                             :
+           s_S1_metadata_anikin.sp_mode === TWO_SP_MODE ? {'0, hs_S1_64a_force_mantissa_extended, hs_S1_64b_force_mantissa_extended}    :
+                                                          {'0, hs_S1_32a_force_mantissa_extended, hs_S1_32b_force_mantissa_extended, 
+                                                          hs_S1_32c_force_mantissa_extended, hs_S1_32d_force_mantissa_extended}
+            ),
+  .o_jedi(s_sp_intmultiplier_jedi),
+  .i_valid_anikin(s_S2_en & s_S1_valid128_jedi),
+  .i_valid_force(s_S2_en & s_S1_valid128_jedi),
+  .o_valid_jedi(s_sp_intmultiplier_valid),
+  .o_sanity_identifier(unused_sp_intmultiplier_sanity_identifier),
+  .o_error(unused_sp_intmultiplier_error),
+  .o_debug(unused_sp_intmultiplier_debug)
+);
 always_ff @( posedge i_clk ) begin : stage2a_extended_mantissa_mult
   if (!i_rst_n) begin
     s_S2_128_mult_out_full  <= '0;
@@ -539,27 +570,36 @@ always_ff @( posedge i_clk ) begin : stage2a_extended_mantissa_mult
         s_o_error[7] <= 1'b1;
         // $fatal(1, "Bad things had happened, (s_S1_metadata_anikin.sp_mode === s_S1_metadata_force.sp_mode) is false.");
       end
+
+      // todo we need to split s_sp_intmultiplier_jedi into:
+      // s_S2_128_mult_out_full
+      // s_S2_64a_mult_out_full
+      // s_S2_64b_mult_out_full
+      // s_S2_32a_mult_out_full
+      // s_S2_32b_mult_out_full
+      // s_S2_32c_mult_out_full
+      // s_S2_32d_mult_out_full
       
-      case (s_S1_metadata_anikin.sp_mode)
-        SINGLE_MODE: begin
-          s_S2_128_mult_out_full <= hs_S1_128_anikin_mantissa_extended * hs_S1_128_force_mantissa_extended; // I can hear Jones screaming
-        end
-        TWO_SP_MODE: begin
-          s_S2_64a_mult_out_full <= hs_S1_64a_anikin_mantissa_extended * hs_S1_64a_force_mantissa_extended;
-          s_S2_64b_mult_out_full <= hs_S1_64b_anikin_mantissa_extended * hs_S1_64b_force_mantissa_extended;
-        end
-        FOUR_SP_MODE: begin
-          s_S2_32a_mult_out_full <= hs_S1_32a_anikin_mantissa_extended * hs_S1_32a_force_mantissa_extended;
-          s_S2_32b_mult_out_full <= hs_S1_32b_anikin_mantissa_extended * hs_S1_32b_force_mantissa_extended;
-          s_S2_32c_mult_out_full <= hs_S1_32c_anikin_mantissa_extended * hs_S1_32c_force_mantissa_extended;
-          s_S2_32d_mult_out_full <= hs_S1_32d_anikin_mantissa_extended * hs_S1_32d_force_mantissa_extended;
-        end
-        default: begin
-          assert (0) else begin
-            s_o_error[3] <= 1'b1;
-          end
-        end
-      endcase // case (i_metadata.sp_mode)
+      // case (s_S1_metadata_anikin.sp_mode)
+      //   SINGLE_MODE: begin
+      //     s_S2_128_mult_out_full <= hs_S1_128_anikin_mantissa_extended * hs_S1_128_force_mantissa_extended; // I can hear Jones screaming
+      //   end
+      //   TWO_SP_MODE: begin
+      //     s_S2_64a_mult_out_full <= hs_S1_64a_anikin_mantissa_extended * hs_S1_64a_force_mantissa_extended;
+      //     s_S2_64b_mult_out_full <= hs_S1_64b_anikin_mantissa_extended * hs_S1_64b_force_mantissa_extended;
+      //   end
+      //   FOUR_SP_MODE: begin
+      //     s_S2_32a_mult_out_full <= hs_S1_32a_anikin_mantissa_extended * hs_S1_32a_force_mantissa_extended;
+      //     s_S2_32b_mult_out_full <= hs_S1_32b_anikin_mantissa_extended * hs_S1_32b_force_mantissa_extended;
+      //     s_S2_32c_mult_out_full <= hs_S1_32c_anikin_mantissa_extended * hs_S1_32c_force_mantissa_extended;
+      //     s_S2_32d_mult_out_full <= hs_S1_32d_anikin_mantissa_extended * hs_S1_32d_force_mantissa_extended;
+      //   end
+      //   default: begin
+      //     assert (0) else begin
+      //       s_o_error[3] <= 1'b1;
+      //     end
+      //   end
+      // endcase // case (i_metadata.sp_mode)
     end
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
