@@ -31,7 +31,10 @@ import fixed128_pkg::*;
 import fixed64_pkg::*;
 import fixed32_pkg::*;
 
-`define USE_RAM_DATA
+// Turn this define ON (uncomment) when synthesizing using Vivado, as it only recognize .data binary files
+// Turn thie design OFF (comment) when simulating using non-Vivado, as the testing infrastructure is set up
+// to read .hex files.
+// `define USE_RAM_DATA
 
 `ifdef USE_RAM_DATA
   `define SPEX_RAM_EXT "data"
