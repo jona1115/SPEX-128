@@ -94,7 +94,7 @@ logic [31:0] s_o_exp_c_bits;
 /**
  * The LUT part of it
  */
-(* rom_style = "block" *) logic [31:0] mem [0:8191]; // Infer a BRAM
+(* rom_style = "block" *) logic [31:0] mem [0:2047]; // Infer a BRAM
 initial begin
   `SPEX_READMEM(INIT_FILE, mem);
 end
