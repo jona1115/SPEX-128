@@ -400,7 +400,10 @@ always_ff @( posedge i_clk ) begin : mem128_port_a
         end
 
         default: begin
-          // No-op
+          assert (0) else begin
+            $error("[%0t] Invalid mode detected in fixed_partition", $time); 
+            s_o_error[0] <= 1'b1;
+          end
         end
       endcase
     end
