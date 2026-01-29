@@ -1,16 +1,26 @@
-// todo add header comments after file is done
-// Naming convension: anikin * force = jedi
-// Working on this module made me want to rewatch star wars (clone wars, and revenge of the sith) so bad! todo
-// signal naming: s_Sn_xxxxx: This is the output of stage n
-// signal prefix: s_ is for signals, hs_ for helper signal
-
-// Also, for now we are not going to deal with denormal types reason:
-// 1. The output from the lookup table are mostly normal
-// 2. Denormals only happen after some negative a input in the two and four sp mode
-// 3. For now it is just not worth the time to implement that imo, aside from the normalization part, we also need 
-//    to figure out, in hardware, if the output should also be a denormal. And that is just too much work, at
-//    least for now
-// 4. So for now, in stage 5, we treat denormals as ZEROs
+/********************************************************************
+ * 
+ * Originator   : Jonathan Tan
+ * Date         : 11/27/2025
+ * 
+ ********************************************************************
+ * 
+ * Description:
+ * This is a subword parallel floating point multiplier. IEEE-754
+ * compliant (almost).
+ * 
+ * Naming convension:
+ *  jedi = anikin * force
+ * 
+ ********************************************************************
+ * 
+ * Modification history:
+ *    Ver   |  Who       |  Date	      |  Changes
+ *  ------- + ---------- + ------------ + --------------------------
+ *    1.00  |  Jonathan  |  11/27/2025  |  Birth of this file
+ *    1.01  |  Jonathan  |  1/27/2026   |  Renamed file from sp_multiplier.sv to sp_fpmultiplier.sv
+ * 
+ *******************************************************************/
 
 import float_flag_pkg::*;
 import sp_mode_pkg::*;
@@ -23,14 +33,19 @@ import fixed64_pkg::*;
 import fixed32_pkg::*;
 import unbiasing_pkg::*;
 
-module sp_multiplier #(
+module sp_fpmultiplier #(
   parameter int NUM_BITS_128  = 128,
   parameter int NUM_BITS_64   = 64,
   parameter int NUM_BITS_32   = 32,
 
+  // Multiplier pipeline latency (cycles from mul start to valid product)
+  parameter int INTMUL_LATENCY = 1,
+
   // Error and debug parameters
   parameter int ERROR_SIGNAL_NUM_BITS = 32,
   parameter int DEBUG_SIGNAL_NUM_BITS = 32,
+
+  parameter int DEBUG_PRINT_EN = 0,
 
   // Identifier const
   parameter logic [3:0] MODULE_IDENTIFIER = 4'b0000
@@ -261,89 +276,64 @@ float_classifier #() my_float_classifier_force (
 
 
 /**
- * FSM
- */
-typedef enum logic [2:0] { 
-  S0_IDLE     = 3'b000,
-  S1          = 3'b001,
-  S2          = 3'b010,
-  S3          = 3'b011,
-  S4          = 3'b100,
-  S5          = 3'b101,
-  S6          = 3'b110,
-  S7          = 3'b111
-} state_t;
-state_t s_curr_state, s_next_state;
-always_ff @( posedge i_clk ) begin : float_to_fixed_FSM
-  if (!i_rst_n) begin
-    s_curr_state <= S0_IDLE;
-  end
-  else begin
-    s_curr_state <= s_next_state;
-  end
-end
-
-/**
- * 
- * State transition control
- * 
+ * Fixed-latency pipeline control.
+ * Each stage enable is a delayed version of the initial "fire" signal.
  */
 logic s_S0_en, s_S1_en, s_S2_en, s_S3_en, s_S4_en, s_S5_en, s_S6_en, s_S7_en;
-always_comb begin : stage_en_control
-  // Defaults
-  s_next_state = s_curr_state;
-  s_S0_en = '0;
-  s_S1_en = '0;
-  s_S2_en = '0;
-  s_S3_en = '0;
-  s_S4_en = '0;
-  s_S5_en = '0;
-  s_S6_en = '0;
-  s_S7_en = '0;
+logic s_fire;
+localparam int MUL_START_OFFSET = 1;
+localparam int S1_OFFSET = 0;
+localparam int S2_OFFSET = MUL_START_OFFSET + INTMUL_LATENCY;
+localparam int S3_OFFSET = S2_OFFSET + 1;
+localparam int S4_OFFSET = S3_OFFSET + 1;
+localparam int S5_OFFSET = S4_OFFSET + 1;
+localparam int PIPE_DEPTH = S5_OFFSET + 1; //6
+logic [PIPE_DEPTH-1:0] s_pipe_valid;
+logic [PIPE_DEPTH-1:0] s_pipe_valid_next;
+logic s_mul_start;
 
-  unique case (s_curr_state)
-    S0_IDLE: begin
-      s_next_state = S1;
+always_comb begin : stage_fire_decode
+  s_fire = 1'b0;
+  unique case (i_metadata.sp_mode)
+    SINGLE_MODE: begin
+      s_fire = (s_S0_valid128_anikin === 1'b1) && (s_S0_valid128_force === 1'b1);
     end
-    S1: begin
-      if ( // "All or nothing" enforcer - All anikin and force subwords of either sp_mode have to be valid for stage 0 to proceed:
-        (i_metadata.sp_mode === SINGLE_MODE && s_S0_valid128_anikin === 1'b1 && s_S0_valid128_force === 1'b1) ||
-        (i_metadata.sp_mode === TWO_SP_MODE && s_S0_valid64a_anikin === 1'b1 && s_S0_valid64a_force === 1'b1 && s_S0_valid64b_anikin === 1'b1 && s_S0_valid64b_force === 1'b1) ||
-        (i_metadata.sp_mode === FOUR_SP_MODE && s_S0_valid32a_anikin === 1'b1 && s_S0_valid32a_force === 1'b1 && s_S0_valid32b_anikin === 1'b1 && s_S0_valid32b_force === 1'b1 && s_S0_valid32c_anikin === 1'b1 && s_S0_valid32c_force === 1'b1 && s_S0_valid32d_anikin === 1'b1 && s_S0_valid32d_force === 1'b1)
-      ) begin
-        s_S1_en = 1'b1;
-        s_next_state = S2;
-      end
+    TWO_SP_MODE: begin
+      s_fire = (s_S0_valid64a_anikin === 1'b1) && (s_S0_valid64a_force === 1'b1) &&
+               (s_S0_valid64b_anikin === 1'b1) && (s_S0_valid64b_force === 1'b1);
     end
-    S2: begin
-      s_S2_en = 1'b1;
-      s_next_state = S3;
-    end
-    S3: begin
-      s_S3_en = 1'b1;
-      s_next_state = S4;
-    end
-    S4: begin
-      s_S4_en = 1'b1;
-      s_next_state = S5;
-    end
-    S5: begin
-      s_S5_en = 1'b1;
-      s_next_state = S0_IDLE; // s5 is the last stage
-    end
-    S6: begin
-      s_S6_en = 1'b1;
-      s_next_state = S7;
-    end
-    S7: begin
-      s_S7_en = 1'b1;
-      s_next_state = S0_IDLE;
+    FOUR_SP_MODE: begin
+      s_fire = (s_S0_valid32a_anikin === 1'b1) && (s_S0_valid32a_force === 1'b1) &&
+               (s_S0_valid32b_anikin === 1'b1) && (s_S0_valid32b_force === 1'b1) &&
+               (s_S0_valid32c_anikin === 1'b1) && (s_S0_valid32c_force === 1'b1) &&
+               (s_S0_valid32d_anikin === 1'b1) && (s_S0_valid32d_force === 1'b1);
     end
     default: begin
-      s_next_state = S0_IDLE;
+      s_fire = 1'b0;
     end
   endcase
 end
+
+always_ff @(posedge i_clk) begin : stage_valid_pipeline
+  if (!i_rst_n) begin
+    s_pipe_valid <= '0;
+  end
+  else begin
+    s_pipe_valid <= s_pipe_valid_next;
+  end
+end
+
+assign s_pipe_valid_next = {s_pipe_valid[PIPE_DEPTH-2:0], s_fire};
+
+assign s_mul_start = s_pipe_valid_next[MUL_START_OFFSET];
+assign s_S0_en = 1'b0;
+assign s_S1_en = s_pipe_valid_next[S1_OFFSET];
+assign s_S2_en = s_pipe_valid_next[S2_OFFSET];
+assign s_S3_en = s_pipe_valid_next[S3_OFFSET];
+assign s_S4_en = s_pipe_valid_next[S4_OFFSET];
+assign s_S5_en = s_pipe_valid_next[S5_OFFSET];
+assign s_S6_en = 1'b0;
+assign s_S7_en = 1'b0;
 
 //=====================================================================================
 // Stage 1
@@ -512,6 +502,35 @@ assign hs_S1_32d_force_mantissa_extended  = {`NOT_DENORMAL(s_S1_metadata_force.f
 logic [225:0] s_S2_128_mult_out_full;
 logic [105:0] s_S2_64a_mult_out_full, s_S2_64b_mult_out_full;
 logic [47:0]  s_S2_32a_mult_out_full, s_S2_32b_mult_out_full, s_S2_32c_mult_out_full, s_S2_32d_mult_out_full;
+
+logic [225:0] s_sp_intmultiplier_jedi;
+logic [3:0]   unused_sp_intmultiplier_sanity_identifier;
+logic [ERROR_SIGNAL_NUM_BITS-1:0] unused_sp_intmultiplier_error;
+logic [DEBUG_SIGNAL_NUM_BITS-1:0] unused_sp_intmultiplier_debug;
+sp_intmultiplier #(
+  .MUL_LATENCY(INTMUL_LATENCY)
+) my_sp_intmultiplier (
+  .i_clk(i_clk),
+  .i_rst_n(i_rst_n),
+  .i_metadata(s_S1_metadata_anikin),
+  .i_anikin(s_S1_metadata_anikin.sp_mode === SINGLE_MODE ? hs_S1_128_anikin_mantissa_extended                                           :
+            s_S1_metadata_anikin.sp_mode === TWO_SP_MODE ? {'0, hs_S1_64a_anikin_mantissa_extended, hs_S1_64b_anikin_mantissa_extended} :
+                                        /*FOUR_SP_MODE*/   {'0, hs_S1_32a_anikin_mantissa_extended, hs_S1_32b_anikin_mantissa_extended, 
+                                                            hs_S1_32c_anikin_mantissa_extended, hs_S1_32d_anikin_mantissa_extended}
+            ),
+  .i_force(s_S1_metadata_anikin.sp_mode === SINGLE_MODE ? hs_S1_128_force_mantissa_extended                                             :
+           s_S1_metadata_anikin.sp_mode === TWO_SP_MODE ? {'0, hs_S1_64a_force_mantissa_extended, hs_S1_64b_force_mantissa_extended}    :
+                                       /*FOUR_SP_MODE*/   {'0, hs_S1_32a_force_mantissa_extended, hs_S1_32b_force_mantissa_extended, 
+                                                          hs_S1_32c_force_mantissa_extended, hs_S1_32d_force_mantissa_extended}
+            ),
+  .o_jedi(s_sp_intmultiplier_jedi),
+  .i_valid_anikin(s_mul_start),
+  .i_valid_force(s_mul_start),
+  .o_valid_jedi(),
+  .o_sanity_identifier(unused_sp_intmultiplier_sanity_identifier),
+  .o_error(unused_sp_intmultiplier_error),
+  .o_debug(unused_sp_intmultiplier_debug)
+);
 always_ff @( posedge i_clk ) begin : stage2a_extended_mantissa_mult
   if (!i_rst_n) begin
     s_S2_128_mult_out_full  <= '0;
@@ -530,20 +549,20 @@ always_ff @( posedge i_clk ) begin : stage2a_extended_mantissa_mult
         s_o_error[7] <= 1'b1;
         // $fatal(1, "Bad things had happened, (s_S1_metadata_anikin.sp_mode === s_S1_metadata_force.sp_mode) is false.");
       end
-      
+
       case (s_S1_metadata_anikin.sp_mode)
         SINGLE_MODE: begin
-          s_S2_128_mult_out_full <= hs_S1_128_anikin_mantissa_extended * hs_S1_128_force_mantissa_extended; // I can hear Jones screaming
+          s_S2_128_mult_out_full <= s_sp_intmultiplier_jedi;
         end
         TWO_SP_MODE: begin
-          s_S2_64a_mult_out_full <= hs_S1_64a_anikin_mantissa_extended * hs_S1_64a_force_mantissa_extended;
-          s_S2_64b_mult_out_full <= hs_S1_64b_anikin_mantissa_extended * hs_S1_64b_force_mantissa_extended;
+          s_S2_64a_mult_out_full <= s_sp_intmultiplier_jedi[211:106];
+          s_S2_64b_mult_out_full <= s_sp_intmultiplier_jedi[105:0];
         end
         FOUR_SP_MODE: begin
-          s_S2_32a_mult_out_full <= hs_S1_32a_anikin_mantissa_extended * hs_S1_32a_force_mantissa_extended;
-          s_S2_32b_mult_out_full <= hs_S1_32b_anikin_mantissa_extended * hs_S1_32b_force_mantissa_extended;
-          s_S2_32c_mult_out_full <= hs_S1_32c_anikin_mantissa_extended * hs_S1_32c_force_mantissa_extended;
-          s_S2_32d_mult_out_full <= hs_S1_32d_anikin_mantissa_extended * hs_S1_32d_force_mantissa_extended;
+          s_S2_32a_mult_out_full <= s_sp_intmultiplier_jedi[191:144];
+          s_S2_32b_mult_out_full <= s_sp_intmultiplier_jedi[143:96];
+          s_S2_32c_mult_out_full <= s_sp_intmultiplier_jedi[95:48];
+          s_S2_32d_mult_out_full <= s_sp_intmultiplier_jedi[47:0];
         end
         default: begin
           assert (0) else begin
@@ -1304,7 +1323,7 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
               ((s_S4_metadata_anikin.float_type_a === NAN || s_S4_metadata_force.float_type_a === NAN) ||
               (s_S4_64a_jedi.exp === '1 && s_S4_64a_potential_result[51:0] !== '0 && s_S4_64a_potential_result[51:0] !== '1))) begin
             // If either is NaN, output will be NaN
-            $display(">>>>> boba tea gnarly");
+            // $display(">>>>> boba tea gnarly");
             s_S5_64a_jedi.sign      <= s_S4_64a_jedi.sign;
             s_S5_64a_jedi.exp       <= '1;
             s_S5_64a_jedi.mantissa  <= 52'hA; // non-0
@@ -1669,5 +1688,19 @@ assign o_sanity_identifier  = MODULE_IDENTIFIER;
 assign o_error              = s_o_error;
 assign o_debug              = s_o_debug;
 
+//=====================================================================================
+// Debug: optional cycle-by-cycle visibility
+//=====================================================================================
+always_ff @(posedge i_clk) begin : dbg_spmul
+  if (i_rst_n && DEBUG_PRINT_EN === 1) begin
+    $display("[%0t] %m sp_mode=%0d i_v128_a=%b i_v128_f=%b s0_v128_a=%b s0_v128_f=%b s_fire=%b s_S5_en=%b o_v128=%b",
+             $time,
+             i_metadata.sp_mode,
+             i_valid128_anikin, i_valid128_force,
+             s_S0_valid128_anikin, s_S0_valid128_force,
+             s_fire, s_S5_en, o_valid128_jedi);
+  end
+end
 
-endmodule // module sp_multiplier #()
+
+endmodule // module sp_fpmultiplier #()
