@@ -42,6 +42,8 @@ module sp_fpmultiplier #(
   parameter int ERROR_SIGNAL_NUM_BITS = 32,
   parameter int DEBUG_SIGNAL_NUM_BITS = 32,
 
+  parameter int DEBUG_PRINT_EN = 0,
+
   // Identifier const
   parameter logic [3:0] MODULE_IDENTIFIER = 4'b0000
 ) (
@@ -282,7 +284,7 @@ localparam int S2_OFFSET = MUL_START_OFFSET + INTMUL_LATENCY;
 localparam int S3_OFFSET = S2_OFFSET + 1;
 localparam int S4_OFFSET = S3_OFFSET + 1;
 localparam int S5_OFFSET = S4_OFFSET + 1;
-localparam int PIPE_DEPTH = S5_OFFSET + 1;
+localparam int PIPE_DEPTH = S5_OFFSET + 1; //6
 logic [PIPE_DEPTH-1:0] s_pipe_valid;
 logic [PIPE_DEPTH-1:0] s_pipe_valid_next;
 logic s_mul_start;
@@ -1691,6 +1693,20 @@ assign o_valid32d_jedi      = s_S5_valid32d_jedi;
 assign o_sanity_identifier  = MODULE_IDENTIFIER;
 assign o_error              = s_o_error;
 assign o_debug              = s_o_debug;
+
+//=====================================================================================
+// Debug: optional cycle-by-cycle visibility
+//=====================================================================================
+always_ff @(posedge i_clk) begin : dbg_spmul
+  if (i_rst_n && DEBUG_PRINT_EN === 1) begin
+    $display("[%0t] %m sp_mode=%0d i_v128_a=%b i_v128_f=%b s0_v128_a=%b s0_v128_f=%b s_fire=%b s_S5_en=%b o_v128=%b",
+             $time,
+             i_metadata.sp_mode,
+             i_valid128_anikin, i_valid128_force,
+             s_S0_valid128_anikin, s_S0_valid128_force,
+             s_fire, s_S5_en, o_valid128_jedi);
+  end
+end
 
 
 endmodule // module sp_fpmultiplier #()

@@ -424,7 +424,7 @@ module SPEX128_top_unit_test;
     $display("<<<<< s_my_sp_fpmultiplier_4_valid128_jedi = %x", ds_my_sp_fpmultiplier_4_valid128_jedi); \
   $display("<<<<< =================== End Intermediate valid bits ===================");
   // -------- Tunables --------------------------------------------------------
-  `define LATENCY 2+1+5*3/*idk why the +3*/+30 // 21
+  `define LATENCY 2+1+5*3/*idk why the +3*/+10 // 21
   // LSB error tolerances (difference in integer value of the LSB slice)
   `define ERR_TOL_LSB_128 200
   `define ERR_TOL_LSB_64  200000 // 200,000 is for latency_and_ordering to pass

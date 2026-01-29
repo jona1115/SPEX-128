@@ -908,7 +908,9 @@ logic s_my_sp_fpmultiplier_3_valid32d_jedi;
 logic [3:0] s_my_sp_fpmultiplier_3_identifier;
 logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_3_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_3_debug;
-sp_fpmultiplier #() my_sp_fpmultiplier_3 (
+sp_fpmultiplier #(
+  .DEBUG_PRINT_EN(0)
+) my_sp_fpmultiplier_3 (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
   .i_metadata(s_level2_metadata),
@@ -956,7 +958,9 @@ logic [3:0] s_my_sp_fpmultiplier_4_identifier;
 logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_4_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_4_debug;
 logic unused_mul4_1, unused_mul4_2, unused_mul4_3, unused_mul4_4, unused_mul4_5, unused_mul4_6;
-sp_fpmultiplier #() my_sp_fpmultiplier_4 (
+sp_fpmultiplier #(
+  .DEBUG_PRINT_EN(0)
+) my_sp_fpmultiplier_4 (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
   .i_metadata(s_level2_metadata),
