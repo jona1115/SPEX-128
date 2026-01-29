@@ -31,6 +31,19 @@ import fixed64_pkg::*;
 import fixed32_pkg::*;
 import unbiasing_pkg::*;
 
+// Turn this define ON (uncomment) when synthesizing using Vivado, as it only recognize .data binary files
+// Turn thie design OFF (comment) when simulating using non-Vivado, as the testing infrastructure is set up
+// to read .hex files.
+// `define USE_RAM_DATA
+
+`ifdef USE_RAM_DATA
+  `define SPEX_RAM_EXT "data"
+  `define SPEX_READMEM $readmemb
+`else
+  `define SPEX_RAM_EXT "hex"
+  `define SPEX_READMEM $readmemh
+`endif
+
 module SPEX128_top #(
   parameter int NUM_BITS_128  = 128,
   parameter int NUM_BITS_64   = 64,
@@ -222,8 +235,8 @@ fixed_partition_sp #(
   .ADDR_BITS_128(10),
   .ADDR_BITS_64(10),
   .ADDR_BITS_32(10),
-  .INIT_128_POS_FILE("fixed128_0a_partition.hex"),
-  .INIT_128_NEG_FILE("fixed128_1a_partition.hex")
+  .INIT_128_POS_FILE({"fixed128_0a_partition.", `SPEX_RAM_EXT}),
+  .INIT_128_NEG_FILE({"fixed128_1a_partition.", `SPEX_RAM_EXT})
 ) my_fixed_partition_sp_par_a (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
@@ -290,7 +303,7 @@ fixed_partition_sp #(
   .ADDR_BITS_128(13),
   .ADDR_BITS_64(13),
   .ADDR_BITS_32(10),
-  .INIT_128_FILE("fixed128_b_partition.hex")
+  .INIT_128_FILE({"fixed128_b_partition.", `SPEX_RAM_EXT})
 ) my_fixed_partition_sp_par_b (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
@@ -357,7 +370,7 @@ fixed_partition_sp #(
   .ADDR_BITS_128(13),
   .ADDR_BITS_64(13),
   .ADDR_BITS_32(11),
-  .INIT_128_FILE("fixed128_c_partition.hex")
+  .INIT_128_FILE({"fixed128_c_partition.", `SPEX_RAM_EXT})
 ) my_fixed_partition_sp_par_c (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
@@ -422,7 +435,7 @@ fixed_partition_sp #(
   .ENABLE_64(1'b0),
   .ENABLE_32(1'b0),
   .ADDR_BITS_128(13),
-  .INIT_128_FILE("fixed128_d_partition.hex")
+  .INIT_128_FILE({"fixed128_d_partition.", `SPEX_RAM_EXT})
 ) my_fixed_partition_sp_par_d (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
@@ -487,7 +500,7 @@ fixed_partition_sp #(
   .ENABLE_64(1'b0),
   .ENABLE_32(1'b0),
   .ADDR_BITS_128(13),
-  .INIT_128_FILE("fixed128_e_partition.hex")
+  .INIT_128_FILE({"fixed128_e_partition.", `SPEX_RAM_EXT})
 ) my_fixed_partition_sp_par_e (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
