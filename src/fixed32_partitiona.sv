@@ -31,9 +31,22 @@ import fixed128_pkg::*;
 import fixed64_pkg::*;
 import fixed32_pkg::*;
 
+// Turn this define ON (uncomment) when synthesizing using Vivado, as it only recognize .data binary files
+// Turn thie design OFF (comment) when simulating using non-Vivado, as the testing infrastructure is set up
+// to read .hex files.
+`define USE_RAM_DATA
+
+`ifdef USE_RAM_DATA
+  `define SPEX_RAM_EXT "data"
+  `define SPEX_READMEM $readmemb
+`else
+  `define SPEX_RAM_EXT "hex"
+  `define SPEX_READMEM $readmemh
+`endif
+
 module fixed32_partitiona #(
-  parameter string INIT_POS_FILE = "fixed32_0a_partition.hex",
-  parameter string INIT_NEG_FILE = "fixed32_1a_partition.hex",
+  parameter string INIT_POS_FILE = {"fixed32_0a_partition.", `SPEX_RAM_EXT},
+  parameter string INIT_NEG_FILE = {"fixed32_1a_partition.", `SPEX_RAM_EXT},
   
   parameter int NUM_BITS_128  = 128,
   parameter int NUM_BITS_64   = 64,
@@ -73,7 +86,7 @@ module fixed32_partitiona #(
 // Signal definitions
 //=====================================================================================
 logic s_o_valid;
-binary32_t s_o_exp_a;
+logic [31:0] s_o_exp_a_bits;
 
 //=====================================================================================
 // Module body
@@ -84,21 +97,23 @@ binary32_t s_o_exp_a;
  */
 (* rom_style = "block" *) logic [31:0] mempos [0:1023]; // Infer a BRAM
 (* rom_style = "block" *) logic [31:0] memneg [0:1023]; // Infer a BRAM
-initial $readmemh(INIT_POS_FILE, mempos);
-initial $readmemh(INIT_NEG_FILE, memneg);
+initial begin
+  `SPEX_READMEM(INIT_POS_FILE, mempos);
+  `SPEX_READMEM(INIT_NEG_FILE, memneg);
+end
 always_ff @( posedge i_clk ) begin : LUTs
   if (!i_rst_n) begin
-    s_o_exp_a <= '0;
+    s_o_exp_a_bits <= '0;
   end
   else begin
     if (i_valid) begin // The hope is that this will infer a en signal into the BRAM
       if (i_a[10] === 1'b0) begin
         // Positive input a
-        s_o_exp_a <= binary32_t'(mempos[i_a[9:0]]);
+        s_o_exp_a_bits <= mempos[i_a[9:0]];
       end
       else begin
         // Negative input a
-        s_o_exp_a <= binary32_t'(memneg[i_a[9:0]]);
+        s_o_exp_a_bits <= memneg[i_a[9:0]];
       end
     end // if (i_valid) begin
   end // else begin
@@ -119,7 +134,7 @@ end // always_ff
 //=====================================================================================
 // Final assignment
 //=====================================================================================
-assign o_exp_a = s_o_exp_a;
+assign o_exp_a = binary32_t'(s_o_exp_a_bits);
 assign o_valid = s_o_valid; 
 assign o_sanity_identifier = 4'b0000;
 assign o_error = '0;

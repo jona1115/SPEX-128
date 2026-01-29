@@ -31,9 +31,19 @@ import fixed128_pkg::*;
 import fixed64_pkg::*;
 import fixed32_pkg::*;
 
+`define USE_RAM_DATA
+
+`ifdef USE_RAM_DATA
+  `define SPEX_RAM_EXT "data"
+  `define SPEX_READMEM $readmemb
+`else
+  `define SPEX_RAM_EXT "hex"
+  `define SPEX_READMEM $readmemh
+`endif
+
 module fixed128_64_partitionb #(
-  parameter string INIT_128_FILE = "fixed128_b_partition.hex",
-  parameter string INIT_64_FILE = "fixed64_b_partition.hex",
+  parameter string INIT_128_FILE = {"fixed128_b_partition.", `SPEX_RAM_EXT},
+  parameter string INIT_64_FILE = {"fixed64_b_partition.", `SPEX_RAM_EXT},
   
   parameter int NUM_BITS_128  = 128,
   parameter int NUM_BITS_64   = 64,
@@ -82,12 +92,12 @@ module fixed128_64_partitionb #(
 logic                               s_o_valid64a;
 logic                               s_o_valid64b;
 logic                               s_o_valid128;
-binary128_t                         s_o_exp_a128;
-binary64_t                          s_o_exp_a64a;
-binary64_t                          s_o_exp_a64b;
 float_metadata_t                    s_o_metadata;
 logic [ERROR_SIGNAL_NUM_BITS-1:0]   s_o_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0]   s_o_debug;
+logic [127:0]                       s_o_exp_a128_bits;
+logic [63:0]                        s_o_exp_a64a_bits;
+logic [63:0]                        s_o_exp_a64b_bits;
 
 //=====================================================================================
 // Module body
@@ -105,42 +115,56 @@ end
  */
 (* rom_style = "block" *) logic [127:0] mem128  [0:8191]; // Infer a BRAM
 (* rom_style = "block" *) logic [63:0]  mem64   [0:8191]; // Infer a BRAM
-initial $readmemh(INIT_128_FILE, mem128);
-initial $readmemh(INIT_64_FILE, mem64);
-always_ff @( posedge i_clk ) begin : LUTs
+initial begin
+  `SPEX_READMEM(INIT_128_FILE, mem128);
+  `SPEX_READMEM(INIT_64_FILE, mem64);
+end
+
+// Xilinx synchronous ROM template: one read port per output register.
+always_ff @( posedge i_clk ) begin : lut128
   if (!i_rst_n) begin
-    s_o_exp_a128  <= '0;
-    s_o_exp_a64a  <= '0;
-    s_o_exp_a64b  <= '0;
-    s_o_error     <= '0;
+    s_o_exp_a128_bits <= '0;
+  end
+  else if (i_metadata.sp_mode == SINGLE_MODE && i_valid128 === 1'b1) begin
+    s_o_exp_a128_bits <= mem128[i_a];
+  end
+end // always_ff
+
+always_ff @( posedge i_clk ) begin : lut64a
+  if (!i_rst_n) begin
+    s_o_exp_a64a_bits <= '0;
+  end
+  else if (i_metadata.sp_mode == TWO_SP_MODE && i_valid64a === 1'b1 && i_valid64b === 1'b1) begin
+    s_o_exp_a64a_bits <= mem64[i_a];
+  end
+end // always_ff
+
+always_ff @( posedge i_clk ) begin : lut64b
+  if (!i_rst_n) begin
+    s_o_exp_a64b_bits <= '0;
+  end
+  else if (i_metadata.sp_mode == TWO_SP_MODE && i_valid64a === 1'b1 && i_valid64b === 1'b1) begin
+    s_o_exp_a64b_bits <= mem64[i_a2];
+  end
+end // always_ff
+
+always_ff @( posedge i_clk ) begin : error_register
+  if (!i_rst_n) begin
+    s_o_error <= '0;
   end
   else begin
     case (i_metadata.sp_mode)
-      SINGLE_MODE: begin
-        if (i_valid128 === 1'b1) begin
-          s_o_exp_a128 <= binary128_t'(mem128[i_a]);
-        end // if (i_valid128 === 1'b1)
-      end // SINGLE_MODE
-
-      TWO_SP_MODE: begin
-        if (i_valid64a === 1'b1 && i_valid64b === 1'b1) begin // To keep output in sync, both has to be valid 
-          s_o_exp_a64a <= binary64_t'(mem64[i_a]);                    // to proceed
-          s_o_exp_a64b <= binary64_t'(mem64[i_a2]);
-        end // if (i_valid64a === 1'b1 && i_valid64b === 1'b1)
-      end // TWO_SP_MODE
-
-      FOUR_SP_MODE: begin
-        // Do nothing
-      end // FOUR_SP_MODE
-
+      SINGLE_MODE, TWO_SP_MODE, FOUR_SP_MODE: begin
+        // No error
+      end
       default: begin
         assert (0) else begin
-            s_o_error[0] <= 1'b1;
-            // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
-          end
-      end // default
+          s_o_error[0] <= 1'b1;
+          // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
+        end
+      end
     endcase
-  end // else begin
+  end
 end // always_ff
 
 /**
@@ -174,9 +198,9 @@ end // always_ff
 // Final assignment
 //=====================================================================================
 assign o_metadata = s_o_metadata;
-assign o_exp_a64a = s_o_exp_a64a;
-assign o_exp_a64b = s_o_exp_a64b;
-assign o_exp_a128 = s_o_exp_a128;
+assign o_exp_a64a = binary64_t'(s_o_exp_a64a_bits);
+assign o_exp_a64b = binary64_t'(s_o_exp_a64b_bits);
+assign o_exp_a128 = binary128_t'(s_o_exp_a128_bits);
 assign o_valid64a = s_o_valid64a;
 assign o_valid64b = s_o_valid64b;
 assign o_valid128 = s_o_valid128;

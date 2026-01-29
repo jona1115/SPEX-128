@@ -31,8 +31,18 @@ import fixed128_pkg::*;
 import fixed64_pkg::*;
 import fixed32_pkg::*;
 
+`define USE_RAM_DATA
+
+`ifdef USE_RAM_DATA
+  `define SPEX_RAM_EXT "data"
+  `define SPEX_READMEM $readmemb
+`else
+  `define SPEX_RAM_EXT "hex"
+  `define SPEX_READMEM $readmemh
+`endif
+
 module fixed128_partitione #(
-  parameter string INIT_FILE = "fixed128_e_partition.hex",
+  parameter string INIT_FILE = {"fixed128_e_partition.", `SPEX_RAM_EXT},
   
   parameter int NUM_BITS_128  = 128,
   parameter int NUM_BITS_64   = 64,
@@ -72,7 +82,7 @@ module fixed128_partitione #(
 // Signal definitions
 //=====================================================================================
 logic s_o_valid;
-binary128_t s_o_exp_e;
+logic [127:0] s_o_exp_e_bits;
 
 //=====================================================================================
 // Module body
@@ -82,14 +92,16 @@ binary128_t s_o_exp_e;
  * The LUT part of it
  */
 (* rom_style = "block" *) logic [127:0] mem [0:8191]; // Infer a BRAM
-initial $readmemh(INIT_FILE, mem);
+initial begin
+  `SPEX_READMEM(INIT_FILE, mem);
+end
 always_ff @( posedge i_clk ) begin : LUT
   if (!i_rst_n) begin
-    s_o_exp_e <= '0;
+    s_o_exp_e_bits <= '0;
   end
   else begin
     if (i_valid) begin // The hope is that this will infer a en signal into the BRAM
-      s_o_exp_e <= binary128_t'(mem[i_e]);
+      s_o_exp_e_bits <= mem[i_e];
     end // if (i_valid) begin
   end // else begin
 end // always_ff
@@ -109,7 +121,7 @@ end // always_ff
 //=====================================================================================
 // Final assignment
 //=====================================================================================
-assign o_exp_e = s_o_exp_e;
+assign o_exp_e = binary128_t'(s_o_exp_e_bits);
 assign o_valid = s_o_valid; 
 assign o_sanity_identifier = 4'b0000;
 assign o_error = '0;
