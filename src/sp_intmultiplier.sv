@@ -132,7 +132,7 @@ always_comb begin : stage_en_control
     S1: begin
       if (i_valid_anikin === 1'b1 && i_valid_force=== 1'b1) begin // "All or nothing"
         s_S1_en = 1'b1;
-        s_next_state = S0_IDLE;
+        s_next_state = S2;
       end
     end
     S2: begin
@@ -145,15 +145,15 @@ always_comb begin : stage_en_control
     end
     S4: begin
       s_S4_en = 1'b1;
-      s_next_state = S5;
+      s_next_state = S0_IDLE;
     end
     S5: begin
       s_S5_en = 1'b1;
-      s_next_state = S0_IDLE; // s5 is the last stage
+      s_next_state = S0_IDLE;
     end
     S6: begin
       s_S6_en = 1'b1;
-      s_next_state = S7;
+      s_next_state = S0_IDLE;
     end
     S7: begin
       s_S7_en = 1'b1;
@@ -168,48 +168,71 @@ end
 //=====================================================================================
 // Stage 1
 //=====================================================================================
-logic [225:0] s_S1_jedi;
+logic [EX_MAN_BITS_128-1:0] pp [0:EX_MAN_BITS_128-1]; // A 2D array of partial products
+genvar col, row;
+generate
+  for (row = 0; row < EX_MAN_BITS_128; row = row + 1) begin : pp_row_generator
+    for (col = 0; col < EX_MAN_BITS_128; col = col + 1) begin : pp_col_generator
+      assign pp[row][col] = i_anikin[col] & i_force[row];
+    end // pp_col_generator
+  end // pp_row_generator
+endgenerate
+
 logic s_S1_valid;
+logic [EX_MAN_BITS_128-1:0] s_S1_pp [0:EX_MAN_BITS_128-1];
 always_ff @( posedge i_clk ) begin : stage1a
   if (!i_rst_n) begin
-    s_S1_jedi   <= '0;
     s_S1_valid  <= '0;
+    s_S1_pp     <= '{default:'0};
   end
   else begin
     if (s_S1_en) begin
       s_S1_valid <= '1;
-      
-      case (i_metadata.sp_mode)
-        SINGLE_MODE: begin
-          s_S1_jedi             <= i_anikin * i_force;
-        end
-        TWO_SP_MODE: begin
-          s_S1_jedi[211:106]    <= i_anikin[105:53] * i_force[105:53];
-          s_S1_jedi[105:0]      <= i_anikin[52:0]   * i_force[52:0];
 
-          // Pad with 0s
-          s_S1_jedi[225:212]    <= '0;
-        end
-        FOUR_SP_MODE: begin
-          s_S1_jedi[191:144]    <= i_anikin[95:72]  * i_force[95:72];
-          s_S1_jedi[143:96]     <= i_anikin[71:48]  * i_force[71:48];
-          s_S1_jedi[95:48]      <= i_anikin[47:24]  * i_force[47:24];
-          s_S1_jedi[47:0]       <= i_anikin[23:0]   * i_force[23:0];
-
-          // Pad with 0s
-          s_S1_jedi[225:192]    <= '0;
-        end
-        default: begin
-          assert (0) else begin
-            s_o_error[3] <= 1'b1;
-            $error("something bad happened in sp_intmultiplier");
-          end
-        end
-      endcase // case (i_metadata.sp_mode)
+      s_S1_pp <= pp;
     end // if (s_S1_en)
     else begin
       s_S1_valid <= '0;
-    end
+    end // else begin
+  end // !i_rst_n else begin
+end // always_ff @( posedge i_clk )
+
+
+//=====================================================================================
+// Stage 2
+//=====================================================================================
+always_ff @( posedge i_clk ) begin : stage2a
+  if (!i_rst_n) begin
+  end
+  else begin
+    if (s_S2_en) begin
+    end // if (s_S2_en)
+  end // !i_rst_n else begin
+end // always_ff @( posedge i_clk )
+
+
+//=====================================================================================
+// Stage 3
+//=====================================================================================
+always_ff @( posedge i_clk ) begin : stage3a
+  if (!i_rst_n) begin
+  end
+  else begin
+    if (s_S3_en) begin
+    end // if (s_S3_en)
+  end // !i_rst_n else begin
+end // always_ff @( posedge i_clk )
+
+
+//=====================================================================================
+// Stage 4
+//=====================================================================================
+always_ff @( posedge i_clk ) begin : stage4a
+  if (!i_rst_n) begin
+  end
+  else begin
+    if (s_S4_en) begin
+    end // if (s_S4_en)
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
 
@@ -217,10 +240,10 @@ end // always_ff @( posedge i_clk )
 //=====================================================================================
 // Final assignment
 //=====================================================================================
-assign o_jedi = s_S1_jedi;
-assign o_valid_jedi = s_S1_valid;
+assign o_jedi = '0; // todo
+assign o_valid_jedi = '0; // todo
 assign o_sanity_identifier = MODULE_IDENTIFIER;
 assign o_error = s_o_error;
-assign o_debug = '0; // todo
+assign o_debug = '0;
 
 endmodule // module sp_fpmultiplier #()
