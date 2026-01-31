@@ -159,7 +159,7 @@ module sp_fpmultiplier_unit_test;
   string HEX_B_128 = "force_128b.hex";
   string HEX_C_128 = "jedi_128b.hex";
 
-  `define LATENCY 6
+  `define LATENCY (6 + my_sp_fpmultiplier.INTMUL_LATENCY)
 
   // ----------------------------------
   // Helpers
@@ -320,6 +320,7 @@ module sp_fpmultiplier_unit_test;
 
 `ifndef ISOLATE
     `include "cases/correctness.svh"
+    `include "cases/handwritten_sanity.svh"
 `else
     `include "cases/isolate.svh"
 `endif
