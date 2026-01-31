@@ -513,15 +513,15 @@ sp_intmultiplier #(
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
   .i_metadata(s_S1_metadata_anikin),
-  .i_anikin(s_S1_metadata_anikin.sp_mode === SINGLE_MODE ? hs_S1_128_anikin_mantissa_extended                                           :
-            s_S1_metadata_anikin.sp_mode === TWO_SP_MODE ? {'0, hs_S1_64a_anikin_mantissa_extended, hs_S1_64b_anikin_mantissa_extended} :
-                                        /*FOUR_SP_MODE*/   {'0, hs_S1_32a_anikin_mantissa_extended, hs_S1_32b_anikin_mantissa_extended, 
-                                                            hs_S1_32c_anikin_mantissa_extended, hs_S1_32d_anikin_mantissa_extended}
+  .i_anikin(s_S1_metadata_anikin.sp_mode === SINGLE_MODE ? hs_S1_128_anikin_mantissa_extended                                                               : // lane a is [112:0]
+            s_S1_metadata_anikin.sp_mode === TWO_SP_MODE ? {5'b00000, hs_S1_64a_anikin_mantissa_extended, 2'b00, hs_S1_64b_anikin_mantissa_extended}        : // lane a is [107:55], b is [52:0]
+                                        /*FOUR_SP_MODE*/   {10'b00000_00000, hs_S1_32a_anikin_mantissa_extended, 2'b00, hs_S1_32b_anikin_mantissa_extended,   // lane a is [102:79], b is [76:53]
+                                                            3'b000, hs_S1_32c_anikin_mantissa_extended, 2'b00, hs_S1_32d_anikin_mantissa_extended}            // lane c is [49:26], d is [23:0]
             ),
-  .i_force(s_S1_metadata_anikin.sp_mode === SINGLE_MODE ? hs_S1_128_force_mantissa_extended                                             :
-           s_S1_metadata_anikin.sp_mode === TWO_SP_MODE ? {'0, hs_S1_64a_force_mantissa_extended, hs_S1_64b_force_mantissa_extended}    :
-                                       /*FOUR_SP_MODE*/   {'0, hs_S1_32a_force_mantissa_extended, hs_S1_32b_force_mantissa_extended, 
-                                                          hs_S1_32c_force_mantissa_extended, hs_S1_32d_force_mantissa_extended}
+  .i_force(s_S1_metadata_anikin.sp_mode === SINGLE_MODE ? hs_S1_128_force_mantissa_extended                                                                 :
+           s_S1_metadata_anikin.sp_mode === TWO_SP_MODE ? {5'b00000, hs_S1_64a_force_mantissa_extended, 2'b00, hs_S1_64b_force_mantissa_extended}           :
+                                       /*FOUR_SP_MODE*/   {10'b00000_00000, hs_S1_32a_force_mantissa_extended, 2'b00, hs_S1_32b_force_mantissa_extended,
+                                                          3'b000, hs_S1_32c_force_mantissa_extended, 2'b00, hs_S1_32d_force_mantissa_extended}
             ),
   .o_jedi(s_sp_intmultiplier_jedi),
   .i_valid_anikin(s_mul_start),

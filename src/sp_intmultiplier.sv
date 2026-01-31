@@ -19,6 +19,8 @@
  * 
  *******************************************************************/
 
+`define EN_DEBUG_PRINT
+
 import float_flag_pkg::*;
 import sp_mode_pkg::*;
 import float_metadata_pkg::*;
@@ -168,18 +170,66 @@ end
 //=====================================================================================
 // Stage 1
 //=====================================================================================
-logic [EX_MAN_BITS_128-1:0] pp [0:EX_MAN_BITS_128-1]; // A 2D array of partial products
-genvar col, row;
-generate
+logic [EX_MAN_BITS_128-1:0] s_pp [0:EX_MAN_BITS_128-1]; // A 2D array of partial products
+int col, row;
+`define ZERO_OUT_TL_BR   /*top left, bottom right*/                     \
+  if ((/*TL*/row >= 0 && row <= 54 && col >= 50 && col <= 112) ||       \
+      (/*BR*/row >= 55 && row <= 112 && col >= 0 && col <= 54)) begin   \
+    s_pp[row][col] = 0;                                                 \
+  end
+`define ZERO_OUT_TRTL_TRBR_BLTL_BLBR   /*TR's TL/BR, BL's TL/BR*/       \
+  if ((/*TRTL*/row >= 0 && row <= 23 && col >= 24 && col <= 49) ||      \
+      (/*TRBR*/row >= 24 && row <= 52 && col >= 0 && col <= 23) ||      \
+      (/*BLTL*/row >= 53 && row <= 78 && col >= 77 && col <= 112) ||    \
+      (/*BLBR*/row >= 77 && row <= 112 && col >= 50 && col <= 78)) begin   \
+    s_pp[row][col] = 0;                                                 \
+  end
+
+always_comb begin : pp_matrix_generator // pp = partial products
   for (row = 0; row < EX_MAN_BITS_128; row = row + 1) begin : pp_row_generator
     for (col = 0; col < EX_MAN_BITS_128; col = col + 1) begin : pp_col_generator
-      assign pp[row][col] = i_anikin[col] & i_force[row];
+      s_pp[row][col] = i_anikin[col] & i_force[row];
+
+      unique case (i_metadata.sp_mode)
+        SINGLE_MODE: begin
+        end // SINGLE_MODE
+
+        // todo these numbers should be double checked
+
+        TWO_SP_MODE: begin
+          // Zero out: top left, bottom right
+          if ((/*TL*/row >= 0   && row <= 54  && col >= 53  && col <= 112) ||
+              (/*BR*/row >= 55  && row <= 112 && col >= 0   && col <= 54)) begin
+            s_pp[row][col] = 0;
+          end
+        end // TWO_SP_MODE
+
+        FOUR_SP_MODE: begin
+          // Zero out: TL, BR (slighly different from TWO_SP_MODE)
+          if ((/*TL*/row >= 0   && row <= 52  && col >= 50  && col <= 112) ||
+              (/*BR*/row >= 50  && row <= 112 && col >= 0   && col <= 52)) begin
+            s_pp[row][col] = 0;
+          end
+          
+          // Zero out: TR's TL/BR, BL's TL/BR
+          if ((/*TRTL*/row >= 0 && row <= 23 && col >= 24 && col <= 52) ||
+              (/*TRBR*/row >= 24 && row <= 52 && col >= 0 && col <= 23) ||
+              (/*BLTL*/row >= 53 && row <= 78 && col >= 77 && col <= 112) ||
+              (/*BLBR*/row >= 77 && row <= 112 && col >= 50 && col <= 78)) begin
+            s_pp[row][col] = 0;
+          end
+        end // FOUR_SP_MODE
+
+        default: begin
+        end // default
+      endcase
     end // pp_col_generator
   end // pp_row_generator
-endgenerate
+end // pp_matrix_generator
 
 logic s_S1_valid;
 logic [EX_MAN_BITS_128-1:0] s_S1_pp [0:EX_MAN_BITS_128-1];
+int debug_col, debug_row;
 always_ff @( posedge i_clk ) begin : stage1a
   if (!i_rst_n) begin
     s_S1_valid  <= '0;
@@ -189,14 +239,22 @@ always_ff @( posedge i_clk ) begin : stage1a
     if (s_S1_en) begin
       s_S1_valid <= '1;
 
-      s_S1_pp <= pp;
+      s_S1_pp <= s_pp;
+
+`ifdef EN_DEBUG_PRINT
+      for (debug_row = 0; debug_row < EX_MAN_BITS_128; debug_row = debug_row + 1) begin : pp_row_debug_loop
+        for (debug_col = EX_MAN_BITS_128-1; debug_col >= 0; debug_col = debug_col - 1) begin : pp_col_debug_loop
+          $write("%x", s_pp[debug_row][debug_col]);
+        end // pp_col_debug_loop
+        $display("");
+      end // pp_row_debug_loop
+`endif
     end // if (s_S1_en)
     else begin
       s_S1_valid <= '0;
     end // else begin
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
-
 
 //=====================================================================================
 // Stage 2
