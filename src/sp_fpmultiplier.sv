@@ -555,13 +555,13 @@ always_ff @( posedge i_clk ) begin : stage2a_extended_mantissa_mult
           s_S2_128_mult_out_full <= s_sp_intmultiplier_jedi;
         end
         TWO_SP_MODE: begin
-          s_S2_64a_mult_out_full <= s_sp_intmultiplier_jedi[211:106];
+          s_S2_64a_mult_out_full <= s_sp_intmultiplier_jedi[215:110];
           s_S2_64b_mult_out_full <= s_sp_intmultiplier_jedi[105:0];
         end
         FOUR_SP_MODE: begin
-          s_S2_32a_mult_out_full <= s_sp_intmultiplier_jedi[191:144];
-          s_S2_32b_mult_out_full <= s_sp_intmultiplier_jedi[143:96];
-          s_S2_32c_mult_out_full <= s_sp_intmultiplier_jedi[95:48];
+          s_S2_32a_mult_out_full <= s_sp_intmultiplier_jedi[205:158];
+          s_S2_32b_mult_out_full <= s_sp_intmultiplier_jedi[153:106];
+          s_S2_32c_mult_out_full <= s_sp_intmultiplier_jedi[99:52];
           s_S2_32d_mult_out_full <= s_sp_intmultiplier_jedi[47:0];
         end
         default: begin
