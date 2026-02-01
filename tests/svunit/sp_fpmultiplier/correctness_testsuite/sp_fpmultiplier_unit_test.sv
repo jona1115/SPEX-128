@@ -316,7 +316,7 @@ module sp_fpmultiplier_unit_test;
   //===================================
   `SVUNIT_TESTS_BEGIN
 
-`define ISOLATE
+// `define ISOLATE
 
 `ifndef ISOLATE
     `include "cases/correctness.svh"
