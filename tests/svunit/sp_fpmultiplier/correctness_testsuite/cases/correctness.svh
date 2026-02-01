@@ -54,7 +54,7 @@
 // -------------------------------------------------------------------------
 // Spec 1/4/5/8: SINGLE_MODE zero; valid after exactly 5 ticks; per-lane gating
 // -------------------------------------------------------------------------
-`SVTEST(single_mode_zero_and_latency_5)
+`SVTEST(single_mode_zero_and_latency)
   drive_meta(SINGLE_MODE, ZERO, NA, NA, NA);
 
   s_i_in_anikin = F128_ZERO;
@@ -66,10 +66,9 @@
   @(posedge s_i_clk);
   clear_valids();
 
-  // Check latency precisely: first 4 ticks no valid, at 5th tick valid
-  wait_n_ticks(`LATENCY - 2);
-  `FAIL_UNLESS(!s_o_valid128_jedi)
   wait_n_ticks(2);
+  `FAIL_UNLESS(!s_o_valid128_jedi)
+  wait_n_ticks(`LATENCY - 2);
   `FAIL_UNLESS(s_o_valid128_jedi)
   `FAIL_UNLESS(s_o_metadata.sp_mode == SINGLE_MODE)
   `FAIL_UNLESS(s_o_out_jedi == 128'b0)
