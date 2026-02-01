@@ -19,7 +19,7 @@
  * 
  *******************************************************************/
 
-`define EN_DEBUG_PRINT
+// `define EN_DEBUG_PRINT
 
 import float_flag_pkg::*;
 import sp_mode_pkg::*;
@@ -31,6 +31,27 @@ import fixed128_pkg::*;
 import fixed64_pkg::*;
 import fixed32_pkg::*;
 import unbiasing_pkg::*;
+
+module ha (
+  input  logic i_a,
+  input  logic i_b,
+  output logic o_sum,
+  output logic o_carry
+);
+  assign o_sum   = i_a ^ i_b;
+  assign o_carry = i_a & i_b;
+endmodule
+
+module fa (
+  input  logic i_a,
+  input  logic i_b,
+  input  logic i_cin,
+  output logic o_sum,
+  output logic o_carry
+);
+  assign o_sum   = i_a ^ i_b ^ i_cin;
+  assign o_carry = (i_a & i_b) | (i_a & i_cin) | (i_b & i_cin);
+endmodule
 
 module sp_intmultiplier #(
   parameter int NUM_BITS_128      = 128,
@@ -194,8 +215,6 @@ always_comb begin : pp_matrix_generator // pp = partial products
         SINGLE_MODE: begin
         end // SINGLE_MODE
 
-        // todo these numbers should be double checked
-
         TWO_SP_MODE: begin
           // Zero out: top left, bottom right
           if ((/*TL*/row >= 0   && row <= 54  && col >= 53  && col <= 112) ||
@@ -259,11 +278,32 @@ end // always_ff @( posedge i_clk )
 //=====================================================================================
 // Stage 2
 //=====================================================================================
+logic [12431 : 0] S;
+logic [12431 : 0] C;
+`include "dadda_compressor.svh"
+logic [12431 : 0] s_S2_S;
+logic [12431 : 0] s_S2_C;
 always_ff @( posedge i_clk ) begin : stage2a
   if (!i_rst_n) begin
+    s_S2_S <= '0;
+    s_S2_C <= '0;
   end
   else begin
     if (s_S2_en) begin
+      s_S2_S <= S;
+      s_S2_C <= C;
+    end // if (s_S2_en)
+  end // !i_rst_n else begin
+end // always_ff @( posedge i_clk )
+
+logic [EX_MAN_BITS_128-1:0] s_S2_pp [0:EX_MAN_BITS_128-1];
+always_ff @( posedge i_clk ) begin : stage2b_signal_passthrough
+  if (!i_rst_n) begin
+    s_S2_pp <= '{default:'0};
+  end
+  else begin
+    if (s_S2_en) begin
+      s_S2_pp <= s_S1_pp;
     end // if (s_S2_en)
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
@@ -272,11 +312,21 @@ end // always_ff @( posedge i_clk )
 //=====================================================================================
 // Stage 3
 //=====================================================================================
+logic [225 : 0] z0;
+logic [225 : 0] z1;
+`include "not_final_adder.svh"
+logic [225 : 0] s_S3_z0;
+logic [225 : 0] s_S3_z1;
+logic [EX_MAN_BITS_128-1:0] s_S3_pp [0:EX_MAN_BITS_128-1];
 always_ff @( posedge i_clk ) begin : stage3a
   if (!i_rst_n) begin
+    s_S3_z0 <= '0;
+    s_S3_z0 <= '0;
   end
   else begin
     if (s_S3_en) begin
+      s_S3_z0 <= z0;
+      s_S3_z1 <= z1;
     end // if (s_S3_en)
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
@@ -285,11 +335,14 @@ end // always_ff @( posedge i_clk )
 //=====================================================================================
 // Stage 4
 //=====================================================================================
+logic [EX_MAN_BITS_128*2-1:0] s_S4_jedi;
 always_ff @( posedge i_clk ) begin : stage4a
   if (!i_rst_n) begin
+    s_S4_jedi <= '0;
   end
   else begin
     if (s_S4_en) begin
+      s_S4_jedi <= s_S3_z0 + s_S3_z1;
     end // if (s_S4_en)
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
@@ -298,8 +351,8 @@ end // always_ff @( posedge i_clk )
 //=====================================================================================
 // Final assignment
 //=====================================================================================
-assign o_jedi = '0; // todo
-assign o_valid_jedi = '0; // todo
+assign o_jedi = s_S4_jedi;
+assign o_valid_jedi = 1'b1; // todo
 assign o_sanity_identifier = MODULE_IDENTIFIER;
 assign o_error = s_o_error;
 assign o_debug = '0;

@@ -39,7 +39,7 @@ module sp_fpmultiplier #(
   parameter int NUM_BITS_32   = 32,
 
   // Multiplier pipeline latency (cycles from mul start to valid product)
-  parameter int INTMUL_LATENCY = 1,
+  parameter int INTMUL_LATENCY = 4,
 
   // Error and debug parameters
   parameter int ERROR_SIGNAL_NUM_BITS = 32,
