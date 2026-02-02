@@ -266,7 +266,7 @@ end // always_ff @( posedge i_clk )
 //=====================================================================================
 logic [12431 : 0] S;
 logic [12431 : 0] C;
-`include "dadda_compressor.svh"
+`include "dadda_compressor_part1.svh"
 logic [12431 : 0] s_S2_S;
 logic [12431 : 0] s_S2_C;
 always_ff @( posedge i_clk ) begin : stage2a
