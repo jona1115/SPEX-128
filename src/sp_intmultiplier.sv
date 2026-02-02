@@ -192,20 +192,6 @@ end
 // Stage 1
 //=====================================================================================
 logic [EX_MAN_BITS_128-1:0] s_pp [0:EX_MAN_BITS_128-1]; // A 2D array of partial products
-int col, row;
-`define ZERO_OUT_TL_BR   /*top left, bottom right*/                     \
-  if ((/*TL*/row >= 0 && row <= 54 && col >= 50 && col <= 112) ||       \
-      (/*BR*/row >= 55 && row <= 112 && col >= 0 && col <= 54)) begin   \
-    s_pp[row][col] = 0;                                                 \
-  end
-`define ZERO_OUT_TRTL_TRBR_BLTL_BLBR   /*TR's TL/BR, BL's TL/BR*/       \
-  if ((/*TRTL*/row >= 0 && row <= 23 && col >= 24 && col <= 49) ||      \
-      (/*TRBR*/row >= 24 && row <= 52 && col >= 0 && col <= 23) ||      \
-      (/*BLTL*/row >= 53 && row <= 78 && col >= 77 && col <= 112) ||    \
-      (/*BLBR*/row >= 77 && row <= 112 && col >= 50 && col <= 78)) begin   \
-    s_pp[row][col] = 0;                                                 \
-  end
-
 always_comb begin : pp_matrix_generator // pp = partial products
   for (row = 0; row < EX_MAN_BITS_128; row = row + 1) begin : pp_row_generator
     for (col = 0; col < EX_MAN_BITS_128; col = col + 1) begin : pp_col_generator
