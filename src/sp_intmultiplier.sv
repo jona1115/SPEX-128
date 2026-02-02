@@ -191,6 +191,7 @@ end
 //=====================================================================================
 // Stage 1
 //=====================================================================================
+int col, row;
 logic [EX_MAN_BITS_128-1:0] s_pp [0:EX_MAN_BITS_128-1]; // A 2D array of partial products
 always_comb begin : pp_matrix_generator // pp = partial products
   for (row = 0; row < EX_MAN_BITS_128; row = row + 1) begin : pp_row_generator
@@ -322,14 +323,20 @@ end // always_ff @( posedge i_clk )
 // Stage 4
 //=====================================================================================
 logic [EX_MAN_BITS_128*2-1:0] s_S4_jedi;
+logic                         s_S4_valid;
 always_ff @( posedge i_clk ) begin : stage4a
   if (!i_rst_n) begin
-    s_S4_jedi <= '0;
+    s_S4_jedi   <= '0;
+    s_S4_valid  <= '0;
   end
   else begin
     if (s_S4_en) begin
-      s_S4_jedi <= s_S3_z0 + s_S3_z1;
+      s_S4_jedi   <= s_S3_z0 + s_S3_z1;
+      s_S4_valid  <= '1;
     end // if (s_S4_en)
+    else begin
+      s_S4_valid  <= '0;
+    end
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
 
@@ -338,7 +345,7 @@ end // always_ff @( posedge i_clk )
 // Final assignment
 //=====================================================================================
 assign o_jedi = s_S4_jedi;
-assign o_valid_jedi = 1'b1; // todo
+assign o_valid_jedi = s_S4_valid;
 assign o_sanity_identifier = MODULE_IDENTIFIER;
 assign o_error = s_o_error;
 assign o_debug = '0;
