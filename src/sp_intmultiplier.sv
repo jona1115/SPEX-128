@@ -62,6 +62,8 @@ module sp_intmultiplier #(
   parameter int EX_MAN_BITS_64    = 53,     // EXtended MANtissa number of BITS for fp128
   parameter int EX_MAN_BITS_32    = 23,     // EXtended MANtissa number of BITS for fp128
 
+  parameter int RADIX_4_ROWS      = EX_MAN_BITS_128 / 2,
+
   // Multiplier pipeline latency (cycles from valid in to valid out)
   parameter int MUL_LATENCY       = 1,
 
@@ -194,9 +196,9 @@ end
 // `define USE_RADIX_4_BOOTH
 int col, row;
 `ifndef USE_RADIX_4_BOOTH
-logic [EX_MAN_BITS_128-1:0] s_pp [0:EX_MAN_BITS_128-1]; // A 2D array of partial products
+logic [EX_MAN_BITS_128-1:0]   s_pp [0:EX_MAN_BITS_128-1]; // A 2D array of partial products
 `else
-logic [EX_MAN_BITS_128-1 : 0] s_pp [0 : EX_MAN_BITS_128/2-1];
+logic [EX_MAN_BITS_128-1 : 0] s_pp [0 : RADIX_4_ROWS-1];
 `endif
 `include "pen_and_paper_pp_generator.svh"
 
@@ -204,9 +206,9 @@ logic s_S1_valid;
 `ifndef USE_RADIX_4_BOOTH
 logic [EX_MAN_BITS_128-1 : 0] s_S1_pp [0 : EX_MAN_BITS_128-1];
 `else
-logic [EX_MAN_BITS_128-1 : 0] s_S1_pp [0 : EX_MAN_BITS_128/2-1]; // # PP row is n/2+1 as per EE486 Lecture 7: Integer Multiplication by M.J. Flynn from Standford University
+logic [EX_MAN_BITS_128-1 : 0] s_S1_pp [0 : RADIX_4_ROWS-1]; // # PP row is n/2+1 as per EE486 Lecture 7: Integer Multiplication by M.J. Flynn from Standford University
 `endif
-int debug_col, debug_row;
+int debug_col, debug_row, debug_num_rows;
 always_ff @( posedge i_clk ) begin : stage1a
   if (!i_rst_n) begin
     s_S1_valid  <= '0;
@@ -219,7 +221,12 @@ always_ff @( posedge i_clk ) begin : stage1a
       s_S1_pp <= s_pp;
 
 `ifdef EN_DEBUG_PRINT
-      for (debug_row = 0; debug_row < EX_MAN_BITS_128; debug_row = debug_row + 1) begin : pp_row_debug_loop
+`ifndef USE_RADIX_4_BOOTH
+      debug_num_rows = EX_MAN_BITS_128;
+`else
+      debug_num_rows = RADIX_4_ROWS;
+`endif
+      for (debug_row = 0; debug_row < debug_num_rows; debug_row = debug_row + 1) begin : pp_row_debug_loop
         for (debug_col = EX_MAN_BITS_128-1; debug_col >= 0; debug_col = debug_col - 1) begin : pp_col_debug_loop
           $write("%x", s_pp[debug_row][debug_col]);
         end // pp_col_debug_loop
