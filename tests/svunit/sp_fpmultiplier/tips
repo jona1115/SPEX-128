@@ -1,2 +1,4 @@
 ../svunit_run.sh -s modelsim --also float_classifier
+../svunit_run.sh -s modelsim --also float_classifier --also sp_intmultiplier
+time ../svunit_run.sh -s modelsim --also float_classifier --also sp_intmultiplier
 

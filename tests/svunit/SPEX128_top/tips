@@ -1,3 +1,5 @@
 ../svunit_run.sh -s modelsim --all
 ../sim_and_gen_waveform.sh --all && vsim -view ./waves/svunit.wlf -do "./dos/wave.do"
+time ../svunit_run.sh -s modelsim --all
+
 

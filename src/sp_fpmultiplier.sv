@@ -39,7 +39,7 @@ module sp_fpmultiplier #(
   parameter int NUM_BITS_32   = 32,
 
   // Multiplier pipeline latency (cycles from mul start to valid product)
-  parameter int INTMUL_LATENCY = 1,
+  parameter int INTMUL_LATENCY = 4,
 
   // Error and debug parameters
   parameter int ERROR_SIGNAL_NUM_BITS = 32,
@@ -513,15 +513,15 @@ sp_intmultiplier #(
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
   .i_metadata(s_S1_metadata_anikin),
-  .i_anikin(s_S1_metadata_anikin.sp_mode === SINGLE_MODE ? hs_S1_128_anikin_mantissa_extended                                           :
-            s_S1_metadata_anikin.sp_mode === TWO_SP_MODE ? {'0, hs_S1_64a_anikin_mantissa_extended, hs_S1_64b_anikin_mantissa_extended} :
-                                        /*FOUR_SP_MODE*/   {'0, hs_S1_32a_anikin_mantissa_extended, hs_S1_32b_anikin_mantissa_extended, 
-                                                            hs_S1_32c_anikin_mantissa_extended, hs_S1_32d_anikin_mantissa_extended}
+  .i_anikin(s_S1_metadata_anikin.sp_mode === SINGLE_MODE ? hs_S1_128_anikin_mantissa_extended                                                               : // lane a is [112:0]
+            s_S1_metadata_anikin.sp_mode === TWO_SP_MODE ? {5'b00000, hs_S1_64a_anikin_mantissa_extended, 2'b00, hs_S1_64b_anikin_mantissa_extended}        : // lane a is [107:55], b is [52:0]
+                                        /*FOUR_SP_MODE*/   {10'b00000_00000, hs_S1_32a_anikin_mantissa_extended, 2'b00, hs_S1_32b_anikin_mantissa_extended,   // lane a is [102:79], b is [76:53]
+                                                            3'b000, hs_S1_32c_anikin_mantissa_extended, 2'b00, hs_S1_32d_anikin_mantissa_extended}            // lane c is [49:26], d is [23:0]
             ),
-  .i_force(s_S1_metadata_anikin.sp_mode === SINGLE_MODE ? hs_S1_128_force_mantissa_extended                                             :
-           s_S1_metadata_anikin.sp_mode === TWO_SP_MODE ? {'0, hs_S1_64a_force_mantissa_extended, hs_S1_64b_force_mantissa_extended}    :
-                                       /*FOUR_SP_MODE*/   {'0, hs_S1_32a_force_mantissa_extended, hs_S1_32b_force_mantissa_extended, 
-                                                          hs_S1_32c_force_mantissa_extended, hs_S1_32d_force_mantissa_extended}
+  .i_force(s_S1_metadata_anikin.sp_mode === SINGLE_MODE ? hs_S1_128_force_mantissa_extended                                                                 :
+           s_S1_metadata_anikin.sp_mode === TWO_SP_MODE ? {5'b00000, hs_S1_64a_force_mantissa_extended, 2'b00, hs_S1_64b_force_mantissa_extended}           :
+                                       /*FOUR_SP_MODE*/   {10'b00000_00000, hs_S1_32a_force_mantissa_extended, 2'b00, hs_S1_32b_force_mantissa_extended,
+                                                          3'b000, hs_S1_32c_force_mantissa_extended, 2'b00, hs_S1_32d_force_mantissa_extended}
             ),
   .o_jedi(s_sp_intmultiplier_jedi),
   .i_valid_anikin(s_mul_start),
@@ -555,13 +555,13 @@ always_ff @( posedge i_clk ) begin : stage2a_extended_mantissa_mult
           s_S2_128_mult_out_full <= s_sp_intmultiplier_jedi;
         end
         TWO_SP_MODE: begin
-          s_S2_64a_mult_out_full <= s_sp_intmultiplier_jedi[211:106];
+          s_S2_64a_mult_out_full <= s_sp_intmultiplier_jedi[215:110];
           s_S2_64b_mult_out_full <= s_sp_intmultiplier_jedi[105:0];
         end
         FOUR_SP_MODE: begin
-          s_S2_32a_mult_out_full <= s_sp_intmultiplier_jedi[191:144];
-          s_S2_32b_mult_out_full <= s_sp_intmultiplier_jedi[143:96];
-          s_S2_32c_mult_out_full <= s_sp_intmultiplier_jedi[95:48];
+          s_S2_32a_mult_out_full <= s_sp_intmultiplier_jedi[205:158];
+          s_S2_32b_mult_out_full <= s_sp_intmultiplier_jedi[153:106];
+          s_S2_32c_mult_out_full <= s_sp_intmultiplier_jedi[99:52];
           s_S2_32d_mult_out_full <= s_sp_intmultiplier_jedi[47:0];
         end
         default: begin
