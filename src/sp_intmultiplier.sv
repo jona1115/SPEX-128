@@ -308,7 +308,7 @@ logic [EX_MAN_BITS_128-1:0] s_S3_pp [0:EX_MAN_BITS_128-1];
 always_ff @( posedge i_clk ) begin : stage3a
   if (!i_rst_n) begin
     s_S3_z0 <= '0;
-    s_S3_z0 <= '0;
+    s_S3_z1 <= '0;
   end
   else begin
     if (s_S3_en) begin
