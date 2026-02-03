@@ -221,11 +221,11 @@ always_ff @( posedge i_clk ) begin : stage1a
       s_S1_pp <= s_pp;
 
 `ifdef EN_DEBUG_PRINT
-`ifndef USE_RADIX_4_BOOTH
+  `ifndef USE_RADIX_4_BOOTH
       debug_num_rows = EX_MAN_BITS_128;
-`else
+  `else
       debug_num_rows = RADIX_4_ROWS;
-`endif
+  `endif
       for (debug_row = 0; debug_row < debug_num_rows; debug_row = debug_row + 1) begin : pp_row_debug_loop
         for (debug_col = EX_MAN_BITS_128-1; debug_col >= 0; debug_col = debug_col - 1) begin : pp_col_debug_loop
           $write("%x", s_pp[debug_row][debug_col]);
