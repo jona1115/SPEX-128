@@ -191,50 +191,21 @@ end
 //=====================================================================================
 // Stage 1
 //=====================================================================================
+// `define USE_RADIX_4_BOOTH
 int col, row;
+`ifndef USE_RADIX_4_BOOTH
 logic [EX_MAN_BITS_128-1:0] s_pp [0:EX_MAN_BITS_128-1]; // A 2D array of partial products
-always_comb begin : pp_matrix_generator // pp = partial products
-  for (row = 0; row < EX_MAN_BITS_128; row = row + 1) begin : pp_row_generator
-    for (col = 0; col < EX_MAN_BITS_128; col = col + 1) begin : pp_col_generator
-      s_pp[row][col] = i_anikin[col] & i_force[row];
-
-      unique case (i_metadata.sp_mode)
-        SINGLE_MODE: begin
-        end // SINGLE_MODE
-
-        TWO_SP_MODE: begin
-          // Zero out: top left, bottom right
-          if ((/*TL*/row >= 0   && row <= 54  && col >= 53  && col <= 112) ||
-              (/*BR*/row >= 55  && row <= 112 && col >= 0   && col <= 54)) begin
-            s_pp[row][col] = 0;
-          end
-        end // TWO_SP_MODE
-
-        FOUR_SP_MODE: begin
-          // Zero out: TL, BR (slighly different from TWO_SP_MODE)
-          if ((/*TL*/row >= 0   && row <= 52  && col >= 50  && col <= 112) ||
-              (/*BR*/row >= 50  && row <= 112 && col >= 0   && col <= 52)) begin
-            s_pp[row][col] = 0;
-          end
-          
-          // Zero out: TR's TL/BR, BL's TL/BR
-          if ((/*TRTL*/row >= 0 && row <= 23 && col >= 24 && col <= 52) ||
-              (/*TRBR*/row >= 24 && row <= 52 && col >= 0 && col <= 23) ||
-              (/*BLTL*/row >= 53 && row <= 78 && col >= 77 && col <= 112) ||
-              (/*BLBR*/row >= 77 && row <= 112 && col >= 50 && col <= 78)) begin
-            s_pp[row][col] = 0;
-          end
-        end // FOUR_SP_MODE
-
-        default: begin
-        end // default
-      endcase
-    end // pp_col_generator
-  end // pp_row_generator
-end // pp_matrix_generator
+`else
+logic [EX_MAN_BITS_128-1 : 0] s_pp [0 : EX_MAN_BITS_128/2-1];
+`endif
+`include "pen_and_paper_pp_generator.svh"
 
 logic s_S1_valid;
-logic [EX_MAN_BITS_128-1:0] s_S1_pp [0:EX_MAN_BITS_128-1];
+`ifndef USE_RADIX_4_BOOTH
+logic [EX_MAN_BITS_128-1 : 0] s_S1_pp [0 : EX_MAN_BITS_128-1];
+`else
+logic [EX_MAN_BITS_128-1 : 0] s_S1_pp [0 : EX_MAN_BITS_128/2-1]; // # PP row is n/2+1 as per EE486 Lecture 7: Integer Multiplication by M.J. Flynn from Standford University
+`endif
 int debug_col, debug_row;
 always_ff @( posedge i_clk ) begin : stage1a
   if (!i_rst_n) begin
