@@ -200,7 +200,7 @@ logic [EX_MAN_BITS_128-1:0]   s_pp [0:EX_MAN_BITS_128-1]; // A 2D array of parti
 `else
 logic [EX_MAN_BITS_128-1 : 0] s_pp [0 : RADIX_4_ROWS-1];
 `endif
-`include "pen_and_paper_pp_generator.svh"
+`include "helper/pen_and_paper_pp_generator.svh"
 
 logic s_S1_valid;
 `ifndef USE_RADIX_4_BOOTH
@@ -245,7 +245,7 @@ end // always_ff @( posedge i_clk )
 //=====================================================================================
 logic [12431 : 0] S;
 logic [12431 : 0] C;
-`include "dadda_compressor_part1.svh"
+`include "helper/dadda_compressor_part1.svh"
 logic [12431 : 0] s_S2_S;
 logic [12431 : 0] s_S2_C;
 always_ff @( posedge i_clk ) begin : stage2a
@@ -279,7 +279,7 @@ end // always_ff @( posedge i_clk )
 //=====================================================================================
 logic [225 : 0] z0;
 logic [225 : 0] z1;
-`include "dadda_compressor_part2.svh"
+`include "helper/dadda_compressor_part2.svh"
 logic [225 : 0] s_S3_z0;
 logic [225 : 0] s_S3_z1;
 logic [EX_MAN_BITS_128-1:0] s_S3_pp [0:EX_MAN_BITS_128-1];
