@@ -62,7 +62,8 @@ module sp_intmultiplier #(
   parameter int EX_MAN_BITS_64    = 53,     // EXtended MANtissa number of BITS for fp128
   parameter int EX_MAN_BITS_32    = 23,     // EXtended MANtissa number of BITS for fp128
 
-  parameter int RADIX_4_ROWS      = EX_MAN_BITS_128 / 2,
+  parameter int PAD_BITS_113      = 2,      // per radix 4 rule, we pad the LSB with one 0, and the MSB with one 0, hence 2
+  parameter int RADIX_4_ROWS      = (EX_MAN_BITS_128 + PAD_BITS_113 - 1) / 2, // -1 because if you draw it out, that is the pattern
 
   // Multiplier pipeline latency (cycles from valid in to valid out)
   parameter int MUL_LATENCY       = 1,
@@ -193,21 +194,19 @@ end
 //=====================================================================================
 // Stage 1
 //=====================================================================================
-// `define USE_RADIX_4_BOOTH
+`define USE_RADIX_4_BOOTH
 int col, row;
 `ifndef USE_RADIX_4_BOOTH
 logic [EX_MAN_BITS_128-1:0]   s_pp [0:EX_MAN_BITS_128-1]; // A 2D array of partial products
-`else
-logic [EX_MAN_BITS_128-1 : 0] s_pp [0 : RADIX_4_ROWS-1];
-`endif
 `include "helper/pen_and_paper_pp_generator.svh"
-
-logic s_S1_valid;
-`ifndef USE_RADIX_4_BOOTH
 logic [EX_MAN_BITS_128-1 : 0] s_S1_pp [0 : EX_MAN_BITS_128-1];
 `else
-logic [EX_MAN_BITS_128-1 : 0] s_S1_pp [0 : RADIX_4_ROWS-1]; // # PP row is n/2+1 as per EE486 Lecture 7: Integer Multiplication by M.J. Flynn from Standford University
+logic [EX_MAN_BITS_128 : 0]   s_pp [0 : RADIX_4_ROWS-1];
+`include "helper/radix4_booth_pp_generator.svh"
+logic [EX_MAN_BITS_128 : 0]   s_S1_pp [0 : RADIX_4_ROWS-1]; // # PP row is n/2+1 as per EE486 Lecture 7: Integer Multiplication by M.J. Flynn from Standford University
 `endif
+
+logic s_S1_valid;
 int debug_col, debug_row, debug_num_rows;
 always_ff @( posedge i_clk ) begin : stage1a
   if (!i_rst_n) begin
@@ -243,11 +242,19 @@ end // always_ff @( posedge i_clk )
 //=====================================================================================
 // Stage 2
 //=====================================================================================
+`ifndef USE_RADIX_4_BOOTH
 logic [12431 : 0] S;
 logic [12431 : 0] C;
 `include "helper/dadda_compressor_part1.svh"
 logic [12431 : 0] s_S2_S;
 logic [12431 : 0] s_S2_C;
+`else
+logic [5993 : 0] S;
+logic [5993 : 0] C;
+`include "helper/radix4_dadda_compressor_part1.svh"
+logic [5993 : 0] s_S2_S;
+logic [5993 : 0] s_S2_C;
+`endif
 always_ff @( posedge i_clk ) begin : stage2a
   if (!i_rst_n) begin
     s_S2_S <= '0;
@@ -279,7 +286,11 @@ end // always_ff @( posedge i_clk )
 //=====================================================================================
 logic [225 : 0] z0;
 logic [225 : 0] z1;
+`ifndef USE_RADIX_4_BOOTH
 `include "helper/dadda_compressor_part2.svh"
+`else
+`include "helper/radix4_dadda_compressor_part2.svh"
+`endif
 logic [225 : 0] s_S3_z0;
 logic [225 : 0] s_S3_z1;
 logic [EX_MAN_BITS_128-1:0] s_S3_pp [0:EX_MAN_BITS_128-1];
