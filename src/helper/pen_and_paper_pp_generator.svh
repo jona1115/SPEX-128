@@ -1,3 +1,5 @@
+int col, row;
+
 always_comb begin : pp_matrix_generator // pp = partial products
   for (row = 0; row < EX_MAN_BITS_128; row = row + 1) begin : pp_row_generator
     for (col = 0; col < EX_MAN_BITS_128; col = col + 1) begin : pp_col_generator

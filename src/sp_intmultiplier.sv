@@ -20,6 +20,7 @@
  *******************************************************************/
 
 // `define EN_DEBUG_PRINT
+`define USE_RADIX4_RECODING
 
 import float_flag_pkg::*;
 import sp_mode_pkg::*;
@@ -54,19 +55,18 @@ module fa (
 endmodule
 
 module sp_intmultiplier #(
-  parameter int NUM_BITS_128      = 128,
-  parameter int NUM_BITS_64       = 64,
-  parameter int NUM_BITS_32       = 32,
+  parameter int NUM_BITS_128          = 128,
+  parameter int NUM_BITS_64           = 64,
+  parameter int NUM_BITS_32           = 32,
 
-  parameter int EX_MAN_BITS_128   = 113,    // EXtended MANtissa number of BITS for fp128
-  parameter int EX_MAN_BITS_64    = 53,     // EXtended MANtissa number of BITS for fp128
-  parameter int EX_MAN_BITS_32    = 23,     // EXtended MANtissa number of BITS for fp128
+  parameter int EX_MAN_BITS_128       = 113,    // EXtended MANtissa number of BITS for fp128
+  parameter int EX_MAN_BITS_64        = 53,     // EXtended MANtissa number of BITS for fp128
+  parameter int EX_MAN_BITS_32        = 23,     // EXtended MANtissa number of BITS for fp128
 
-  parameter int PAD_BITS_113      = 2,      // per radix 4 rule, we pad the LSB with one 0, and the MSB with one 0, hence 2
-  parameter int RADIX_4_ROWS      = (EX_MAN_BITS_128 + PAD_BITS_113 - 1) / 2, // -1 because if you draw it out, that is the pattern
+  parameter int RADIX4_ROWS           = $ceil(EX_MAN_BITS_128 / 2), // -1 because if you draw it out, that is the pattern
 
   // Multiplier pipeline latency (cycles from valid in to valid out)
-  parameter int MUL_LATENCY       = 1,
+  parameter int MUL_LATENCY           = 4,
 
   // Error and debug parameters
   parameter int ERROR_SIGNAL_NUM_BITS = 32,
@@ -82,9 +82,9 @@ module sp_intmultiplier #(
   input   var float_metadata_t                    i_metadata,
 
   // Data
-  input   logic [EX_MAN_BITS_128-1:0]             i_anikin,
-  input   logic [EX_MAN_BITS_128-1:0]             i_force,
-  output  logic [EX_MAN_BITS_128*2-1:0]           o_jedi,
+  input   logic [EX_MAN_BITS_128-1 : 0]           i_anikin,
+  input   logic [EX_MAN_BITS_128-1 : 0]           i_force,
+  output  logic [EX_MAN_BITS_128*2-1 : 0]         o_jedi,
 
   // Upstream Handshake
   input   logic                                   i_valid_anikin,
@@ -94,11 +94,11 @@ module sp_intmultiplier #(
   output  logic                                   o_valid_jedi,
 
   // Module identifier
-  output  logic [3:0]                             o_sanity_identifier,
+  output  logic [3 : 0]                           o_sanity_identifier,
 
   // Error and debug signals
-  output  logic [ERROR_SIGNAL_NUM_BITS-1:0]       o_error,
-  output  logic [DEBUG_SIGNAL_NUM_BITS-1:0]       o_debug
+  output  logic [ERROR_SIGNAL_NUM_BITS-1 : 0]     o_error,
+  output  logic [DEBUG_SIGNAL_NUM_BITS-1 : 0]     o_debug
 );
 
 //=====================================================================================
@@ -194,16 +194,16 @@ end
 //=====================================================================================
 // Stage 1
 //=====================================================================================
-`define USE_RADIX_4_BOOTH
-int col, row;
-`ifndef USE_RADIX_4_BOOTH
-logic [EX_MAN_BITS_128-1:0]   s_pp [0:EX_MAN_BITS_128-1]; // A 2D array of partial products
-`include "helper/pen_and_paper_pp_generator.svh"
-logic [EX_MAN_BITS_128-1 : 0] s_S1_pp [0 : EX_MAN_BITS_128-1];
+`ifndef USE_RADIX4_RECODING
+  // Vanila
+  logic [EX_MAN_BITS_128-1 : 0]     s_pp    [0 : EX_MAN_BITS_128-1]; // A 2D array of partial products
+  `include "helper/pen_and_paper_pp_generator.svh"
+  logic [EX_MAN_BITS_128-1 : 0]     s_S1_pp [0 : EX_MAN_BITS_128-1];
 `else
-logic [EX_MAN_BITS_128 : 0]   s_pp [0 : RADIX_4_ROWS-1];
-`include "helper/radix4_booth_pp_generator.svh"
-logic [EX_MAN_BITS_128 : 0]   s_S1_pp [0 : RADIX_4_ROWS-1]; // # PP row is n/2+1 as per EE486 Lecture 7: Integer Multiplication by M.J. Flynn from Standford University
+  // Radix 4
+  logic [EX_MAN_BITS_128+2-1 : 0]   s_pp    [0 : RADIX4_ROWS-1]; // +2 because worse case, 3X will shift one bit left, and overflow one bit, eg 3X of 11010
+  `include "helper/radix4_pp_generator.svh"
+  logic [EX_MAN_BITS_128+2-1 : 0]   s_S1_pp [0 : RADIX4_ROWS-1];
 `endif
 
 logic s_S1_valid;
@@ -216,14 +216,13 @@ always_ff @( posedge i_clk ) begin : stage1a
   else begin
     if (s_S1_en) begin
       s_S1_valid <= '1;
-
       s_S1_pp <= s_pp;
-
+      
 `ifdef EN_DEBUG_PRINT
-  `ifndef USE_RADIX_4_BOOTH
+  `ifndef USE_RADIX4_RECODING
       debug_num_rows = EX_MAN_BITS_128;
   `else
-      debug_num_rows = RADIX_4_ROWS;
+      debug_num_rows = RADIX4_ROWS;
   `endif
       for (debug_row = 0; debug_row < debug_num_rows; debug_row = debug_row + 1) begin : pp_row_debug_loop
         for (debug_col = EX_MAN_BITS_128-1; debug_col >= 0; debug_col = debug_col - 1) begin : pp_col_debug_loop
@@ -242,18 +241,20 @@ end // always_ff @( posedge i_clk )
 //=====================================================================================
 // Stage 2
 //=====================================================================================
-`ifndef USE_RADIX_4_BOOTH
-logic [12431 : 0] S;
-logic [12431 : 0] C;
-`include "helper/dadda_compressor_part1.svh"
-logic [12431 : 0] s_S2_S;
-logic [12431 : 0] s_S2_C;
+`ifndef USE_RADIX4_RECODING
+  // Vanila
+  logic [12431 : 0] S;
+  logic [12431 : 0] C;
+  `include "helper/dadda_compressor_part1.svh"
+  logic [12431 : 0] s_S2_S;
+  logic [12431 : 0] s_S2_C;
 `else
-logic [5993 : 0] S;
-logic [5993 : 0] C;
-`include "helper/radix4_dadda_compressor_part1.svh"
-logic [5993 : 0] s_S2_S;
-logic [5993 : 0] s_S2_C;
+  // Radix 4
+  logic [5993 : 0] S;
+  logic [5993 : 0] C;
+  `include "helper/radix4_dadda_compressor_part1.svh"
+  logic [5993 : 0] s_S2_S;
+  logic [5993 : 0] s_S2_C;
 `endif
 always_ff @( posedge i_clk ) begin : stage2a
   if (!i_rst_n) begin
@@ -268,7 +269,7 @@ always_ff @( posedge i_clk ) begin : stage2a
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
 
-logic [EX_MAN_BITS_128-1:0] s_S2_pp [0:EX_MAN_BITS_128-1];
+logic [EX_MAN_BITS_128+2-1 : 0] s_S2_pp [0 : RADIX4_ROWS-1];
 always_ff @( posedge i_clk ) begin : stage2b_signal_passthrough
   if (!i_rst_n) begin
     s_S2_pp <= '{default:'0};
@@ -286,10 +287,12 @@ end // always_ff @( posedge i_clk )
 //=====================================================================================
 logic [225 : 0] z0;
 logic [225 : 0] z1;
-`ifndef USE_RADIX_4_BOOTH
-`include "helper/dadda_compressor_part2.svh"
+`ifndef USE_RADIX4_RECODING
+  // Vanila
+  `include "helper/dadda_compressor_part2.svh"
 `else
-`include "helper/radix4_dadda_compressor_part2.svh"
+  // Radix 4
+  `include "helper/radix4_dadda_compressor_part2.svh"
 `endif
 logic [225 : 0] s_S3_z0;
 logic [225 : 0] s_S3_z1;
