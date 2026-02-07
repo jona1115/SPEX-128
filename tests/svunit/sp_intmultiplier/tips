@@ -1,0 +1,2 @@
+time ../svunit_run.sh -s modelsim
+
