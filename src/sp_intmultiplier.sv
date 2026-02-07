@@ -210,7 +210,7 @@ end
   logic [EX_MAN_BITS_128-1 : 0]     s_S1_pp [0 : EX_MAN_BITS_128-1];
 `else
   // Radix 4
-  logic [EX_MAN_BITS_128-1 : 0]     s_pp    [0 : RADIX4_ROWS-1];  // Compressor expects exactly EX_MAN_BITS_128 columns (0..EX_MAN_BITS_128-1)
+  logic [EX_MAN_BITS_128-1 : 0]     s_pp    [0 : RADIX4_ROWS-1];  // Compressor expects EX_MAN_BITS_128 columns (0..EX_MAN_BITS_128-1)
   logic [1:0]                       s_pp_carry_out;               // Carry bits beyond EX_MAN_BITS_128-1 after folding (bit[0] -> o_jedi[EX_MAN_BITS_128*2-1])
   `include "helper/radix4_pp_generator.svh"
   logic [EX_MAN_BITS_128-1 : 0]     s_S1_pp [0 : RADIX4_ROWS-1];

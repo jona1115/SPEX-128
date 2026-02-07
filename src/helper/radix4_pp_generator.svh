@@ -30,33 +30,32 @@ always_comb begin : radix4_pp_generator
 
       TWO_SP_MODE: begin
         if ((mtpc_i+1) <= 54) begin
-          s_S1_anikin_masked[RADIX4_PP_NBITS-1:53] = '0; // keep [52:0]
+          s_S1_anikin_masked[RADIX4_PP_NBITS-1:53] = '0;    // keep [52:0]
         end
         else begin
-          s_S1_anikin_masked[54:0] = '0; // keep [RADIX4_PP_NBITS-1:55]
+          s_S1_anikin_masked[54:0] = '0;                    // keep [RADIX4_PP_NBITS-1:55]
         end
       end
 
       FOUR_SP_MODE: begin
         if ((mtpc_i+1) <= 25) begin
-          s_S1_anikin_masked[RADIX4_PP_NBITS-1:24] = '0; // lane d: [23:0]
+          s_S1_anikin_masked[RADIX4_PP_NBITS-1:24] = '0;    // lane d: [23:0]
         end
         else if ((mtpc_i+1) <= 52) begin
           s_S1_anikin_masked[RADIX4_PP_NBITS-1:50] = '0;
-          s_S1_anikin_masked[25:0] = '0; // lane c: [49:26]
+          s_S1_anikin_masked[25:0] = '0;                    // lane c: [49:26]
         end
         else if ((mtpc_i+1) <= 78) begin
           s_S1_anikin_masked[RADIX4_PP_NBITS-1:77] = '0;
-          s_S1_anikin_masked[52:0] = '0; // lane b: [76:53]
+          s_S1_anikin_masked[52:0] = '0;                    // lane b: [76:53]
         end
         else begin
           s_S1_anikin_masked[RADIX4_PP_NBITS-1:103] = '0;
-          s_S1_anikin_masked[78:0] = '0; // lane a: [102:79]
+          s_S1_anikin_masked[78:0] = '0;                    // lane a: [102:79]
         end
       end
 
       default: begin
-        // If sp_mode is invalid, don't try to be clever; fall back to full-width multiply.
       end
     endcase
 
@@ -79,7 +78,8 @@ always_comb begin : radix4_pp_generator
     pp_row += 1;
   end
 
-  // Carry bits beyond the last partial-product row. For EX_MAN_BITS_128=113 and RADIX4_ROWS=57:
-  // s_pp_carry_out[0] maps to o_jedi[225], s_pp_carry_out[1] would map to bit 226 (should be 0).
+  // Carry bits beyond the last partial-product row.
+  // For EX_MAN_BITS_128=113 and RADIX4_ROWS=57: s_pp_carry_out[0] maps to o_jedi[225], s_pp_carry_out[1] would
+  //                                             map to bit 226 (should be 0).
   s_pp_carry_out = s_S1_carry_out;
 end // radix4_pp_generator
