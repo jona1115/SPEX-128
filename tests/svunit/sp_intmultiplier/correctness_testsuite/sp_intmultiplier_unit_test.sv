@@ -35,11 +35,11 @@ module sp_intmultiplier_unit_test;
   logic [3 : 0]                           s_o_sanity_identifier;
   logic [`ERROR_SIGNAL_NUM_BITS-1 : 0]    s_o_error;
   logic [`DEBUG_SIGNAL_NUM_BITS-1 : 0]    s_o_debug;
-  logic [`EX_MAN_BITS_128+2-1 : 0]        ds_S1_pp [0 : `RADIX4_ROWS-1];
-  logic [5993 : 0]                        ds_S2_S;
-  logic [5993 : 0]                        ds_S2_C;
-  logic [225 : 0]                         ss_S3_z0;
-  logic [225 : 0]                         ss_S3_z1;
+  logic [`EX_MAN_BITS_128-1 : 0]          ds_S1_pp [0 : `RADIX4_ROWS-1];
+  logic [6104 : 0]                        ds_S2_S;
+  logic [6104 : 0]                        ds_S2_C;
+  logic [225 : 0]                         ds_S3_z0;
+  logic [225 : 0]                         ds_S3_z1;
   logic [`EX_MAN_BITS_128*2-1:0]          ds_S4_jedi;
   logic                                   ds_S4_valid;
 
@@ -67,8 +67,8 @@ module sp_intmultiplier_unit_test;
     .ds_S1_pp(ds_S1_pp),
     .ds_S2_S(ds_S2_S),
     .ds_S2_C(ds_S2_C),
-    .ds_S3_z0(ss_S3_z0),
-    .ds_S3_z1(ss_S3_z1),
+    .ds_S3_z0(ds_S3_z0),
+    .ds_S3_z1(ds_S3_z1),
     .ds_S4_jedi(ds_S4_jedi),
     .ds_S4_valid(ds_S4_valid)
   );
@@ -134,15 +134,15 @@ module sp_intmultiplier_unit_test;
     $display("<<<<< big endian: ds_S1_pp =");                                           \
     for (row = 0; row < `RADIX4_ROWS; row = row + 1) begin                              \
       $write("\t\t");                                                                   \
-      for (col = `EX_MAN_BITS_128+2-1; col >= 0; col = col - 1) begin                   \
+      for (col = `EX_MAN_BITS_128-1; col >= 0; col = col - 1) begin                     \
         $write("%x ", ds_S1_pp[row][col]);                                              \
       end /*for col*/                                                                   \
       $display(""); /*\n*/                                                              \
     end /*for row*/                                                                     \
     // $display("<<<<< ds_S2_S = %x", ds_S2_S);                                            \
     // $display("<<<<< ds_S2_C = %x", ds_S2_C);                                            \
-    $display("<<<<< ss_S3_z0 = %x", ss_S3_z0);                                          \
-    $display("<<<<< ss_S3_z1 = %x", ss_S3_z1);                                          \
+    $display("<<<<< ds_S3_z0 = %x", ds_S3_z0);                                          \
+    $display("<<<<< ds_S3_z1 = %x", ds_S3_z1);                                          \
     $display("<<<<< ds_S4_jedi = %x", ds_S4_jedi);                                      \
     $display("<<<<< ds_S4_valid = %x", ds_S4_valid);                                    \
     $display("<<<<< =================== End Intermediate Results ===================");

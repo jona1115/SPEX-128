@@ -507,8 +507,15 @@ logic [225:0] s_sp_intmultiplier_jedi;
 logic [3:0]   unused_sp_intmultiplier_sanity_identifier;
 logic [ERROR_SIGNAL_NUM_BITS-1:0] unused_sp_intmultiplier_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] unused_sp_intmultiplier_debug;
+logic [113-1 : 0]                 unused_ds_S1_pp [0 : 57-1];
+logic [6104 : 0]                  unused_ds_S2_S;
+logic [6104 : 0]                  unused_ds_S2_C;
+logic [225 : 0]                   unused_ds_S3_z0;
+logic [225 : 0]                   unused_ds_S3_z1;
+logic [113*2-1:0]                 unused_ds_S4_jedi;
+logic                             unused_ds_S4_valid;
 sp_intmultiplier #(
-  .MUL_LATENCY(INTMUL_LATENCY)
+  .MODULE_LATENCY(INTMUL_LATENCY)
 ) my_sp_intmultiplier (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
@@ -529,7 +536,14 @@ sp_intmultiplier #(
   .o_valid_jedi(),
   .o_sanity_identifier(unused_sp_intmultiplier_sanity_identifier),
   .o_error(unused_sp_intmultiplier_error),
-  .o_debug(unused_sp_intmultiplier_debug)
+  .o_debug(unused_sp_intmultiplier_debug),
+  .ds_S1_pp(unused_ds_S1_pp),
+  .ds_S2_S(unused_ds_S2_S),
+  .ds_S2_C(unused_ds_S2_C),
+  .ds_S3_z0(unused_ds_S3_z0),
+  .ds_S3_z1(unused_ds_S3_z1),
+  .ds_S4_jedi(unused_ds_S4_jedi),
+  .ds_S4_valid(unused_ds_S4_valid)
 );
 always_ff @( posedge i_clk ) begin : stage2a_extended_mantissa_mult
   if (!i_rst_n) begin

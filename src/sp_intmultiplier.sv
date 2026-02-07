@@ -60,13 +60,14 @@ module sp_intmultiplier #(
   parameter int NUM_BITS_32           = 32,
 
   parameter int EX_MAN_BITS_128       = 113,    // EXtended MANtissa number of BITS for fp128
-  parameter int EX_MAN_BITS_64        = 53,     // EXtended MANtissa number of BITS for fp128
-  parameter int EX_MAN_BITS_32        = 23,     // EXtended MANtissa number of BITS for fp128
+  parameter int EX_MAN_BITS_64        = 53,     // EXtended MANtissa number of BITS for fp64
+  parameter int EX_MAN_BITS_32        = 23,     // EXtended MANtissa number of BITS for fp32
 
-  parameter int RADIX4_ROWS           = $ceil(EX_MAN_BITS_128 / 2), // -1 because if you draw it out, that is the pattern
+  // Radix-4 recoding uses ceil(N/2) partial-product rows.
+  parameter int RADIX4_ROWS           = (EX_MAN_BITS_128 + 1) / 2,
 
   // Multiplier pipeline latency (cycles from valid in to valid out)
-  parameter int MUL_LATENCY           = 4,
+  parameter int MODULE_LATENCY        = 4,
 
   // Error and debug parameters
   parameter int ERROR_SIGNAL_NUM_BITS = 32,
@@ -79,7 +80,7 @@ module sp_intmultiplier #(
   input   logic                                   i_rst_n, // Synchronous
 
   // Metadata stuff
-  input   var float_metadata_t                    i_metadata,
+  input   var float_metadata_t                    i_metadata, // not used currently
 
   // Data
   input   logic [EX_MAN_BITS_128-1 : 0]           i_anikin,
@@ -98,7 +99,15 @@ module sp_intmultiplier #(
 
   // Error and debug signals
   output  logic [ERROR_SIGNAL_NUM_BITS-1 : 0]     o_error,
-  output  logic [DEBUG_SIGNAL_NUM_BITS-1 : 0]     o_debug
+  output  logic [DEBUG_SIGNAL_NUM_BITS-1 : 0]     o_debug,
+
+  output  logic [EX_MAN_BITS_128-1 : 0]           ds_S1_pp [0 : RADIX4_ROWS-1],
+  output  logic [6104 : 0]                        ds_S2_S,
+  output  logic [6104 : 0]                        ds_S2_C,
+  output  logic [225 : 0]                         ds_S3_z0,
+  output  logic [225 : 0]                         ds_S3_z1,
+  output  logic [EX_MAN_BITS_128*2-1:0]           ds_S4_jedi,
+  output  logic                                   ds_S4_valid
 );
 
 //=====================================================================================
@@ -201,9 +210,11 @@ end
   logic [EX_MAN_BITS_128-1 : 0]     s_S1_pp [0 : EX_MAN_BITS_128-1];
 `else
   // Radix 4
-  logic [EX_MAN_BITS_128+2-1 : 0]   s_pp    [0 : RADIX4_ROWS-1]; // +2 because worse case, 3X will shift one bit left, and overflow one bit, eg 3X of 11010
+  logic [EX_MAN_BITS_128-1 : 0]     s_pp    [0 : RADIX4_ROWS-1];  // Compressor expects exactly EX_MAN_BITS_128 columns (0..EX_MAN_BITS_128-1)
+  logic [1:0]                       s_pp_carry_out;               // Carry bits beyond EX_MAN_BITS_128-1 after folding (bit[0] -> o_jedi[EX_MAN_BITS_128*2-1])
   `include "helper/radix4_pp_generator.svh"
-  logic [EX_MAN_BITS_128+2-1 : 0]   s_S1_pp [0 : RADIX4_ROWS-1];
+  logic [EX_MAN_BITS_128-1 : 0]     s_S1_pp [0 : RADIX4_ROWS-1];
+  logic [1:0]                       s_S1_pp_carry_out;
 `endif
 
 logic s_S1_valid;
@@ -212,11 +223,17 @@ always_ff @( posedge i_clk ) begin : stage1a
   if (!i_rst_n) begin
     s_S1_valid  <= '0;
     s_S1_pp     <= '{default:'0};
+`ifdef USE_RADIX4_RECODING
+    s_S1_pp_carry_out <= '0;
+`endif
   end
   else begin
     if (s_S1_en) begin
       s_S1_valid <= '1;
       s_S1_pp <= s_pp;
+`ifdef USE_RADIX4_RECODING
+      s_S1_pp_carry_out <= s_pp_carry_out;
+`endif
       
 `ifdef EN_DEBUG_PRINT
   `ifndef USE_RADIX4_RECODING
@@ -250,11 +267,11 @@ end // always_ff @( posedge i_clk )
   logic [12431 : 0] s_S2_C;
 `else
   // Radix 4
-  logic [5993 : 0] S;
-  logic [5993 : 0] C;
+  logic [6104 : 0] S;
+  logic [6104 : 0] C;
   `include "helper/radix4_dadda_compressor_part1.svh"
-  logic [5993 : 0] s_S2_S;
-  logic [5993 : 0] s_S2_C;
+  logic [6104 : 0] s_S2_S;
+  logic [6104 : 0] s_S2_C;
 `endif
 always_ff @( posedge i_clk ) begin : stage2a
   if (!i_rst_n) begin
@@ -269,14 +286,19 @@ always_ff @( posedge i_clk ) begin : stage2a
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
 
-logic [EX_MAN_BITS_128+2-1 : 0] s_S2_pp [0 : RADIX4_ROWS-1];
+logic [EX_MAN_BITS_128-1 : 0] s_S2_pp [0 : RADIX4_ROWS-1];
+logic [1:0]                   s_S2_pp_carry_out;
 always_ff @( posedge i_clk ) begin : stage2b_signal_passthrough
   if (!i_rst_n) begin
     s_S2_pp <= '{default:'0};
+    s_S2_pp_carry_out <= '0;
   end
   else begin
     if (s_S2_en) begin
       s_S2_pp <= s_S1_pp;
+`ifdef USE_RADIX4_RECODING
+      s_S2_pp_carry_out <= s_S1_pp_carry_out;
+`endif
     end // if (s_S2_en)
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
@@ -296,16 +318,20 @@ logic [225 : 0] z1;
 `endif
 logic [225 : 0] s_S3_z0;
 logic [225 : 0] s_S3_z1;
-logic [EX_MAN_BITS_128-1:0] s_S3_pp [0:EX_MAN_BITS_128-1];
+logic [1:0]                 s_S3_pp_carry_out;
 always_ff @( posedge i_clk ) begin : stage3a
   if (!i_rst_n) begin
     s_S3_z0 <= '0;
     s_S3_z1 <= '0;
+    s_S3_pp_carry_out <= '0;
   end
   else begin
     if (s_S3_en) begin
       s_S3_z0 <= z0;
       s_S3_z1 <= z1;
+`ifdef USE_RADIX4_RECODING
+      s_S3_pp_carry_out <= s_S2_pp_carry_out;
+`endif
     end // if (s_S3_en)
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
@@ -323,7 +349,13 @@ always_ff @( posedge i_clk ) begin : stage4a
   end
   else begin
     if (s_S4_en) begin
+`ifndef USE_RADIX4_RECODING
       s_S4_jedi   <= s_S3_z0 + s_S3_z1;
+`else
+      // radix4_dadda_compressor_* compresses only bits [EX_MAN_BITS_128-1:0] per partial-product row.
+      // `radix4_pp_generator.svh` folds any overflow into higher rows and returns the final carry bit for o_jedi[EX_MAN_BITS_128*2-1].
+      s_S4_jedi   <= s_S3_z0 + s_S3_z1 + {s_S3_pp_carry_out[0], {(EX_MAN_BITS_128*2-1){1'b0}}};
+`endif
       s_S4_valid  <= '1;
     end // if (s_S4_en)
     else begin
@@ -341,5 +373,16 @@ assign o_valid_jedi = s_S4_valid;
 assign o_sanity_identifier = MODULE_IDENTIFIER;
 assign o_error = s_o_error;
 assign o_debug = '0;
+
+// Debug signals
+`ifdef USE_RADIX4_RECODING
+assign ds_S1_pp = s_S1_pp;
+assign ds_S2_S = s_S2_S;
+assign ds_S2_C = s_S2_C;
+assign ds_S3_z0 = s_S3_z0;
+assign ds_S3_z1 = s_S3_z1;
+assign ds_S4_jedi = s_S4_jedi;
+assign ds_S4_valid = s_S4_valid;
+`endif
 
 endmodule // module sp_fpmultiplier #()
