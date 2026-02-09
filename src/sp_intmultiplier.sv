@@ -79,7 +79,7 @@ module sp_intmultiplier #(
   input   logic                                   i_rst_n, // Synchronous
 
   // Metadata stuff
-  input   var float_metadata_t                    i_metadata, // not used currently
+  input   var float_metadata_t                    i_metadata,
 
   // Data
   input   logic [EX_MAN_BITS_128-1 : 0]           i_anikin,
@@ -285,12 +285,18 @@ always_ff @( posedge i_clk ) begin : stage2a
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
 
-logic [EX_MAN_BITS_128-1 : 0] s_S2_pp [0 : RADIX4_ROWS-1];
-logic [1:0]                   s_S2_pp_carry_out;
+`ifndef USE_RADIX4_RECODING
+  logic [EX_MAN_BITS_128-1:0]   s_S2_pp [0:EX_MAN_BITS_128-1];
+`else
+  logic [EX_MAN_BITS_128-1 : 0] s_S2_pp [0 : RADIX4_ROWS-1];
+  logic [1:0]                   s_S2_pp_carry_out;
+`endif
 always_ff @( posedge i_clk ) begin : stage2b_signal_passthrough
   if (!i_rst_n) begin
     s_S2_pp <= '{default:'0};
+`ifdef USE_RADIX4_RECODING
     s_S2_pp_carry_out <= '0;
+`endif
   end
   else begin
     if (s_S2_en) begin
@@ -301,7 +307,6 @@ always_ff @( posedge i_clk ) begin : stage2b_signal_passthrough
     end // if (s_S2_en)
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
-
 
 //=====================================================================================
 // Stage 3
