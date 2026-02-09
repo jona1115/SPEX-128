@@ -18,6 +18,8 @@
  * 
  *******************************************************************/
 
+`include "config.svh" // Here lives a bunch of macro flags...
+
 import float_flag_pkg::*;
 import sp_mode_pkg::*;
 import float_metadata_pkg::*;

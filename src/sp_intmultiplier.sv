@@ -19,8 +19,7 @@
  * 
  *******************************************************************/
 
-// `define EN_DEBUG_PRINT
-`define USE_RADIX4_RECODING
+`include "config.svh" // Here lives a bunch of macro flags...
 
 import float_flag_pkg::*;
 import sp_mode_pkg::*;

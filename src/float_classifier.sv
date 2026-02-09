@@ -9,6 +9,8 @@ import fixed64_pkg::*;
 import fixed32_pkg::*;
 import unbiasing_pkg::*;
 
+`include "config.svh" // Here lives a bunch of macro flags...
+
 module float_classifier #() (
   input  sp_mode_t        i_current_sp,
   input  logic [127:0]    i_float,
