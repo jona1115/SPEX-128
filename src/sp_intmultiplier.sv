@@ -262,14 +262,14 @@ end // always_ff @( posedge i_clk )
   // Vanila
   logic [12431 : 0] S;
   logic [12431 : 0] C;
-  `include "helper/dadda_compressor_part1.svh"
+  `include "helper/dadda_compressor_reduce_tree.svh"
   logic [12431 : 0] s_S2_S;
   logic [12431 : 0] s_S2_C;
 `else
   // Radix 4
   logic [6104 : 0] S;
   logic [6104 : 0] C;
-  `include "helper/radix4_dadda_compressor_part1.svh"
+  `include "helper/radix4_dadda_compressor_reduce_tree.svh"
   logic [6104 : 0] s_S2_S;
   logic [6104 : 0] s_S2_C;
 `endif
@@ -311,10 +311,10 @@ logic [225 : 0] z0;
 logic [225 : 0] z1;
 `ifndef USE_RADIX4_RECODING
   // Vanila
-  `include "helper/dadda_compressor_part2.svh"
+  `include "helper/dadda_compressor_final_rows.svh"
 `else
   // Radix 4
-  `include "helper/radix4_dadda_compressor_part2.svh"
+  `include "helper/radix4_dadda_compressor_final_rows.svh"
 `endif
 logic [225 : 0] s_S3_z0;
 logic [225 : 0] s_S3_z1;
@@ -352,7 +352,7 @@ always_ff @( posedge i_clk ) begin : stage4a
 `ifndef USE_RADIX4_RECODING
       s_S4_jedi   <= s_S3_z0 + s_S3_z1;
 `else
-      // radix4_dadda_compressor_* compresses only bits [EX_MAN_BITS_128-1:0] per partial-product row.
+      // radix4_dadda_compressor_{reduce_tree,final_rows} compresses only bits [EX_MAN_BITS_128-1:0] per partial-product row.
       // `radix4_pp_generator.svh` folds any overflow into higher rows and returns the final carry bit for o_jedi[EX_MAN_BITS_128*2-1].
       s_S4_jedi   <= s_S3_z0 + s_S3_z1 + {s_S3_pp_carry_out[0], {(EX_MAN_BITS_128*2-1){1'b0}}};
 `endif
