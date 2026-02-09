@@ -24,6 +24,8 @@
  * 
  *******************************************************************/
 
+`include "config.svh" // Here lives a bunch of macro flags...
+
 import float_flag_pkg::*;
 import sp_mode_pkg::*;
 import float_metadata_pkg::*;
@@ -34,14 +36,6 @@ import binary128_convert_pkg::*;
 import fixed128_pkg::*;
 import fixed64_pkg::*;
 import fixed32_pkg::*;
-
-`ifdef USE_RAM_DATA
-  `define SPEX_RAM_EXT "data"
-  `define SPEX_READMEM $readmemb
-`else
-  `define SPEX_RAM_EXT "hex"
-  `define SPEX_READMEM $readmemh
-`endif
 
 /**
  * Some parts of this module is written in a way that make this module highly reusable

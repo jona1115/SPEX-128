@@ -132,7 +132,6 @@ module sp_fpmultiplier_unit_test;
     s_i_valid32d_anikin = '0;
     s_i_valid32d_force = '0;
 
-
     s_i_rst_n   = 1'b0;                 // assert sync reset
     repeat (2) @(posedge s_i_clk);      // hold for > one posedge
     s_i_rst_n   = 1'b1;                 // deassert
@@ -251,15 +250,15 @@ module sp_fpmultiplier_unit_test;
 
   // Read hex file (one 128-bit word per line) into a queue
   task automatic read_hex128_to_queue(string path, ref logic [127:0] q[$]);
-    int fd; string line; logic [127:0] val;
+    int fd; int rc; string line; logic [127:0] val;
     fd = $fopen(path, "r");
     `FAIL_UNLESS(fd) // must open
     while (!$feof(fd)) begin
-      void'($fgets(line, fd));
+      rc = $fgets(line, fd);
       if (line.len() == 0) continue;
       if ($sscanf(line, "%h", val) == 1) q.push_back(val);
     end
-    void'($fclose(fd));
+    $fclose(fd);
   endtask
 
   // ====== binary128 helpers/consts (add near your other helpers) ======

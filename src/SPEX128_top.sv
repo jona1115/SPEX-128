@@ -20,6 +20,8 @@
  * 
  *******************************************************************/
 
+`include "config.svh" // Here lives a bunch of macro flags...
+
 import float_flag_pkg::*;
 import sp_mode_pkg::*;
 import float_metadata_pkg::*;
@@ -31,18 +33,6 @@ import fixed64_pkg::*;
 import fixed32_pkg::*;
 import unbiasing_pkg::*;
 
-// Turn this define ON (uncomment) when synthesizing using Vivado, as it only recognize .data binary files
-// Turn thie design OFF (comment) when simulating using non-Vivado, as the testing infrastructure is set up
-// to read .hex files.
-// `define USE_RAM_DATA
-
-`ifdef USE_RAM_DATA
-  `define SPEX_RAM_EXT "data"
-  `define SPEX_READMEM $readmemb
-`else
-  `define SPEX_RAM_EXT "hex"
-  `define SPEX_READMEM $readmemh
-`endif
 
 module SPEX128_top #(
   parameter int NUM_BITS_128  = 128,
