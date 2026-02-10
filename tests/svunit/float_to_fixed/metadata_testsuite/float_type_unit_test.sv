@@ -30,6 +30,7 @@ module float_type_unit_test;
   logic                                   s_i_rst_n; // Synchronous
   logic [`NUM_BITS_128-1:0]                s_i_float;
   logic [3:0]                             s_i_ctrl;
+  logic                                   s_i_valid;
   logic [127:0]                           s_o_fixed;
   float_metadata_t                        s_o_metadata;
   logic [3:0]                             s_o_sanity_identifier;
@@ -51,6 +52,7 @@ module float_type_unit_test;
     .i_rst_n(s_i_rst_n),
     .i_float(s_i_float),
     .i_ctrl(s_i_ctrl),
+    .i_valid(s_i_valid),
     .o_fixed(s_o_fixed),
     .o_metadata(s_o_metadata),
     .o_sanity_identifier(s_o_sanity_identifier),
@@ -76,6 +78,7 @@ module float_type_unit_test;
     s_i_clk   = '0;
     s_i_float = '0;
     s_i_ctrl  = '0;
+    s_i_valid = 1'b1;
 
     s_i_rst_n   = 1'b0;                 // assert sync reset
     repeat (2) @(posedge s_i_clk);      // hold for > one posedge
