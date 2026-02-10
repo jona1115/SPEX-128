@@ -316,6 +316,9 @@ always_comb begin : stage_fire_decode
   endcase
 end
 
+/**
+ * FSM
+ */
 always_ff @(posedge i_clk) begin : stage_valid_pipeline
   if (!i_rst_n) begin
     s_pipe_valid <= '0;
