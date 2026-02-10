@@ -143,9 +143,6 @@ logic s_S2_sign_32_c;
 logic s_S2_sign_32_d;
 
 float_metadata_t s_metadata_decoded;
-float_metadata_t s_S1_metadata;
-float_metadata_t s_S2_metadata;
-float_metadata_t s_S3_metadata;
 assign s_current_sp =
   (i_ctrl[1:0] == 2'b00) ? SINGLE_MODE  :
   (i_ctrl[1:0] == 2'b01) ? TWO_SP_MODE  :
@@ -274,7 +271,6 @@ always_ff @( posedge i_clk ) begin : stage1_get_shift_amount
     s_S1_sign_32_b <= 1'b0;
     s_S1_sign_32_c <= 1'b0;
     s_S1_sign_32_d <= 1'b0;
-    s_S1_metadata <= '0;
 
     s_o_error[1]     <= 1'b0;
     s_o_error[ERROR_SIGNAL_NUM_BITS-1:2] <= '0;
@@ -289,7 +285,6 @@ always_ff @( posedge i_clk ) begin : stage1_get_shift_amount
       s_S1_sign_32_b  <= s_binary32_b.sign;
       s_S1_sign_32_c  <= s_binary32_c.sign;
       s_S1_sign_32_d  <= s_binary32_d.sign;
-      s_S1_metadata   <= s_metadata_decoded;
 
       // Switch case
       case (s_current_sp)
@@ -362,7 +357,6 @@ always_ff @( posedge i_clk ) begin : stage2_convert
     s_S2_sign_32_b  <= 1'b0;
     s_S2_sign_32_c  <= 1'b0;
     s_S2_sign_32_d  <= 1'b0;
-    s_S2_metadata   <= '0;
 
     s_o_error[0] <= 1'b0;
   end
@@ -376,7 +370,6 @@ always_ff @( posedge i_clk ) begin : stage2_convert
       s_S2_sign_32_b  <= s_S1_sign_32_b;
       s_S2_sign_32_c  <= s_S1_sign_32_c;
       s_S2_sign_32_d  <= s_S1_sign_32_d;
-      s_S2_metadata   <= s_S1_metadata;
 
       // assign the integer and frac
       case (s_S1_sp)
@@ -596,7 +589,6 @@ end // always_ff
 always_ff @( posedge i_clk ) begin : stage3_finalize
   if (!i_rst_n) begin
     s_S3_sp               <= INVALID_SP_MODE;
-    s_S3_metadata         <= '0;
     s_fixed128.sign_portion   <= 1'b0;
     s_fixed64_a.sign_portion  <= 1'b0;
     s_fixed64_b.sign_portion  <= 1'b0;
@@ -608,7 +600,6 @@ always_ff @( posedge i_clk ) begin : stage3_finalize
   else begin
     if (s_S3_en) begin
       s_S3_sp       <= s_S2_sp;
-      s_S3_metadata <= s_S2_metadata;
 
       case (s_S2_sp)
         SINGLE_MODE: begin
@@ -638,7 +629,7 @@ end // always_ff
 //=====================================================================================
 // Final assignment
 //=====================================================================================
-assign o_metadata = s_S3_metadata;
+assign o_metadata = s_metadata_decoded;
 
 assign o_fixed = (s_S3_sp == SINGLE_MODE)  ? s_fixed128                                            :
                  (s_S3_sp == TWO_SP_MODE)  ? {s_fixed64_a, s_fixed64_b}                            :
