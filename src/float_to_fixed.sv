@@ -42,7 +42,7 @@ module float_to_fixed #(
   parameter int DEBUG_SIGNAL_NUM_BITS     = 32,
 
   // Do not change unless intentional:
-  parameter int MODULE_LATENCY            = 3,
+  parameter int MODULE_LATENCY            = 2,
 
   // Identifier const
   parameter logic [3:0] MODULE_IDENTIFIER = 4'b0000
@@ -73,8 +73,7 @@ module float_to_fixed #(
 typedef enum logic [1:0] { 
   S0_IDLE               = 2'b00,
   S1_GET_SHIFT_AMOUNT   = 2'b01,
-  S2_CONVERT            = 2'b10,
-  S3_FINALIZE           = 2'b11
+  S2_CONVERT            = 2'b10
 } state_t;
 
 //=====================================================================================
@@ -124,7 +123,6 @@ logic s_S2_busy;
 sp_mode_t s_current_sp;
 sp_mode_t s_S1_sp;
 sp_mode_t s_S2_sp;
-sp_mode_t s_S3_sp;
 
 logic s_S1_sign_128;
 logic s_S1_sign_64_a;
@@ -212,11 +210,10 @@ float_classifier #() my_float_classifier_0 (
  * State transition control
  * 
  */
-logic s_S1_en, s_S2_en, s_S3_en;
+logic s_S1_en, s_S2_en;
 localparam int PIPE_DEPTH = MODULE_LATENCY;
 localparam int S1_OFFSET = 0;
 localparam int S2_OFFSET = 1;
-localparam int S3_OFFSET = 2;
 logic [PIPE_DEPTH-1 : 0] s_pipe_valid;
 logic [PIPE_DEPTH-1 : 0] s_pipe_valid_next;
 
@@ -227,7 +224,6 @@ assign s_pipe_valid_next = {s_pipe_valid[PIPE_DEPTH-2 : 0], s_fire};
 
 assign s_S1_en = s_fire;
 assign s_S2_en = s_pipe_valid[S1_OFFSET];
-assign s_S3_en = s_pipe_valid[S2_OFFSET];
 
 /**
  * FSM
@@ -387,8 +383,8 @@ always_ff @( posedge i_clk ) begin : stage2_convert
           else if (s_shift_amount_a > 9) begin
             // Case c:
             // In this case, we have a overflow in the int part, an overflow in the int part
-            // is an overflow in the overall value, so fill everything with 1s. (well, except
-            // the sign bit but that will be dealt with in stage 3).
+            // is an overflow in the overall value, so fill everything with 1s. (the sign bit
+            // is assigned in the final assignment section).
             fixed128_shifted = '1;
           end
           else begin
@@ -417,8 +413,8 @@ always_ff @( posedge i_clk ) begin : stage2_convert
           else if (s_shift_amount_a > 9) begin
             // Case c:
             // In this case, we have a overflow in the int part, an overflow in the int part
-            // is an overflow in the overall value, so fill everything with 1s. (well, except
-            // the sign bit but that will be dealt with in stage 3).
+            // is an overflow in the overall value, so fill everything with 1s. (the sign bit
+            // is assigned in the final assignment section).
             fixed64_a_shifted = '1;
           end
           else begin
@@ -445,8 +441,8 @@ always_ff @( posedge i_clk ) begin : stage2_convert
           else if (s_shift_amount_b > 9) begin
             // Case c:
             // In this case, we have a overflow in the int part, an overflow in the int part
-            // is an overflow in the overall value, so fill everything with 1s. (well, except
-            // the sign bit but that will be dealt with in stage 3).
+            // is an overflow in the overall value, so fill everything with 1s. (the sign bit
+            // is assigned in the final assignment section).
             fixed64_b_shifted = '1;
           end
           else begin
@@ -475,8 +471,8 @@ always_ff @( posedge i_clk ) begin : stage2_convert
           else if (s_shift_amount_a > 9) begin
             // Case c:
             // In this case, we have a overflow in the int part, an overflow in the int part
-            // is an overflow in the overall value, so fill everything with 1s. (well, except
-            // the sign bit but that will be dealt with in stage 3).
+            // is an overflow in the overall value, so fill everything with 1s. (the sign bit
+            // is assigned in the final assignment section).
             fixed32_a_shifted = '1;
           end
           else begin
@@ -503,8 +499,8 @@ always_ff @( posedge i_clk ) begin : stage2_convert
           else if (s_shift_amount_b > 9) begin
             // Case c:
             // In this case, we have a overflow in the int part, an overflow in the int part
-            // is an overflow in the overall value, so fill everything with 1s. (well, except
-            // the sign bit but that will be dealt with in stage 3).
+            // is an overflow in the overall value, so fill everything with 1s. (the sign bit
+            // is assigned in the final assignment section).
             fixed32_b_shifted = '1;
           end
           else begin
@@ -531,8 +527,8 @@ always_ff @( posedge i_clk ) begin : stage2_convert
           else if (s_shift_amount_c > 9) begin
             // Case c:
             // In this case, we have a overflow in the int part, an overflow in the int part
-            // is an overflow in the overall value, so fill everything with 1s. (well, except
-            // the sign bit but that will be dealt with in stage 3).
+            // is an overflow in the overall value, so fill everything with 1s. (the sign bit
+            // is assigned in the final assignment section).
             fixed32_c_shifted = '1;
           end
           else begin
@@ -559,8 +555,8 @@ always_ff @( posedge i_clk ) begin : stage2_convert
           else if (s_shift_amount_d > 9) begin
             // Case c:
             // In this case, we have a overflow in the int part, an overflow in the int part
-            // is an overflow in the overall value, so fill everything with 1s. (well, except
-            // the sign bit but that will be dealt with in stage 3).
+            // is an overflow in the overall value, so fill everything with 1s. (the sign bit
+            // is assigned in the final assignment section).
             fixed32_d_shifted = '1;
           end
           else begin
@@ -578,62 +574,22 @@ always_ff @( posedge i_clk ) begin : stage2_convert
 
         end
       endcase // case (s_S1_sp)
-    end // if (s_S3_en) begin
+    end // if (s_S2_en) begin
   end // else begin
 end // always_ff
-
-//=====================================================================================
-// Stage 3
-// In this stage we will deal with assigning sign bit.
-//=====================================================================================
-always_ff @( posedge i_clk ) begin : stage3_finalize
-  if (!i_rst_n) begin
-    s_S3_sp               <= INVALID_SP_MODE;
-    s_fixed128.sign_portion   <= 1'b0;
-    s_fixed64_a.sign_portion  <= 1'b0;
-    s_fixed64_b.sign_portion  <= 1'b0;
-    s_fixed32_a.sign_portion  <= 1'b0;
-    s_fixed32_b.sign_portion  <= 1'b0;
-    s_fixed32_c.sign_portion  <= 1'b0;
-    s_fixed32_d.sign_portion  <= 1'b0;
-  end
-  else begin
-    if (s_S3_en) begin
-      s_S3_sp       <= s_S2_sp;
-
-      case (s_S2_sp)
-        SINGLE_MODE: begin
-          // Assign sign bit
-          s_fixed128.sign_portion <= s_S2_sign_128;
-        end
-        TWO_SP_MODE: begin
-          // Assign sign bit
-          s_fixed64_a.sign_portion <= s_S2_sign_64_a;
-          s_fixed64_b.sign_portion <= s_S2_sign_64_b;
-        end
-        FOUR_SP_MODE: begin
-          // Assign sign bit
-          s_fixed32_a.sign_portion <= s_S2_sign_32_a;
-          s_fixed32_b.sign_portion <= s_S2_sign_32_b;
-          s_fixed32_c.sign_portion <= s_S2_sign_32_c;
-          s_fixed32_d.sign_portion <= s_S2_sign_32_d;
-        end
-        default: begin
-        end
-      endcase // case (s_S2_sp)
-    end // if (s_S3_en) begin
-  end // else begin
-end // always_ff
-
 
 //=====================================================================================
 // Final assignment
 //=====================================================================================
 assign o_metadata = s_metadata_decoded;
 
-assign o_fixed = (s_S3_sp == SINGLE_MODE)  ? s_fixed128                                            :
-                 (s_S3_sp == TWO_SP_MODE)  ? {s_fixed64_a, s_fixed64_b}                            :
-                 (s_S3_sp == FOUR_SP_MODE) ? {s_fixed32_a, s_fixed32_b, s_fixed32_c, s_fixed32_d}  :
+assign o_fixed = (s_S2_sp == SINGLE_MODE)  ? {s_S2_sign_128, s_fixed128.int_portion, s_fixed128.frac_portion} :
+                 (s_S2_sp == TWO_SP_MODE)  ? {{s_S2_sign_64_a, s_fixed64_a.int_portion, s_fixed64_a.frac_portion},
+                                              {s_S2_sign_64_b, s_fixed64_b.int_portion, s_fixed64_b.frac_portion}} :
+                 (s_S2_sp == FOUR_SP_MODE) ? {{s_S2_sign_32_a, s_fixed32_a.int_portion, s_fixed32_a.frac_portion},
+                                              {s_S2_sign_32_b, s_fixed32_b.int_portion, s_fixed32_b.frac_portion},
+                                              {s_S2_sign_32_c, s_fixed32_c.int_portion, s_fixed32_c.frac_portion},
+                                              {s_S2_sign_32_d, s_fixed32_d.int_portion, s_fixed32_d.frac_portion}} :
                  '0;
 
 // This is the identifier (ie version number) of this block
@@ -642,6 +598,6 @@ assign o_sanity_identifier      = MODULE_IDENTIFIER;
 assign o_error = s_o_error;
 assign o_debug = s_o_debug;
 
-assign o_valid = s_pipe_valid[S3_OFFSET];
+assign o_valid = s_pipe_valid[S2_OFFSET];
 
 endmodule // module float_to_fixed #()

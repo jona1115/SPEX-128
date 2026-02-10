@@ -38,19 +38,14 @@
   s_i_ctrl  = 4'b0010;
   s_i_float = {32'b0_10000000_10010010000111111011011, 32'b1_10000000_01011011111100001001101, 32'b0_10000111_11110100100010101110010, 32'b0_01110000_01111110100001010100001};
 
+  `FAIL_UNLESS_EQUAL(s_o_fixed, expected_0)
+
   @(posedge s_i_clk); @(negedge s_i_clk);
 
   s_i_valid = 1'b0;
   s_i_ctrl  = '0;
   s_i_float = '0;
 
-  // $display("s_o_fixed\t= 0x%x", s_o_fixed);
-  // $display("expected_0\t= 0x%x", expected_0);
-
-  `FAIL_UNLESS_EQUAL(s_o_fixed, expected_0)
-
-  // Then outputs must be valid on consecutive cycles, in order.
-  @(posedge s_i_clk); @(negedge s_i_clk);
   `FAIL_UNLESS_EQUAL(s_o_valid, 1'b1)
   `FAIL_UNLESS_EQUAL(s_o_fixed, expected_1)
 
@@ -92,15 +87,14 @@
   s_i_ctrl  = 4'b0001;
   s_i_float = {64'b0_10000000000_1001001000011111101110000010110000101011110101111111, 64'b0_10000000000_0101101111110000100110010101101010101111011110010000};
 
+  `FAIL_UNLESS_EQUAL(s_o_fixed, expected_0)
+
   @(posedge s_i_clk); @(negedge s_i_clk);
   s_i_valid = 1'b0;
   s_i_ctrl  = '0;
   s_i_float = '0;
 
-  `FAIL_UNLESS_EQUAL(s_o_fixed, expected_0)
-
   // Bubble must appear between outputs.
-  @(posedge s_i_clk); @(negedge s_i_clk);
   `FAIL_UNLESS_EQUAL(s_o_valid, 1'b0)
 
   @(posedge s_i_clk); @(negedge s_i_clk);
