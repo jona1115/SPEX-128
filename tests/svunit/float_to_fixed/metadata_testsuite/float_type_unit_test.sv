@@ -44,9 +44,6 @@ module float_type_unit_test;
     .NUM_BITS_128(`NUM_BITS_128),
     .NUM_BITS_64(`NUM_BITS_64),
     .NUM_BITS_32(`NUM_BITS_32),
-    .FIXED128_SHIFT_AMOUNT_INT_PORTION_OVERFLOW(`FIXED128_SHIFT_AMOUNT_INT_PORTION_OVERFLOW),
-    .FIXED64_SHIFT_AMOUNT_INT_PORTION_OVERFLOW(`FIXED64_SHIFT_AMOUNT_INT_PORTION_OVERFLOW),
-    .FIXED32_SHIFT_AMOUNT_INT_PORTION_OVERFLOW(`FIXED32_SHIFT_AMOUNT_INT_PORTION_OVERFLOW),
     .ERROR_SIGNAL_NUM_BITS(`ERROR_SIGNAL_NUM_BITS),
     .DEBUG_SIGNAL_NUM_BITS(`DEBUG_SIGNAL_NUM_BITS)
   ) my_float_to_fixed(
@@ -79,7 +76,18 @@ module float_type_unit_test;
     s_i_clk   = '0;
     s_i_float = '0;
     s_i_ctrl  = '0;
+
+    s_i_rst_n   = 1'b0;                 // assert sync reset
+    repeat (2) @(posedge s_i_clk);      // hold for > one posedge
+    s_i_rst_n   = 1'b1;                 // deassert
+    @(posedge s_i_clk);                 // let it stablize
   endtask
+
+  // Toggle clock
+  initial begin
+    s_i_clk = 1'b0;
+    forever #1 s_i_clk = ~s_i_clk; // 2 unit period
+  end
 
 
   //===================================
@@ -92,6 +100,14 @@ module float_type_unit_test;
 
   endtask
 
+  // ----------------------------------
+  // Helpers
+  // ----------------------------------
+  `define LATENCY (my_float_to_fixed.MODULE_LATENCY)
+
+  task automatic wait_n_ticks(int n);
+    repeat (n) @(posedge s_i_clk) @(negedge s_i_clk);
+  endtask
 
   //===================================
   // All tests are defined between the
