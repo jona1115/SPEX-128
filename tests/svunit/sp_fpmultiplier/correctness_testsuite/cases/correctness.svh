@@ -42,7 +42,7 @@
   s_i_in_force  = F128_NEG_INF;
   clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(s_o_out_jedi === prev)
   `FAIL_UNLESS(!s_o_valid128_jedi)
@@ -89,7 +89,7 @@
   s_i_valid128_anikin = 1;
   s_i_valid128_force  = 0;
   @(posedge s_i_clk); clear_valids();
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(!s_o_valid128_jedi)
   `FAIL_UNLESS(s_o_out_jedi === prev)
@@ -110,7 +110,7 @@
   @(posedge s_i_clk);
   clear_valids();
   
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
   `FAIL_UNLESS(s_o_valid128_jedi)
   // $display(">>>>> s_o_out_jedi=0x%x", s_o_out_jedi);
   `FAIL_UNLESS( (s_o_out_jedi[126 -: 15] == {15{1'b1}}) && (s_o_out_jedi[111:0] == '0) )
@@ -126,7 +126,7 @@
   @(posedge s_i_clk);
   clear_valids();
   
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
   `FAIL_UNLESS(s_o_valid128_jedi)
   `FAIL_UNLESS( (s_o_out_jedi[127] == 1'b1) && (s_o_out_jedi[126 -: 15] == {15{1'b1}}) && (s_o_out_jedi[111:0] == '0) )
 
@@ -140,7 +140,7 @@
   @(posedge s_i_clk);
   clear_valids();
   
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
   `FAIL_UNLESS(s_o_valid128_jedi)
   `FAIL_UNLESS( (s_o_out_jedi[126 -: 15] == {15{1'b1}}) && (s_o_out_jedi[111:0] != '0) )
   `FAIL_UNLESS(s_o_error === '0)
@@ -165,7 +165,7 @@
   s_i_valid64b_anikin = 1; s_i_valid64b_force = 1;
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(s_o_valid64a_jedi && s_o_valid64b_jedi)
   `FAIL_UNLESS(top64(s_o_out_jedi) == mul64_bits(a_top, b_top))
@@ -191,7 +191,7 @@
   s_i_valid64b_anikin = 1; s_i_valid64b_force = 0;   // lane B incomplete
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(!s_o_valid64a_jedi && !s_o_valid64b_jedi) // all suppressed
   `FAIL_UNLESS(s_o_out_jedi === prev)                    // no update
@@ -207,7 +207,7 @@
   s_i_valid64b_anikin = 1; s_i_valid64b_force = 1;   // lane B complete
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(!s_o_valid64a_jedi && !s_o_valid64b_jedi)
   `FAIL_UNLESS(s_o_out_jedi === prev)
@@ -232,7 +232,7 @@
   s_i_valid64b_anikin = 1; s_i_valid64b_force = 0; // block the group
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
   `FAIL_UNLESS(!s_o_valid64a_jedi && !s_o_valid64b_jedi)
   `FAIL_UNLESS(s_o_out_jedi === prev)
 
@@ -244,7 +244,7 @@
   s_i_valid64b_anikin = 1; s_i_valid64b_force = 1;
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(s_o_valid64a_jedi && s_o_valid64b_jedi)
   `FAIL_UNLESS(top64(s_o_out_jedi) == mul64_bits(a_top, b_top))
@@ -278,7 +278,7 @@
   s_i_valid32d_anikin = 1; s_i_valid32d_force = 1;
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(s_o_valid32a_jedi && s_o_valid32b_jedi && s_o_valid32c_jedi && s_o_valid32d_jedi)
   `FAIL_UNLESS(lane32_a(s_o_out_jedi) == mul32_bits(aa, fa))
@@ -313,7 +313,7 @@
   s_i_valid32d_anikin = 1; s_i_valid32d_force = 1;
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   oa = lane32_a(s_o_out_jedi);
   ob = lane32_b(s_o_out_jedi);
@@ -364,7 +364,7 @@
   s_i_valid32d_anikin = 1; s_i_valid32d_force = 1;
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
   `FAIL_UNLESS(!s_o_valid32a_jedi && !s_o_valid32b_jedi && !s_o_valid32c_jedi && !s_o_valid32d_jedi)
   `FAIL_UNLESS(s_o_out_jedi === prev)
 
@@ -375,7 +375,7 @@
   s_i_valid32d_anikin = 1; s_i_valid32d_force = 1;
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(s_o_valid32a_jedi && s_o_valid32b_jedi && s_o_valid32c_jedi && s_o_valid32d_jedi)
   `FAIL_UNLESS(lane32_a(s_o_out_jedi) == mul32_bits(aa, fa))
@@ -392,14 +392,14 @@
 `SVTEST(metadata_passthrough_and_error_zero)
   drive_meta(SINGLE_MODE, NA, NA, NA, NA);
   `MAKE_ALL_VALID_SINGLE
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
   `FAIL_UNLESS(s_o_metadata.sp_mode == SINGLE_MODE)
 
   wait_n_ticks(1);
 
   drive_meta(TWO_SP_MODE, NA, NA, NA, NA);
   `MAKE_ALL_VALID_TWO_SP
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
   // $display(">>>>> s_o_metadata.sp_mode = %d", s_o_metadata.sp_mode);
   `FAIL_UNLESS(s_o_metadata.sp_mode == TWO_SP_MODE)
 
@@ -407,7 +407,7 @@
 
   drive_meta(FOUR_SP_MODE, NA, NA, NA, NA);
   `MAKE_ALL_VALID_FOUR_SP
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
   `FAIL_UNLESS(s_o_metadata.sp_mode == FOUR_SP_MODE)
 
   `FAIL_UNLESS(s_o_error === '0)
@@ -439,7 +439,7 @@
     @(posedge s_i_clk);
     clear_valids();
 
-    wait_n_ticks(`LATENCY);
+    wait_n_ticks(`LATENCY - 1);
 
     `FAIL_UNLESS(s_o_valid128_jedi)
     // $display(">>>>> s_i_in_anikin=0x%x", s_i_in_anikin);
@@ -489,7 +489,7 @@ localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
   s_i_valid64b_anikin = 1; s_i_valid64b_force = 1;
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(s_o_valid64a_jedi && s_o_valid64b_jedi)
   `FAIL_UNLESS(top64(s_o_out_jedi) == mul64_bits(a_top, b_top)) // expect +INF
@@ -516,7 +516,7 @@ localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
   s_i_valid64b_anikin = 1; s_i_valid64b_force = 1;
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(s_o_valid64a_jedi && s_o_valid64b_jedi)
   `FAIL_UNLESS(top64(s_o_out_jedi) == mul64_bits(a_top, b_top))
@@ -541,7 +541,7 @@ localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
   s_i_valid64b_anikin = 1; s_i_valid64b_force = 1;
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(s_o_valid64a_jedi && s_o_valid64b_jedi)
   `FAIL_UNLESS(top64(s_o_out_jedi) == mul64_bits(a_top, b_top))
@@ -578,7 +578,7 @@ localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
   s_i_valid32d_anikin = 1; s_i_valid32d_force = 1;
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(s_o_valid32a_jedi && s_o_valid32b_jedi && s_o_valid32c_jedi && s_o_valid32d_jedi)
   `FAIL_UNLESS(lane32_a(s_o_out_jedi) == mul32_bits(aa, fa)) // +INF
@@ -606,7 +606,7 @@ localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
   s_i_valid32d_anikin = 1; s_i_valid32d_force = 1;
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(s_o_valid32a_jedi && s_o_valid32b_jedi && s_o_valid32c_jedi && s_o_valid32d_jedi)
   `FAIL_UNLESS(lane32_a(s_o_out_jedi) == mul32_bits(aa, fa))
@@ -631,7 +631,7 @@ localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
   s_i_valid64b_anikin = 1; s_i_valid64b_force = 1; // B valid
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(!s_o_valid64a_jedi && !s_o_valid64b_jedi) // Both invalid
   `FAIL_UNLESS(s_o_out_jedi === prev)                    // Nothing happens
@@ -650,7 +650,7 @@ localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
   s_i_valid128_anikin = 1; s_i_valid128_force = 1;
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(s_o_valid128_jedi)
   `FAIL_UNLESS(is_inf128(s_o_out_jedi) && (s_o_out_jedi[127] == 1'b0)) // +INF
@@ -667,7 +667,7 @@ localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
   s_i_valid128_anikin = 1; s_i_valid128_force = 1;
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(s_o_valid128_jedi)
   `FAIL_UNLESS(is_inf128(s_o_out_jedi) && (s_o_out_jedi[127] == 1'b1)) // -INF
@@ -683,7 +683,7 @@ localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
 //   s_i_valid128_anikin = 1; s_i_valid128_force = 1;
 //   @(posedge s_i_clk); clear_valids();
 
-//   wait_n_ticks(`LATENCY);
+//   wait_n_ticks(`LATENCY - 1);
 
 //   `FAIL_UNLESS(s_o_valid128_jedi)
 //   `FAIL_UNLESS(is_subnormal128(s_o_out_jedi))
@@ -699,7 +699,7 @@ localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
   s_i_valid128_anikin = 1; s_i_valid128_force = 1;
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(s_o_valid128_jedi)
   `FAIL_UNLESS(s_o_out_jedi == 128'b0)
@@ -715,7 +715,7 @@ localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
   s_i_valid128_anikin = 1; s_i_valid128_force = 1;
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(s_o_valid128_jedi)
   `FAIL_UNLESS(s_o_out_jedi == 128'b0)
@@ -734,7 +734,7 @@ localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
   s_i_valid128_anikin = 1; s_i_valid128_force = 1;
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(s_o_valid128_jedi)
   `FAIL_UNLESS(s_o_out_jedi == EXP_NEAR_ONE)
@@ -753,7 +753,7 @@ localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
   s_i_valid128_anikin = 1; s_i_valid128_force = 1;
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(s_o_valid128_jedi)
   `FAIL_UNLESS(s_o_out_jedi == EXP_BOUNDARY)
@@ -769,7 +769,7 @@ localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
   s_i_valid128_anikin = 1; s_i_valid128_force = 1;
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(s_o_valid128_jedi)
   `FAIL_UNLESS(s_o_out_jedi[127] == 1'b1)       // negative sign
@@ -790,7 +790,7 @@ localparam logic [31:0] FLT_ONE_DOWN = 32'h3F7F_FFFF;
   s_i_valid128_anikin = 1; s_i_valid128_force = 0; // force not valid
   @(posedge s_i_clk); clear_valids();
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(`LATENCY - 1);
 
   `FAIL_UNLESS(!s_o_valid128_jedi)
   `FAIL_UNLESS(s_o_out_jedi === prev) // unchanged

@@ -119,85 +119,43 @@ logic [ERROR_SIGNAL_NUM_BITS-1:0]       s_o_error;
 //=====================================================================================
 
 /**
- * FSM
- */
-typedef enum logic [2:0] { 
-  S0_IDLE     = 3'b000,
-  S1          = 3'b001,
-  S2          = 3'b010,
-  S3          = 3'b011,
-  S4          = 3'b100,
-  S5          = 3'b101,
-  S6          = 3'b110,
-  S7          = 3'b111
-} state_t;
-state_t s_curr_state, s_next_state;
-always_ff @( posedge i_clk ) begin : float_to_fixed_FSM
-  if (!i_rst_n) begin
-    s_curr_state <= S0_IDLE;
-  end
-  else begin
-    s_curr_state <= s_next_state;
-  end
-end
-
-/**
  * 
  * State transition control
  * 
  */
-logic s_S0_en, s_S1_en, s_S2_en, s_S3_en, s_S4_en, s_S5_en, s_S6_en, s_S7_en;
-always_comb begin : stage_en_control
-  // Defaults
-  s_next_state = s_curr_state;
-  s_S0_en = '0;
-  s_S1_en = '0;
-  s_S2_en = '0;
-  s_S3_en = '0;
-  s_S4_en = '0;
-  s_S5_en = '0;
-  s_S6_en = '0;
-  s_S7_en = '0;
+localparam int PIPE_DEPTH = MODULE_LATENCY;
+logic [PIPE_DEPTH-1 : 0]  s_pipe_valid;
+logic [PIPE_DEPTH-1 : 0]  s_pipe_valid_next;
 
-  unique case (s_curr_state)
-    S0_IDLE: begin
-      s_next_state = S1;
-    end
-    S1: begin
-      if (i_valid_anikin === 1'b1 && i_valid_force=== 1'b1) begin // "All or nothing"
-        s_S1_en = 1'b1;
-        s_next_state = S2;
-      end
-    end
-    S2: begin
-      s_S2_en = 1'b1;
-      s_next_state = S3;
-    end
-    S3: begin
-      s_S3_en = 1'b1;
-      s_next_state = S4;
-    end
-    S4: begin
-      s_S4_en = 1'b1;
-      s_next_state = S0_IDLE;
-    end
-    S5: begin
-      s_S5_en = 1'b1;
-      s_next_state = S0_IDLE;
-    end
-    S6: begin
-      s_S6_en = 1'b1;
-      s_next_state = S0_IDLE;
-    end
-    S7: begin
-      s_S7_en = 1'b1;
-      s_next_state = S0_IDLE;
-    end
-    default: begin
-      s_next_state = S0_IDLE;
-    end
-  endcase
+localparam int S1_OFFSET = 0;
+localparam int S2_OFFSET = S1_OFFSET + 1;
+localparam int S3_OFFSET = S2_OFFSET + 1;
+localparam int S4_OFFSET = S3_OFFSET + 1;
+
+// Decode the input valid signals
+logic s_fire;
+assign s_fire = i_valid_anikin & i_valid_force;
+
+assign s_pipe_valid_next = {s_pipe_valid[PIPE_DEPTH-2 : 0], s_fire};
+
+logic s_S1_en, s_S2_en, s_S3_en, s_S4_en;
+assign s_S1_en = s_fire;
+assign s_S2_en = s_pipe_valid[S1_OFFSET]; // todo this naming scheme still doesnt make sense to me
+assign s_S3_en = s_pipe_valid[S2_OFFSET];
+assign s_S4_en = s_pipe_valid[S3_OFFSET];
+
+/**
+ * FSM
+ */
+always_ff @( posedge i_clk ) begin : sp_intmultiplier_FSM
+  if (!i_rst_n) begin
+    s_pipe_valid <= '0;
+  end
+  else begin
+    s_pipe_valid <= s_pipe_valid_next;
+  end
 end
+
 
 //=====================================================================================
 // Stage 1
@@ -233,7 +191,7 @@ always_ff @( posedge i_clk ) begin : stage1a
 `ifdef USE_RADIX4_RECODING
       s_S1_pp_carry_out <= s_pp_carry_out;
 `endif
-      
+
 `ifdef EN_DEBUG_PRINT
   `ifndef USE_RADIX4_RECODING
       debug_num_rows = EX_MAN_BITS_128;
