@@ -128,7 +128,7 @@ logic [PIPE_DEPTH-1 : 0]  s_pipe_valid;
 logic [PIPE_DEPTH-1 : 0]  s_pipe_valid_next;
 
 localparam int S1_OFFSET = 0;
-localparam int S2_OFFSET = S1_OFFSET + 1;
+localparam int S2_OFFSET = 0;
 localparam int S3_OFFSET = S2_OFFSET + 1;
 localparam int S4_OFFSET = S3_OFFSET + 1;
 
@@ -140,9 +140,9 @@ assign s_pipe_valid_next = {s_pipe_valid[PIPE_DEPTH-2 : 0], s_fire};
 
 logic s_S1_en, s_S2_en, s_S3_en, s_S4_en;
 assign s_S1_en = s_fire;
-assign s_S2_en = s_pipe_valid[S1_OFFSET]; // todo this naming scheme still doesnt make sense to me
-assign s_S3_en = s_pipe_valid[S2_OFFSET];
-assign s_S4_en = s_pipe_valid[S3_OFFSET];
+assign s_S2_en = s_pipe_valid[S2_OFFSET]; // todo this naming scheme still doesnt make sense to me
+assign s_S3_en = s_pipe_valid[S3_OFFSET];
+assign s_S4_en = s_pipe_valid[S4_OFFSET];
 
 /**
  * FSM

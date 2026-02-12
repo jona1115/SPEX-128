@@ -213,7 +213,7 @@ float_classifier #() my_float_classifier_0 (
 logic s_S1_en, s_S2_en;
 localparam int PIPE_DEPTH = MODULE_LATENCY;
 localparam int S1_OFFSET = 0;
-localparam int S2_OFFSET = 1;
+localparam int S2_OFFSET = 0;
 logic [PIPE_DEPTH-1 : 0] s_pipe_valid;
 logic [PIPE_DEPTH-1 : 0] s_pipe_valid_next;
 
@@ -223,7 +223,7 @@ assign s_fire = i_valid; // "decodes" the valid bit
 assign s_pipe_valid_next = {s_pipe_valid[PIPE_DEPTH-2 : 0], s_fire};
 
 assign s_S1_en = s_fire;
-assign s_S2_en = s_pipe_valid[S1_OFFSET];
+assign s_S2_en = s_pipe_valid[S2_OFFSET];
 
 /**
  * FSM
@@ -598,6 +598,6 @@ assign o_sanity_identifier      = MODULE_IDENTIFIER;
 assign o_error = s_o_error;
 assign o_debug = s_o_debug;
 
-assign o_valid = s_pipe_valid[S2_OFFSET];
+assign o_valid = s_pipe_valid[PIPE_DEPTH-1];
 
 endmodule // module float_to_fixed #()
