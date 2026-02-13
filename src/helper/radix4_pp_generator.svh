@@ -61,10 +61,10 @@ always_comb begin : radix4_pp_generator
 
     // Compute digit * multiplicand as (N+2)-bit value.
     unique case (s_S1_force_pad[mtpc_i +: 2])
-      2'b00: s_S1_pp_full = '0;
-      2'b01: s_S1_pp_full = {2'b0, s_S1_anikin_masked};
-      2'b10: s_S1_pp_full = {1'b0, s_S1_anikin_masked, 1'b0}; // 2X
-      2'b11: s_S1_pp_full = {1'b0, s_S1_anikin_masked, 1'b0} + {2'b0, s_S1_anikin_masked}; // 3X
+      2'b00: s_S1_pp_full = '0;                                                             // 0
+      2'b01: s_S1_pp_full = {2'b0, s_S1_anikin_masked};                                     // X
+      2'b10: s_S1_pp_full = {1'b0, s_S1_anikin_masked, 1'b0};                               // 2X
+      2'b11: s_S1_pp_full = {1'b0, s_S1_anikin_masked, 1'b0} + {2'b0, s_S1_anikin_masked};  // 3X
       default: s_S1_pp_full = '0;
     endcase
 
