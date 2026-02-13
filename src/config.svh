@@ -22,17 +22,23 @@
 `ifndef CONFIG_SVH
 `define CONFIG_SVH
 
-// This is the master swich for vivado (uncommented) or not vivado (commented)
+/**
+ * This is the master swich for vivado (uncommented) or not vivado (commented)
+ */
 // `define RUNNING_VIVADO_SYNTHESIS
 
 `ifdef RUNNING_VIVADO_SYNTHESIS
-  // Turn this define ON (uncomment) when synthesizing using Vivado, as it only recognize .data binary files
-  // Turn thie design OFF (comment) when simulating using non-Vivado, as the testing infrastructure is set up
-  // to read .hex files.
+  /**
+   * Turn this define ON (uncomment) when synthesizing using Vivado, as it only recognize .data binary files
+   * Turn thie design OFF (comment) when simulating using non-Vivado, as the testing infrastructure is set up
+   * to read .hex files.
+   */
   `define USE_RAM_DATA
 `endif
 
-// Used in fixed_partition_sp.sv and SPEX128_top.sv
+/**
+ * Used in fixed_partition_sp.sv and SPEX128_top.sv
+ */
 `ifdef USE_RAM_DATA
   `define SPEX_RAM_EXT "data"
   `define SPEX_READMEM $readmemb
@@ -55,7 +61,9 @@
   `define HARDWARE_BLOCKOUT
 `endif
 
-// Used in sp_intmultiplier
+/**
+ * Used in sp_intmultiplier
+ */
 // `define EN_DEBUG_PRINT
 `define USE_RADIX4_RECODING
 
