@@ -22,10 +22,15 @@
 `ifndef CONFIG_SVH
 `define CONFIG_SVH
 
-// Turn this define ON (uncomment) when synthesizing using Vivado, as it only recognize .data binary files
-// Turn thie design OFF (comment) when simulating using non-Vivado, as the testing infrastructure is set up
-// to read .hex files.
-// `define USE_RAM_DATA
+// This is the master swich for vivado (uncommented) or not vivado (commented)
+// `define RUNNING_VIVADO_SYNTHESIS
+
+`ifdef RUNNING_VIVADO_SYNTHESIS
+  // Turn this define ON (uncomment) when synthesizing using Vivado, as it only recognize .data binary files
+  // Turn thie design OFF (comment) when simulating using non-Vivado, as the testing infrastructure is set up
+  // to read .hex files.
+  `define USE_RAM_DATA
+`endif
 
 // Used in fixed_partition_sp.sv and SPEX128_top.sv
 `ifdef USE_RAM_DATA
@@ -34,6 +39,20 @@
 `else
   `define SPEX_RAM_EXT "hex"
   `define SPEX_READMEM $readmemh
+`endif
+
+/**
+ * Some parts of fixed_partition_sp is written in a way that make this module highly reusable
+ * whether you want to use 128 reusable LUT or not, and those parts are gated by parameters
+ * which the synthesizer should be smart enough to exclude when compiling, as long as you
+ * set the correct parameter flags. But to be safe this macro gates the compilation of those
+ * parts if needed.
+ * 
+ * When this macro is set, those lines of code will be excluded by the compilation like a c
+ * macro and will not be included in the synthesized hardware, hence "hardware" "blockout".
+ */
+`ifdef RUNNING_VIVADO_SYNTHESIS
+  `define HARDWARE_BLOCKOUT
 `endif
 
 // Used in sp_intmultiplier
