@@ -509,11 +509,11 @@ logic [225:0] s_sp_intmultiplier_jedi;
 logic [3:0]   unused_sp_intmultiplier_sanity_identifier;
 logic [ERROR_SIGNAL_NUM_BITS-1:0] unused_sp_intmultiplier_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] unused_sp_intmultiplier_debug;
-logic [113-1 : 0]                 unused_ds_S1_pp [0 : 57-1];
-logic [6104 : 0]                  unused_ds_S2_S;
-logic [6104 : 0]                  unused_ds_S2_C;
-logic [225 : 0]                   unused_ds_S3_z0;
-logic [225 : 0]                   unused_ds_S3_z1;
+logic [115-1 : 0]                 unused_ds_S1_pp [0 : 58-1];
+logic [6327 : 0]                  unused_ds_S2_S;
+logic [6327 : 0]                  unused_ds_S2_C;
+logic [229 : 0]                   unused_ds_S3_z0;
+logic [229 : 0]                   unused_ds_S3_z1;
 logic [113*2-1:0]                 unused_ds_S4_jedi;
 logic                             unused_ds_S4_valid;
 sp_intmultiplier #(

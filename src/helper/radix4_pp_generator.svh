@@ -1,85 +1,75 @@
-localparam int RADIX4_PP_NBITS = EX_MAN_BITS_128;
+genvar pp_row_g;
+logic [RADIX4_PP_NBITS : 0] s_S1_force_pad;
+assign s_S1_force_pad = {{(RADIX4_PP_NBITS+1-EX_MAN_BITS_128){1'b0}}, i_force};
 
-logic [RADIX4_PP_NBITS+1 : 0] s_S1_pp_full;
-logic [RADIX4_PP_NBITS+1 : 0] s_S1_pp_folded;
-logic [RADIX4_PP_NBITS-1 : 0] s_S1_anikin_masked;
-logic [RADIX4_PP_NBITS-1 : 0] s_S1_carry_add;
-logic [1:0]                   s_S1_carry_out;
+generate
+  for (pp_row_g = 0; pp_row_g < RADIX4_ROWS; pp_row_g++) begin : radix4_pp_row_gen
+    localparam int RADIX4_DIGIT_LSB = pp_row_g * 2;
+    localparam int RADIX4_DIGIT_MSB = (pp_row_g * 2) + 1;
 
-logic [RADIX4_PP_NBITS : 0]   s_S1_force_pad; // pad one MSB to make even number of bits (113 -> 114)
-assign s_S1_force_pad = {1'b0, i_force};
+    logic [1:0]                   s_S1_force_digit_row;
+    logic [RADIX4_PP_NBITS-1 : 0] s_S1_anikin_ext_row;
+    logic [RADIX4_PP_NBITS-1 : 0] s_S1_anikin_masked_row;
+    logic [RADIX4_PP_NBITS : 0]   s_S1_pp_full_row;
 
-int pp_row, mtpc_i; // mtpc == MulTiPliCant
-always_comb begin : radix4_pp_generator
-  // Defaults
-  s_pp           = '{default:'0};
-  s_pp_carry_out = '0;
+    always_comb begin : radix4_pp_row_comb
+      // Defaults
+      s_S1_force_digit_row   = '0;
+      s_S1_anikin_ext_row    = {{(RADIX4_PP_NBITS-EX_MAN_BITS_128){1'b0}}, i_anikin};
+      s_S1_anikin_masked_row = s_S1_anikin_ext_row;
+      s_S1_pp_full_row       = '0;
+      s_pp[pp_row_g]         = '0;
 
-  s_S1_carry_add = '0;
-  s_S1_carry_out = '0;
+      // Force radix-4 digit from zero-extended multiplier bits.
+      s_S1_force_digit_row = s_S1_force_pad[RADIX4_DIGIT_LSB +: 2];
 
-  pp_row = 0;
-  for (mtpc_i = 0; mtpc_i < RADIX4_PP_NBITS+1; mtpc_i += 2) begin
-    // Mask multiplicand to enforce subword-parallel "no cross terms" behavior.
-    // We key lane selection off the MSB index of this radix-4 digit (mtpc_i+1).
-    s_S1_anikin_masked = i_anikin;
-    unique case (i_metadata.sp_mode)
-      SINGLE_MODE: begin
-        // no masking
-      end
-
-      TWO_SP_MODE: begin
-        if ((mtpc_i+1) <= 54) begin
-          s_S1_anikin_masked[RADIX4_PP_NBITS-1:53] = '0;    // keep [52:0]
+      // Mask multiplicand to enforce subword-parallel "no cross terms" behavior.
+      unique case (i_metadata.sp_mode)
+        SINGLE_MODE: begin
+          // no masking
         end
-        else begin
-          s_S1_anikin_masked[54:0] = '0;                    // keep [RADIX4_PP_NBITS-1:55]
+
+        TWO_SP_MODE: begin
+          if (RADIX4_DIGIT_MSB <= 54) begin
+            s_S1_anikin_masked_row[RADIX4_PP_NBITS-1:53] = '0;    // keep [52:0]
+          end
+          else begin
+            s_S1_anikin_masked_row[54:0] = '0;                    // keep [RADIX4_PP_NBITS-1:55]
+          end
         end
-      end
 
-      FOUR_SP_MODE: begin
-        if ((mtpc_i+1) <= 25) begin
-          s_S1_anikin_masked[RADIX4_PP_NBITS-1:24] = '0;    // lane d: [23:0]
+        FOUR_SP_MODE: begin
+          if (RADIX4_DIGIT_MSB <= 25) begin
+            s_S1_anikin_masked_row[RADIX4_PP_NBITS-1:24] = '0;    // lane d: [23:0]
+          end
+          else if (RADIX4_DIGIT_MSB <= 52) begin
+            s_S1_anikin_masked_row[RADIX4_PP_NBITS-1:50] = '0;
+            s_S1_anikin_masked_row[25:0] = '0;                    // lane c: [49:26]
+          end
+          else if (RADIX4_DIGIT_MSB <= 78) begin
+            s_S1_anikin_masked_row[RADIX4_PP_NBITS-1:77] = '0;
+            s_S1_anikin_masked_row[52:0] = '0;                    // lane b: [76:53]
+          end
+          else begin
+            s_S1_anikin_masked_row[RADIX4_PP_NBITS-1:103] = '0;
+            s_S1_anikin_masked_row[78:0] = '0;                    // lane a: [102:79]
+          end
         end
-        else if ((mtpc_i+1) <= 52) begin
-          s_S1_anikin_masked[RADIX4_PP_NBITS-1:50] = '0;
-          s_S1_anikin_masked[25:0] = '0;                    // lane c: [49:26]
+
+        default: begin
         end
-        else if ((mtpc_i+1) <= 78) begin
-          s_S1_anikin_masked[RADIX4_PP_NBITS-1:77] = '0;
-          s_S1_anikin_masked[52:0] = '0;                    // lane b: [76:53]
-        end
-        else begin
-          s_S1_anikin_masked[RADIX4_PP_NBITS-1:103] = '0;
-          s_S1_anikin_masked[78:0] = '0;                    // lane a: [102:79]
-        end
-      end
+      endcase
 
-      default: begin
-      end
-    endcase
+      // Compute one radix-4 partial-product row.
+      unique case (s_S1_force_digit_row)
+        2'b00: s_S1_pp_full_row = '0;                                                               // 0
+        2'b01: s_S1_pp_full_row = {1'b0, s_S1_anikin_masked_row};                                   // X
+        2'b10: s_S1_pp_full_row = {s_S1_anikin_masked_row, 1'b0};                                   // 2X
+        2'b11: s_S1_pp_full_row = {s_S1_anikin_masked_row, 1'b0} + {1'b0, s_S1_anikin_masked_row};  // 3X
+        default: s_S1_pp_full_row = '0;
+      endcase
 
-    // Compute digit * multiplicand as (N+2)-bit value.
-    unique case (s_S1_force_pad[mtpc_i +: 2])
-      2'b00: s_S1_pp_full = '0;                                                             // 0
-      2'b01: s_S1_pp_full = {2'b0, s_S1_anikin_masked};                                     // X
-      2'b10: s_S1_pp_full = {1'b0, s_S1_anikin_masked, 1'b0};                               // 2X
-      2'b11: s_S1_pp_full = {1'b0, s_S1_anikin_masked, 1'b0} + {2'b0, s_S1_anikin_masked};  // 3X
-      default: s_S1_pp_full = '0;
-    endcase
-
-    // Fold any overflow above bit[EX_MAN_BITS_128-1] into subsequent radix-4 rows.
-    s_S1_pp_folded = s_S1_pp_full + {2'b0, s_S1_carry_add};
-
-    s_pp[pp_row]   = s_S1_pp_folded[RADIX4_PP_NBITS-1:0];
-    s_S1_carry_out = s_S1_pp_folded[RADIX4_PP_NBITS+1 : RADIX4_PP_NBITS];
-    s_S1_carry_add = {s_S1_carry_out, {(RADIX4_PP_NBITS-2){1'b0}}}; // shift down by 2 (row spacing is 2 bits)
-
-    pp_row += 1;
+      s_pp[pp_row_g] = s_S1_pp_full_row[RADIX4_PP_NBITS-1 : 0];
+    end
   end
-
-  // Carry bits beyond the last partial-product row.
-  // For EX_MAN_BITS_128=113 and RADIX4_ROWS=57: s_pp_carry_out[0] maps to o_jedi[225], s_pp_carry_out[1] would
-  //                                             map to bit 226 (should be 0).
-  s_pp_carry_out = s_S1_carry_out;
-end // radix4_pp_generator
+endgenerate
