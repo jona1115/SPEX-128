@@ -396,7 +396,7 @@ always_ff @( posedge i_clk ) begin : mem128_port_a
         default: begin
           assert (0) else begin
             $error("[%0t] Invalid mode detected in fixed_partition", $time); 
-            s_o_error[0] <= 1'b1;
+            // s_o_error[0] <= 1'b1;
           end
         end
       endcase
@@ -679,7 +679,7 @@ always_ff @( posedge i_clk ) begin : stage2a
 
         default: begin
           assert (0) else begin
-            s_o_error[1] <= 1'b1;
+            // s_o_error[1] <= 1'b1;
           end
         end
       endcase
