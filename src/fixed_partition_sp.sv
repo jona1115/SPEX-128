@@ -228,13 +228,8 @@ end
 //=====================================================================================
 // Stage 1: Read LUTs (vector registers for BRAM inference)
 //=====================================================================================
-logic [127:0] s_stage1a_exp_a128_bits;
-logic [127:0] s_stage1a_exp_a64a_128_bits;
-logic [127:0] s_stage1a_exp_a64b_128_bits;
 logic [63:0]  s_stage1a_exp_a64a_64_bits;
 logic [63:0]  s_stage1a_exp_a64b_64_bits;
-logic [127:0] s_stage1a_exp_a32a_128_bits;
-logic [127:0] s_stage1a_exp_a32b_128_bits;
 logic [31:0]  s_stage1a_exp_a32a_32_bits;
 logic [31:0]  s_stage1a_exp_a32b_32_bits;
 logic [31:0]  s_stage2a_exp_a32c_32_bits;
@@ -243,6 +238,9 @@ logic [31:0]  s_stage2a_exp_a32d_32_bits;
 /**
  * Stage 1: Reads lane A, i.e., 128/64a/32a
  */
+logic [127:0] s_stage1a_exp_a128_bits;
+logic [127:0] s_stage1a_exp_a64a_128_bits;
+logic [127:0] s_stage1a_exp_a32a_128_bits;
 always_ff @( posedge i_clk ) begin : stage_1_mem128_port_a
   if (!i_rst_n) begin
     s_stage1a_exp_a128_bits   <= '0;
@@ -314,6 +312,8 @@ end // stage_1_mem128_port_a
 /**
  * Stage 1: Reads lane B, i.e., 64b/32b
  */
+logic [127:0] s_stage1a_exp_a64b_128_bits;
+logic [127:0] s_stage1a_exp_a32b_128_bits;
 always_ff @( posedge i_clk ) begin : stage_1_mem128_port_b
   if (!i_rst_n) begin
     s_stage1a_exp_a64b_128_bits <= '0;
@@ -368,16 +368,16 @@ end // stage_1_mem128_port_b
 /**
  * Stage 1b block: Propogate valid bit and metadata bits
  */
-logic             s_stage1b_valid128;
-logic             s_stage1b_valid64a;
-logic             s_stage1b_valid64b;
-logic             s_stage1b_valid32a;
-logic             s_stage1b_valid32b;
-logic             s_stage1b_valid32c;
-logic             s_stage1b_valid32d;
-logic [LANE_BITS_32-1:0] s_stage1b_lane_32c;
-logic [LANE_BITS_32-1:0] s_stage1b_lane_32d;
-float_metadata_t  s_stage1b_metadata;
+logic                     s_stage1b_valid128;
+logic                     s_stage1b_valid64a;
+logic                     s_stage1b_valid64b;
+logic                     s_stage1b_valid32a;
+logic                     s_stage1b_valid32b;
+logic                     s_stage1b_valid32c;
+logic                     s_stage1b_valid32d;
+logic [LANE_BITS_32-1:0]  s_stage1b_lane_32c;
+logic [LANE_BITS_32-1:0]  s_stage1b_lane_32d;
+float_metadata_t          s_stage1b_metadata;
 always_ff @( posedge i_clk ) begin : stage1b
   if (!i_rst_n) begin
     s_stage1b_valid128 <= '0;
@@ -407,15 +407,10 @@ always_ff @( posedge i_clk ) begin : stage1b
   end
 end
 
+
 //=====================================================================================
 // Stage 2
 //=====================================================================================
-binary128_t  s_stage2a_exp_a128;
-binary64_t   s_stage2a_exp_a64a;
-binary64_t   s_stage2a_exp_a64b;
-binary32_t   s_stage2a_exp_a32a;
-binary32_t   s_stage2a_exp_a32b;
-
 /**
  * Stage 2a: This stage reads lane c when sp_mode is FOUR_SP_MODE
  */
@@ -470,30 +465,38 @@ always_ff @( posedge i_clk ) begin : stage2a_reading_lane_d
   end // else begin
 end // stage2a_reading_lane_cd
 
-always_ff @( posedge i_clk ) begin : stage2a
+/**
+ * Stage 2b: ?
+ */
+binary128_t  s_stage2b_exp_a128;
+binary64_t   s_stage2b_exp_a64a;
+binary64_t   s_stage2b_exp_a64b;
+binary32_t   s_stage2b_exp_a32a;
+binary32_t   s_stage2b_exp_a32b;
+always_ff @( posedge i_clk ) begin : stage2b
   if (!i_rst_n) begin
-    s_stage2a_exp_a128   <= '0;
-    s_stage2a_exp_a64a   <= '0;
-    s_stage2a_exp_a64b   <= '0;
-    s_stage2a_exp_a32a   <= '0;
-    s_stage2a_exp_a32b   <= '0;
+    s_stage2b_exp_a128   <= '0;
+    s_stage2b_exp_a64a   <= '0;
+    s_stage2b_exp_a64b   <= '0;
+    s_stage2b_exp_a32a   <= '0;
+    s_stage2b_exp_a32b   <= '0;
   end
   else begin
     if (s_S2_en) begin
       case (s_stage1b_metadata.sp_mode)
         SINGLE_MODE: begin
-          s_stage2a_exp_a128 <= binary128_t'(s_stage1a_exp_a128_bits);
+          s_stage2b_exp_a128 <= binary128_t'(s_stage1a_exp_a128_bits);
         end
 
         TWO_SP_MODE: begin
           if (ENABLE_64) begin
             if (USE_128_FOR_64) begin
-              s_stage2a_exp_a64a <= binary128_to_binary64_rne(binary128_t'(s_stage1a_exp_a64a_128_bits));
-              s_stage2a_exp_a64b <= binary128_to_binary64_rne(binary128_t'(s_stage1a_exp_a64b_128_bits));
+              s_stage2b_exp_a64a <= binary128_to_binary64_rne(binary128_t'(s_stage1a_exp_a64a_128_bits));
+              s_stage2b_exp_a64b <= binary128_to_binary64_rne(binary128_t'(s_stage1a_exp_a64b_128_bits));
             end
             else begin
-              s_stage2a_exp_a64a <= binary64_t'(s_stage1a_exp_a64a_64_bits);
-              s_stage2a_exp_a64b <= binary64_t'(s_stage1a_exp_a64b_64_bits);
+              s_stage2b_exp_a64a <= binary64_t'(s_stage1a_exp_a64a_64_bits);
+              s_stage2b_exp_a64b <= binary64_t'(s_stage1a_exp_a64b_64_bits);
             end
           end
         end
@@ -503,12 +506,12 @@ always_ff @( posedge i_clk ) begin : stage2a
               s_stage1b_valid32a === 1'b1 && s_stage1b_valid32b === 1'b1 &&
               s_stage1b_valid32c === 1'b1 && s_stage1b_valid32d === 1'b1) begin
             if (USE_128_FOR_32) begin
-              s_stage2a_exp_a32a <= binary128_to_binary32_rne(binary128_t'(s_stage1a_exp_a32a_128_bits));
-              s_stage2a_exp_a32b <= binary128_to_binary32_rne(binary128_t'(s_stage1a_exp_a32b_128_bits));
+              s_stage2b_exp_a32a <= binary128_to_binary32_rne(binary128_t'(s_stage1a_exp_a32a_128_bits));
+              s_stage2b_exp_a32b <= binary128_to_binary32_rne(binary128_t'(s_stage1a_exp_a32b_128_bits));
             end
             else begin
-              s_stage2a_exp_a32a <= binary32_t'(s_stage1a_exp_a32a_32_bits);
-              s_stage2a_exp_a32b <= binary32_t'(s_stage1a_exp_a32b_32_bits);
+              s_stage2b_exp_a32a <= binary32_t'(s_stage1a_exp_a32a_32_bits);
+              s_stage2b_exp_a32b <= binary32_t'(s_stage1a_exp_a32b_32_bits);
             end
           end
         end
@@ -524,48 +527,48 @@ always_ff @( posedge i_clk ) begin : stage2a
 end
 
 /**
- * Stage 2b block: Propogate valid bit and metadata bits
+ * Stage 2c block: Propogate valid bit and metadata bits
  */
-logic             s_stage2b_valid128;
-logic             s_stage2b_valid64a;
-logic             s_stage2b_valid64b;
-logic             s_stage2b_valid32a;
-logic             s_stage2b_valid32b;
-logic             s_stage2b_valid32c;
-logic             s_stage2b_valid32d;
-float_metadata_t  s_stage2b_metadata;
-always_ff @( posedge i_clk ) begin : stage2b
+logic             s_stage2c_valid128;
+logic             s_stage2c_valid64a;
+logic             s_stage2c_valid64b;
+logic             s_stage2c_valid32a;
+logic             s_stage2c_valid32b;
+logic             s_stage2c_valid32c;
+logic             s_stage2c_valid32d;
+float_metadata_t  s_stage2c_metadata;
+always_ff @( posedge i_clk ) begin : stage2c
   if (!i_rst_n) begin
-    s_stage2b_valid128 <= '0;
-    s_stage2b_valid64a <= '0;
-    s_stage2b_valid64b <= '0;
-    s_stage2b_valid32a <= '0;
-    s_stage2b_valid32b <= '0;
-    s_stage2b_valid32c <= '0;
-    s_stage2b_valid32d <= '0;
-    s_stage2b_metadata <= '0;
+    s_stage2c_valid128 <= '0;
+    s_stage2c_valid64a <= '0;
+    s_stage2c_valid64b <= '0;
+    s_stage2c_valid32a <= '0;
+    s_stage2c_valid32b <= '0;
+    s_stage2c_valid32c <= '0;
+    s_stage2c_valid32d <= '0;
+    s_stage2c_metadata <= '0;
   end
   else begin
-    s_stage2b_valid128 <= s_stage1b_valid128;
-    s_stage2b_valid64a <= s_stage1b_valid64a;
-    s_stage2b_valid64b <= s_stage1b_valid64b;
-    s_stage2b_valid32a <= s_stage1b_valid32a;
-    s_stage2b_valid32b <= s_stage1b_valid32b;
-    s_stage2b_valid32c <= s_stage1b_valid32c;
-    s_stage2b_valid32d <= s_stage1b_valid32d;
-    s_stage2b_metadata <= s_stage1b_metadata;
+    s_stage2c_valid128 <= s_stage1b_valid128;
+    s_stage2c_valid64a <= s_stage1b_valid64a;
+    s_stage2c_valid64b <= s_stage1b_valid64b;
+    s_stage2c_valid32a <= s_stage1b_valid32a;
+    s_stage2c_valid32b <= s_stage1b_valid32b;
+    s_stage2c_valid32c <= s_stage1b_valid32c;
+    s_stage2c_valid32d <= s_stage1b_valid32d;
+    s_stage2c_metadata <= s_stage1b_metadata;
   end
 end
 
 //=====================================================================================
 // Final assignment
 //=====================================================================================
-assign o_metadata = s_stage2b_metadata;
-assign o_exp_a128 = s_stage2a_exp_a128;
-assign o_exp_a64a = ENABLE_64 ? s_stage2a_exp_a64a : '0;
-assign o_exp_a64b = ENABLE_64 ? s_stage2a_exp_a64b : '0;
-assign o_exp_a32a = ENABLE_32 ? s_stage2a_exp_a32a : '0;
-assign o_exp_a32b = ENABLE_32 ? s_stage2a_exp_a32b : '0;
+assign o_metadata = s_stage2c_metadata;
+assign o_exp_a128 = s_stage2b_exp_a128;
+assign o_exp_a64a = ENABLE_64 ? s_stage2b_exp_a64a : '0;
+assign o_exp_a64b = ENABLE_64 ? s_stage2b_exp_a64b : '0;
+assign o_exp_a32a = ENABLE_32 ? s_stage2b_exp_a32a : '0;
+assign o_exp_a32b = ENABLE_32 ? s_stage2b_exp_a32b : '0;
 
 generate
   if (ENABLE_32 && USE_128_FOR_32) begin : gen_out32_from128
@@ -582,13 +585,13 @@ generate
   end
 endgenerate
 
-assign o_valid128 = s_stage2b_valid128;
-assign o_valid64a = ENABLE_64 ? s_stage2b_valid64a : 1'b0;
-assign o_valid64b = ENABLE_64 ? s_stage2b_valid64b : 1'b0;
-assign o_valid32a = ENABLE_32 ? s_stage2b_valid32a : 1'b0;
-assign o_valid32b = ENABLE_32 ? s_stage2b_valid32b : 1'b0;
-assign o_valid32c = ENABLE_32 ? s_stage2b_valid32c : 1'b0;
-assign o_valid32d = ENABLE_32 ? s_stage2b_valid32d : 1'b0;
+assign o_valid128 = s_stage2c_valid128;
+assign o_valid64a = ENABLE_64 ? s_stage2c_valid64a : 1'b0;
+assign o_valid64b = ENABLE_64 ? s_stage2c_valid64b : 1'b0;
+assign o_valid32a = ENABLE_32 ? s_stage2c_valid32a : 1'b0;
+assign o_valid32b = ENABLE_32 ? s_stage2c_valid32b : 1'b0;
+assign o_valid32c = ENABLE_32 ? s_stage2c_valid32c : 1'b0;
+assign o_valid32d = ENABLE_32 ? s_stage2c_valid32d : 1'b0;
 assign o_sanity_identifier = MODULE_IDENTIFIER;
 assign o_error = s_o_error;
 assign o_debug = s_o_debug;
