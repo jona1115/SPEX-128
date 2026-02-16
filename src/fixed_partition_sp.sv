@@ -502,9 +502,7 @@ always_ff @( posedge i_clk ) begin : stage2b
         end
 
         FOUR_SP_MODE: begin
-          if (ENABLE_32 &&
-              s_stage1b_valid32a === 1'b1 && s_stage1b_valid32b === 1'b1 &&
-              s_stage1b_valid32c === 1'b1 && s_stage1b_valid32d === 1'b1) begin
+          if (ENABLE_32) begin
             if (USE_128_FOR_32) begin
               s_stage2b_exp_a32a <= binary128_to_binary32_rne(binary128_t'(s_stage1a_exp_a32a_128_bits));
               s_stage2b_exp_a32b <= binary128_to_binary32_rne(binary128_t'(s_stage1a_exp_a32b_128_bits));
@@ -527,7 +525,7 @@ always_ff @( posedge i_clk ) begin : stage2b
 end
 
 /**
- * Stage 2c block: Propogate valid bit and metadata bits
+ * Stage 2c: Signals (valid and metadata bits) passthrough
  */
 logic             s_stage2c_valid128;
 logic             s_stage2c_valid64a;
@@ -537,7 +535,7 @@ logic             s_stage2c_valid32b;
 logic             s_stage2c_valid32c;
 logic             s_stage2c_valid32d;
 float_metadata_t  s_stage2c_metadata;
-always_ff @( posedge i_clk ) begin : stage2c
+always_ff @( posedge i_clk ) begin : stage2c_signal_passthrough
   if (!i_rst_n) begin
     s_stage2c_valid128 <= '0;
     s_stage2c_valid64a <= '0;
@@ -560,38 +558,118 @@ always_ff @( posedge i_clk ) begin : stage2c
   end
 end
 
+
+//=====================================================================================
+// Stage 3
+//=====================================================================================
+/**
+ * Stage 3a: Post process 32b lane c and d
+ */
+binary32_t        s_stage3a_exp_a32c;
+binary32_t        s_stage3a_exp_a32d;
+always_ff @( posedge i_clk ) begin : stage3a_lane_cd_processing
+  if (!i_rst_n) begin
+    s_stage3a_exp_a32c    <= '0;
+    s_stage3a_exp_a32d    <= '0;
+  end
+  else begin
+    if (s_S3_en) begin
+      s_stage3a_exp_a32c  <= binary128_to_binary32_rne(binary128_t'(s_stage2a_exp_a32c_128_bits));
+      s_stage3a_exp_a32d  <= binary128_to_binary32_rne(binary128_t'(s_stage2a_exp_a32d_128_bits));
+    end // if (s_S3_en)
+  end // else begin
+end // stage2a_reading_lane_cd
+
+/**
+ * Stage 3b: Signals passthrough
+ */
+logic             s_stage3b_valid128;
+logic             s_stage3b_valid64a;
+logic             s_stage3b_valid64b;
+logic             s_stage3b_valid32a;
+logic             s_stage3b_valid32b;
+logic             s_stage3b_valid32c;
+logic             s_stage3b_valid32d;
+float_metadata_t  s_stage3b_metadata;
+binary128_t       s_stage3b_exp_a128;
+binary64_t        s_stage3b_exp_a64a;
+binary64_t        s_stage3b_exp_a64b;
+binary32_t        s_stage3b_exp_a32a;
+binary32_t        s_stage3b_exp_a32b;
+always_ff @( posedge i_clk ) begin : stage3b_signal_passthrough
+  if (!i_rst_n) begin
+    s_stage3b_valid128  <= '0;
+    s_stage3b_valid64a  <= '0;
+    s_stage3b_valid64b  <= '0;
+    s_stage3b_valid32a  <= '0;
+    s_stage3b_valid32b  <= '0;
+    s_stage3b_valid32c  <= '0;
+    s_stage3b_valid32d  <= '0;
+    s_stage3b_metadata  <= '0;
+
+    s_stage3b_exp_a128  <= '0;
+    s_stage3b_exp_a64a  <= '0;
+    s_stage3b_exp_a64b  <= '0;
+    s_stage3b_exp_a32a  <= '0;
+    s_stage3b_exp_a32b  <= '0;
+  end
+  else begin
+    if (s_S3_en) begin
+      s_stage3b_valid128  <= s_stage2c_valid128;
+      s_stage3b_valid64a  <= s_stage2c_valid64a;
+      s_stage3b_valid64b  <= s_stage2c_valid64b;
+      s_stage3b_valid32a  <= s_stage2c_valid32a;
+      s_stage3b_valid32b  <= s_stage2c_valid32b;
+      s_stage3b_valid32c  <= s_stage2c_valid32c;
+      s_stage3b_valid32d  <= s_stage2c_valid32d;
+      s_stage3b_metadata  <= s_stage2c_metadata;
+
+      s_stage3b_exp_a128  <= s_stage2b_exp_a128;
+      s_stage3b_exp_a64a  <= s_stage2b_exp_a64a;
+      s_stage3b_exp_a64b  <= s_stage2b_exp_a64b;
+      s_stage3b_exp_a32a  <= s_stage2b_exp_a32a;
+      s_stage3b_exp_a32b  <= s_stage2b_exp_a32b;
+    end // if (s_S3_en)
+    else begin
+      s_stage3b_valid128  <= '0;
+      s_stage3b_valid64a  <= '0;
+      s_stage3b_valid64b  <= '0;
+      s_stage3b_valid32a  <= '0;
+      s_stage3b_valid32b  <= '0;
+      s_stage3b_valid32c  <= '0;
+      s_stage3b_valid32d  <= '0;
+      s_stage3b_metadata  <= '0;
+
+      s_stage3b_exp_a128  <= '0;
+      s_stage3b_exp_a64a  <= '0;
+      s_stage3b_exp_a64b  <= '0;
+      s_stage3b_exp_a32a  <= '0;
+      s_stage3b_exp_a32b  <= '0;
+    end // else begin
+  end // else begin
+end // stage2a_reading_lane_cd
+
+
 //=====================================================================================
 // Final assignment
 //=====================================================================================
 assign o_metadata = s_stage2c_metadata;
-assign o_exp_a128 = s_stage2b_exp_a128;
-assign o_exp_a64a = ENABLE_64 ? s_stage2b_exp_a64a : '0;
-assign o_exp_a64b = ENABLE_64 ? s_stage2b_exp_a64b : '0;
-assign o_exp_a32a = ENABLE_32 ? s_stage2b_exp_a32a : '0;
-assign o_exp_a32b = ENABLE_32 ? s_stage2b_exp_a32b : '0;
+assign o_exp_a128 = s_stage3b_exp_a128;
+assign o_exp_a64a = ENABLE_64 ? s_stage3b_exp_a64a : '0;
+assign o_exp_a64b = ENABLE_64 ? s_stage3b_exp_a64b : '0;
+assign o_exp_a32a = ENABLE_32 ? s_stage3b_exp_a32a : '0;
+assign o_exp_a32b = ENABLE_32 ? s_stage3b_exp_a32b : '0;
+assign o_exp_a32c = ENABLE_32 ? s_stage3a_exp_a32c : '0;
+assign o_exp_a32d = ENABLE_32 ? s_stage3a_exp_a32d : '0;
 
-generate
-  if (ENABLE_32 && USE_128_FOR_32) begin : gen_out32_from128
-    assign o_exp_a32c = binary128_to_binary32_rne(binary128_t'(s_stage2a_exp_a32c_128_bits));
-    assign o_exp_a32d = binary128_to_binary32_rne(binary128_t'(s_stage2a_exp_a32d_128_bits));
-  end
-  else if (ENABLE_32) begin : gen_out32_from32
-    assign o_exp_a32c = binary32_t'(s_stage2a_exp_a32c_32_bits);
-    assign o_exp_a32d = binary32_t'(s_stage2a_exp_a32d_32_bits);
-  end
-  else begin : gen_out32_zero
-    assign o_exp_a32c = '0;
-    assign o_exp_a32d = '0;
-  end
-endgenerate
+assign o_valid128 = s_stage3b_valid128;
+assign o_valid64a = ENABLE_64 ? s_stage3b_valid64a : 1'b0;
+assign o_valid64b = ENABLE_64 ? s_stage3b_valid64b : 1'b0;
+assign o_valid32a = ENABLE_32 ? s_stage3b_valid32a : 1'b0;
+assign o_valid32b = ENABLE_32 ? s_stage3b_valid32b : 1'b0;
+assign o_valid32c = ENABLE_32 ? s_stage3b_valid32c : 1'b0;
+assign o_valid32d = ENABLE_32 ? s_stage3b_valid32d : 1'b0;
 
-assign o_valid128 = s_stage2c_valid128;
-assign o_valid64a = ENABLE_64 ? s_stage2c_valid64a : 1'b0;
-assign o_valid64b = ENABLE_64 ? s_stage2c_valid64b : 1'b0;
-assign o_valid32a = ENABLE_32 ? s_stage2c_valid32a : 1'b0;
-assign o_valid32b = ENABLE_32 ? s_stage2c_valid32b : 1'b0;
-assign o_valid32c = ENABLE_32 ? s_stage2c_valid32c : 1'b0;
-assign o_valid32d = ENABLE_32 ? s_stage2c_valid32d : 1'b0;
 assign o_sanity_identifier = MODULE_IDENTIFIER;
 assign o_error = s_o_error;
 assign o_debug = s_o_debug;
