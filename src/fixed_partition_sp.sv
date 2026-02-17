@@ -473,6 +473,8 @@ binary64_t   s_stage2b_exp_a64a;
 binary64_t   s_stage2b_exp_a64b;
 binary32_t   s_stage2b_exp_a32a;
 binary32_t   s_stage2b_exp_a32b;
+binary128_to_binary64_rne_p1_t s_stage2b_exp_a64a_p1;
+binary128_to_binary64_rne_p1_t s_stage2b_exp_a64b_p1;
 binary128_to_binary32_rne_p1_t s_stage2b_exp_a32a_p1;
 binary128_to_binary32_rne_p1_t s_stage2b_exp_a32b_p1;
 always_ff @( posedge i_clk ) begin : stage2b
@@ -482,6 +484,8 @@ always_ff @( posedge i_clk ) begin : stage2b
     s_stage2b_exp_a64b   <= '0;
     s_stage2b_exp_a32a   <= '0;
     s_stage2b_exp_a32b   <= '0;
+    s_stage2b_exp_a64a_p1 <= '0;
+    s_stage2b_exp_a64b_p1 <= '0;
     s_stage2b_exp_a32a_p1 <= '0;
     s_stage2b_exp_a32b_p1 <= '0;
   end
@@ -495,12 +499,16 @@ always_ff @( posedge i_clk ) begin : stage2b
         TWO_SP_MODE: begin
           if (ENABLE_64) begin
             if (USE_128_FOR_64) begin
-              s_stage2b_exp_a64a <= binary128_to_binary64_rne(binary128_t'(s_stage1a_exp_a64a_128_bits));
-              s_stage2b_exp_a64b <= binary128_to_binary64_rne(binary128_t'(s_stage1a_exp_a64b_128_bits));
+              s_stage2b_exp_a64a_p1 <= binary128_to_binary64_rne_part1(binary128_t'(s_stage1a_exp_a64a_128_bits));
+              s_stage2b_exp_a64b_p1 <= binary128_to_binary64_rne_part1(binary128_t'(s_stage1a_exp_a64b_128_bits));
+              s_stage2b_exp_a64a <= '0;
+              s_stage2b_exp_a64b <= '0;
             end
             else begin
               s_stage2b_exp_a64a <= binary64_t'(s_stage1a_exp_a64a_64_bits);
               s_stage2b_exp_a64b <= binary64_t'(s_stage1a_exp_a64b_64_bits);
+              s_stage2b_exp_a64a_p1 <= '0;
+              s_stage2b_exp_a64b_p1 <= '0;
             end
           end
         end
@@ -618,8 +626,14 @@ always_ff @( posedge i_clk ) begin : stage3b_signal_passthrough
       s_stage3b_metadata  <= s_stage2c_metadata;
 
       s_stage3b_exp_a128  <= s_stage2b_exp_a128;
-      s_stage3b_exp_a64a  <= s_stage2b_exp_a64a;
-      s_stage3b_exp_a64b  <= s_stage2b_exp_a64b;
+      if (ENABLE_64 && USE_128_FOR_64 && s_stage2c_metadata.sp_mode == TWO_SP_MODE) begin
+        s_stage3b_exp_a64a <= binary128_to_binary64_rne_part2(s_stage2b_exp_a64a_p1);
+        s_stage3b_exp_a64b <= binary128_to_binary64_rne_part2(s_stage2b_exp_a64b_p1);
+      end
+      else begin
+        s_stage3b_exp_a64a <= s_stage2b_exp_a64a;
+        s_stage3b_exp_a64b <= s_stage2b_exp_a64b;
+      end
       if (ENABLE_32 && USE_128_FOR_32 && s_stage2c_metadata.sp_mode == FOUR_SP_MODE) begin
         s_stage3b_exp_a32a <= binary128_to_binary32_rne_part2(s_stage2b_exp_a32a_p1);
         s_stage3b_exp_a32b <= binary128_to_binary32_rne_part2(s_stage2b_exp_a32b_p1);
