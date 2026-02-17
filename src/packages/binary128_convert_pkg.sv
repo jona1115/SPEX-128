@@ -12,10 +12,16 @@
  *******************************************************************/
 
 package binary128_convert_pkg;
-
+  import float_flag_pkg::*;
+  import sp_mode_pkg::*;
+  import float_metadata_pkg::*;
   import binary128_pkg::*;
   import binary64_pkg::*;
   import binary32_pkg::*;
+  import fixed128_pkg::*;
+  import fixed64_pkg::*;
+  import fixed32_pkg::*;
+  import unbiasing_pkg::*;
 
   /**
    * This is a huristics approach.
@@ -40,6 +46,9 @@ package binary128_convert_pkg;
     logic MAN128_G;
     logic MAN128_R;
     logic MAN128_S;
+
+    sh_t shift_amount_128;
+    logic [10 : 0] shift_amount_64;
 
     in = binary128_t'(in_bits);
 
@@ -111,13 +120,9 @@ package binary128_convert_pkg;
         end
       end
 
-      /**
-       * Round the mantissa using huristics
-       */
-      // I realized that the lower 8 bits in 64b.exp is always the same as the lower 8 bits in 128.exp
-      out.exp[7:0] = in.exp[7:0];
-      // And the top 3 bits is always 128.exp[14:12] + 128.exp[11:8]
-      out.exp[10:8] = in.exp[14:12] + in.exp[11:8];
+      shift_amount_128 = unbias_q128(in.exp);
+      shift_amount_64  = rebias_q64(shift_amount_128);
+      out.exp          = shift_amount_64;
 
       /**
        * Assign sign bit

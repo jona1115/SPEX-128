@@ -20,4 +20,8 @@ package unbiasing_pkg;
                           : sh_t'($signed({8'b0, exp}) - 16'sd127);
   endfunction
 
+  function automatic logic [10:0] rebias_q64 (input sh_t exp_unbiased);
+    return logic'($signed(exp_unbiased) + 16'sd1023);
+  endfunction
+
 endpackage
