@@ -1,244 +1,241 @@
 /********************************************************************
- *
- * Originator   : Jonathan Tan
+ * 
+ * Originator   : Jonathan Tan feat. ChatGPT 5.2 Codex
  * Date         : 01/11/2026
- *
+ * 
  ********************************************************************
- *
+ * 
  * Description:
  * Helpers to convert IEEE-754 binary128 to binary64/binary32 with
- * round-to-nearest, ties-to-even (RNE).
- *
+ * round-to-nearest, ties-to-even (G/R/S bits).
+ * 
+ ********************************************************************
+ * 
+ * Modification history:
+ *       Ver   |  Who       |  Date	       |  Changes
+ *     ------- + ---------- + ------------ + --------------------------
+ *       1.00  |  Jonathan  |  01/11/2026  |  Birth of this file
+ * 
  *******************************************************************/
 
 package binary128_convert_pkg;
-  import float_flag_pkg::*;
-  import sp_mode_pkg::*;
-  import float_metadata_pkg::*;
+
   import binary128_pkg::*;
   import binary64_pkg::*;
   import binary32_pkg::*;
-  import fixed128_pkg::*;
-  import fixed64_pkg::*;
-  import fixed32_pkg::*;
-  import unbiasing_pkg::*;
 
-  /**
-   * This is a huristics approach.
-   * 
-   * The mantissa is rounded using RNE
-   * The exponent is rounded using huristics
-   * 
-   */
-  function automatic binary64_t binary128_to_binary64_rne(input logic [127:0] in_bits);
-    binary128_t in;
-    binary64_t  temp_out;
-    binary64_t  out;
+  localparam int BIAS_128 = 16383;
+  localparam int BIAS_64  = 1023;
+  localparam int BIAS_32  = 127;
 
-    logic is_exp_all_ones;
-    logic is_exp_zero;
-    logic is_frac_zero;
-    logic is_nan;
-    logic is_inf;
-    logic is_zero;
-
-    logic MAN64_LSB;
-    logic MAN128_G;
-    logic MAN128_R;
-    logic MAN128_S;
-
-    sh_t shift_amount_128;
-    logic [10 : 0] shift_amount_64;
-
-    in = binary128_t'(in_bits);
-
-    is_exp_all_ones = &in.exp;
-    is_exp_zero     = ~|in.exp;
-    is_frac_zero    = ~|in.mantissa;
-    is_nan          = is_exp_all_ones && !is_frac_zero;
-    is_inf          = is_exp_all_ones && is_frac_zero;
-    is_zero         = is_exp_zero && is_frac_zero;
-
-    // Initialize
-    out = '0;
-
-    // Handle IEEE-754 special types early.
-    if (is_nan) begin
-      out.sign     = in.sign;
-      out.exp      = 11'h7ff;
-      out.mantissa = {1'b1, in.mantissa[111:61]};
-    end
-    else if (is_inf) begin
-      out.sign     = in.sign;
-      out.exp      = 11'h7ff;
-      out.mantissa = '0;
-    end
-    else if (is_zero) begin
-      out.sign     = in.sign;
-      out.exp      = '0;
-      out.mantissa = '0;
-    end
-    else begin
-      // Map 128 directly by truncation
-      temp_out.sign      = in.sign;
-      temp_out.exp       = in.exp;
-      temp_out.mantissa  = in.mantissa[111:60];
-
-      MAN64_LSB          = temp_out.mantissa[0];
-      MAN128_G           = in.mantissa[59];
-      MAN128_R           = in.mantissa[58];
-      MAN128_S           = |in.mantissa[57:0]; // OR tree
-
-      /**
-       * Round the mantissa using RNE
-       */
-      if (MAN128_G === 1'b0) begin
-        // Truncate
-        out = temp_out;
-      end // G=0
-      else begin // G=1
-        if (MAN128_R === 1'b1 || MAN128_S === 1'b1) begin
-          // Round up
-          out = temp_out + 1'b1;
-        end
-        else if (MAN128_R === 1'b0 || MAN128_S === 1'b0) begin
-          // Even case
-          if (MAN64_LSB === 1'b1) begin
-            // Round up
-            out = temp_out + 1'b1;
-          end
-          else begin
-            // Truncate
-            out = temp_out;
-          end
+  function automatic int unsigned lzc_113(input logic [112:0] in);
+    int unsigned count;
+    bit found;
+    count = 0;
+    found = 1'b0;
+    for (int i = 112; i >= 0; i--) begin
+      if (!found) begin
+        if (in[i]) begin
+          found = 1'b1;
         end
         else begin
-          // this shouldn't logically happen, right?
-          assert (0) else begin
-            $error("Illegal case in binary128_convert_pkg.sv:binary128_to_binary64_rne");
-          end
+          count++;
         end
       end
+    end
+    return count;
+  endfunction
 
-      shift_amount_128 = unbias_q128(in.exp);
-      shift_amount_64  = rebias_q64(shift_amount_128);
-      out.exp          = shift_amount_64;
+  function automatic binary64_t binary128_to_binary64_rne(input logic [127:0] in_bits);
+    localparam int E_MAX_64 = 1023;
+    localparam int E_MIN_64 = -1022;
+    binary64_t out;
+    binary128_t in;
+    logic [112:0] full_sig;
+    logic [112:0] sig_norm;
+    logic [112:0] sig_shifted;
+    logic [52:0] keep;
+    logic G;
+    logic R;
+    logic S;
+    logic round_inc;
+    logic [53:0] rounded;
+    int unsigned lz;
+    int signed exp_unbiased;
+    int signed exp_norm;
+    int signed exp_out;
+    int unsigned shift_sub;
 
-      /**
-       * Assign sign bit
-       */
+    out = '0;
+    in = binary128_t'(in_bits);
+
+    if (in.exp == 15'h7fff) begin
       out.sign = in.sign;
+      out.exp = 11'h7ff;
+      if (in.mantissa == '0) begin
+        out.mantissa = '0;
+      end
+      else begin
+        out.mantissa = {1'b1, in.mantissa[111 -: 51]};
+      end
+      return out;
     end
 
-    /**
-     * Prepare output
-     */
-    binary128_to_binary64_rne = out;
+    if (in.exp == 15'd0 && in.mantissa == '0) begin
+      out.sign = in.sign;
+      out.exp = '0;
+      out.mantissa = '0;
+      return out;
+    end
+
+    exp_unbiased = (in.exp == 15'd0) ? (1 - BIAS_128) : ($signed({1'b0, in.exp}) - BIAS_128);
+    full_sig = {(in.exp == 15'd0) ? 1'b0 : 1'b1, in.mantissa};
+    lz = lzc_113(full_sig);
+    sig_norm = full_sig << lz;
+    exp_norm = exp_unbiased - $signed(lz);
+
+    if (exp_norm > E_MAX_64) begin
+      out.sign = in.sign;
+      out.exp = 11'h7ff;
+      out.mantissa = '0;
+      return out;
+    end
+
+    shift_sub = (exp_norm < E_MIN_64) ? (E_MIN_64 - exp_norm) : 0;
+    sig_shifted = sig_norm >> shift_sub;
+
+    keep = sig_shifted[112 -: 53];
+    G = sig_shifted[112-53];
+    R = sig_shifted[112-54];
+    S = |sig_shifted[112-55:0];
+    round_inc = G && (R || S || keep[0]);
+    rounded = {1'b0, keep} + round_inc;
+
+    out.sign = in.sign;
+    if (shift_sub == 0) begin
+      exp_out = exp_norm + (rounded[53] ? 1 : 0);
+      if (exp_out > E_MAX_64) begin
+        out.exp = 11'h7ff;
+        out.mantissa = '0;
+      end
+      else begin
+        out.exp = exp_out + BIAS_64;
+        if (rounded[53]) begin
+          out.mantissa = rounded[52:1];
+        end
+        else begin
+          out.mantissa = rounded[51:0];
+        end
+      end
+    end
+    else begin
+      if (rounded[53] || rounded[52]) begin
+        out.exp = 11'd1;
+        out.mantissa = '0;
+      end
+      else begin
+        out.exp = '0;
+        out.mantissa = rounded[51:0];
+      end
+    end
+
+    return out;
   endfunction
 
   function automatic binary32_t binary128_to_binary32_rne(input logic [127:0] in_bits);
+    localparam int E_MAX_32 = 127;
+    localparam int E_MIN_32 = -126;
+    binary32_t out;
     binary128_t in;
-    binary32_t  temp_out;
-    binary32_t  out;
+    logic [112:0] full_sig;
+    logic [112:0] sig_norm;
+    logic [112:0] sig_shifted;
+    logic [23:0] keep;
+    logic G;
+    logic R;
+    logic S;
+    logic round_inc;
+    logic [24:0] rounded;
+    int unsigned lz;
+    int signed exp_unbiased;
+    int signed exp_norm;
+    int signed exp_out;
+    int unsigned shift_sub;
 
-    logic is_exp_all_ones;
-    logic is_exp_zero;
-    logic is_frac_zero;
-    logic is_nan;
-    logic is_inf;
-    logic is_zero;
-
-    logic MAN32_LSB;
-    logic MAN128_G;
-    logic MAN128_R;
-    logic MAN128_S;
-
+    out = '0;
     in = binary128_t'(in_bits);
 
-    is_exp_all_ones = &in.exp;
-    is_exp_zero     = ~|in.exp;
-    is_frac_zero    = ~|in.mantissa;
-    is_nan          = is_exp_all_ones && !is_frac_zero;
-    is_inf          = is_exp_all_ones && is_frac_zero;
-    is_zero         = is_exp_zero && is_frac_zero;
-
-    // Initialize
-    out = '0;
-
-    // Handle IEEE-754 special types early.
-    if (is_nan) begin
-      out.sign     = in.sign;
-      out.exp      = 8'hff;
-      out.mantissa = {1'b1, in.mantissa[111:90]};
+    if (in.exp == 15'h7fff) begin
+      out.sign = in.sign;
+      out.exp = 8'hff;
+      if (in.mantissa == '0) begin
+        out.mantissa = '0;
+      end
+      else begin
+        out.mantissa = {1'b1, in.mantissa[111 -: 22]};
+      end
+      return out;
     end
-    else if (is_inf) begin
-      out.sign     = in.sign;
-      out.exp      = 8'hff;
+
+    if (in.exp == 15'd0 && in.mantissa == '0) begin
+      out.sign = in.sign;
+      out.exp = '0;
       out.mantissa = '0;
+      return out;
     end
-    else if (is_zero) begin
-      out.sign     = in.sign;
-      out.exp      = '0;
+
+    exp_unbiased = (in.exp == 15'd0) ? (1 - BIAS_128) : ($signed({1'b0, in.exp}) - BIAS_128);
+    full_sig = {(in.exp == 15'd0) ? 1'b0 : 1'b1, in.mantissa};
+    lz = lzc_113(full_sig);
+    sig_norm = full_sig << lz;
+    exp_norm = exp_unbiased - $signed(lz);
+
+    if (exp_norm > E_MAX_32) begin
+      out.sign = in.sign;
+      out.exp = 8'hff;
       out.mantissa = '0;
+      return out;
     end
-    else begin
-      // Map 128 directly by truncation
-      temp_out.sign      = in.sign;
-      temp_out.exp       = in.exp[7:0];
-      temp_out.mantissa  = in.mantissa[111:89];
 
-      MAN32_LSB          = temp_out.mantissa[0];
-      MAN128_G           = in.mantissa[88];
-      MAN128_R           = in.mantissa[87];
-      MAN128_S           = |in.mantissa[86:0]; // OR tree
+    shift_sub = (exp_norm < E_MIN_32) ? (E_MIN_32 - exp_norm) : 0;
+    sig_shifted = sig_norm >> shift_sub;
 
-      /**
-       * Round the mantissa using RNE
-       */
-      if (MAN128_G === 1'b0) begin
-        // Truncate
-        out = temp_out;
-      end // G=0
-      else begin // G=1
-        if (MAN128_R === 1'b1 || MAN128_S === 1'b1) begin
-          // Round up
-          out = temp_out + 1'b1;
-        end
-        else if (MAN128_R === 1'b0 || MAN128_S === 1'b0) begin
-          // Even case
-          if (MAN32_LSB === 1'b1) begin
-            // Round up
-            out = temp_out + 1'b1;
-          end
-          else begin
-            // Truncate
-            out = temp_out;
-          end
+    keep = sig_shifted[112 -: 24];
+    G = sig_shifted[112-24];
+    R = sig_shifted[112-25];
+    S = |sig_shifted[112-26:0];
+    round_inc = G && (R || S || keep[0]);
+    rounded = {1'b0, keep} + round_inc;
+
+    out.sign = in.sign;
+    if (shift_sub == 0) begin
+      exp_out = exp_norm + (rounded[24] ? 1 : 0);
+      if (exp_out > E_MAX_32) begin
+        out.exp = 8'hff;
+        out.mantissa = '0;
+      end
+      else begin
+        out.exp = exp_out + BIAS_32;
+        if (rounded[24]) begin
+          out.mantissa = rounded[23:1];
         end
         else begin
-          // this shouldn't logically happen, right?
-          assert (0) else begin
-            $error("Illegal case in binary128_convert_pkg.sv:binary128_to_binary32_rne");
-          end
+          out.mantissa = rounded[22:0];
         end
       end
-
-      /**
-       * Round the mantissa using huristics
-       */
-      // I realized that the lower 8 bits in 32b.exp is always the same as the lower 8 bits in 128.exp
-      out.exp[7:0] = in.exp[7:0];
-
-      /**
-       * Assign sign bit
-       */
-      out.sign = in.sign;
+    end
+    else begin
+      if (rounded[24] || rounded[23]) begin
+        out.exp = 8'd1;
+        out.mantissa = '0;
+      end
+      else begin
+        out.exp = '0;
+        out.mantissa = rounded[22:0];
+      end
     end
 
-    /**
-     * Prepare output
-     */
-    binary128_to_binary32_rne = out;
+    return out;
   endfunction
 
 endpackage : binary128_convert_pkg
