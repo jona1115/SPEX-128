@@ -466,7 +466,7 @@ always_ff @( posedge i_clk ) begin : stage2a_reading_lane_d
 end // stage2a_reading_lane_cd
 
 /**
- * Stage 2b: ?
+ * Stage 2b: Convert 128 to 64 or 32
  */
 binary128_t  s_stage2b_exp_a128;
 binary64_t   s_stage2b_exp_a64a;
