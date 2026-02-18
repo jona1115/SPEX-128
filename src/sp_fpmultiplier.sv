@@ -282,7 +282,6 @@ float_classifier #() my_float_classifier_force (
 logic s_S1_en, s_S2_en, s_S3_en, s_S4_en, s_S5_en, s_S6_en, s_S7_en;
 logic s_fire;
 localparam int MUL_START_OFFSET = 0;
-localparam int S1_OFFSET = 0;
 localparam int S2_OFFSET = MUL_START_OFFSET + INTMUL_LATENCY; // s_pipe_valid[4]
 localparam int S3_OFFSET = S2_OFFSET + 1;                     // s_pipe_valid[5]
 localparam int S4_OFFSET = S3_OFFSET + 1;                     // s_pipe_valid[6]

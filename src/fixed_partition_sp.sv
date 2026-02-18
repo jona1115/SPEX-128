@@ -193,7 +193,6 @@ localparam int PIPE_DEPTH = (MODULE_LATENCY_32 < 3) ? 3 : MODULE_LATENCY_32;
 logic [PIPE_DEPTH-1 : 0]  s_pipe_valid;
 logic [PIPE_DEPTH-1 : 0]  s_pipe_valid_next;
 
-localparam int S1_OFFSET = 0;
 localparam int S2_OFFSET = 0;
 localparam int S3_OFFSET = S2_OFFSET + 1;
 localparam int S4_OFFSET = S3_OFFSET + 1;

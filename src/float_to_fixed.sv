@@ -212,7 +212,6 @@ float_classifier #() my_float_classifier_0 (
  */
 logic s_S1_en, s_S2_en;
 localparam int PIPE_DEPTH = MODULE_LATENCY;
-localparam int S1_OFFSET = 0;
 localparam int S2_OFFSET = 0;
 logic [PIPE_DEPTH-1 : 0] s_pipe_valid;
 logic [PIPE_DEPTH-1 : 0] s_pipe_valid_next;
