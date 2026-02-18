@@ -564,7 +564,7 @@ always_ff @( posedge i_clk ) begin : stage2c_signal_passthrough
     s_S2c_metadata <= '0;
   end
   else begin
-    if (s_S3_en) begin
+    if (s_S2_en) begin
       s_S2c_valid128 <= s_S1b_valid128;
       s_S2c_valid64a <= s_S1b_valid64a;
       s_S2c_valid64b <= s_S1b_valid64b;
@@ -573,9 +573,16 @@ always_ff @( posedge i_clk ) begin : stage2c_signal_passthrough
       s_S2c_valid32c <= s_S1b_valid32c;
       s_S2c_valid32d <= s_S1b_valid32d;
       s_S2c_metadata <= s_S1b_metadata;
-    end // if (s_S3_en)
+    end // if (s_S2_en)
     else begin
       s_S2c_valid128 <= '0;
+      s_S2c_valid64a <= '0;
+      s_S2c_valid64b <= '0;
+      s_S2c_valid32a <= '0;
+      s_S2c_valid32b <= '0;
+      s_S2c_valid32c <= '0;
+      s_S2c_valid32d <= '0;
+      s_S2c_metadata <= '0;
     end
   end // else begin
 end // stage2c_signal_passthrough
