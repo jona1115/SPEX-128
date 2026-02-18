@@ -199,9 +199,9 @@ localparam int S4_OFFSET = S3_OFFSET + 1;
 
 // Decode the input valid signals
 logic s_fire;
-assign s_fire = i_metadata.sp_mode === SINGLE_MODE  ? i_valid128 :
-                i_metadata.sp_mode === TWO_SP_MODE  ? (i_valid64a & i_valid64b) :
-                i_metadata.sp_mode === FOUR_SP_MODE ? (i_valid32a & i_valid32b & i_valid32c & i_valid32d) :
+assign s_fire = i_metadata.sp_mode == SINGLE_MODE  ? i_valid128 :
+                i_metadata.sp_mode == TWO_SP_MODE  ? (i_valid64a & i_valid64b) :
+                i_metadata.sp_mode == FOUR_SP_MODE ? (i_valid32a & i_valid32b & i_valid32c & i_valid32d) :
                 '0;
 
 assign s_pipe_valid_next = {s_pipe_valid[PIPE_DEPTH-2 : 0], s_fire};
@@ -745,7 +745,9 @@ end
 //=====================================================================================
 // Final assignment
 //=====================================================================================
-assign o_metadata = s_S4_any_valid32 ? s_S4_metadata : s_S3b_metadata;
+assign o_metadata = (s_S2c_metadata.sp_mode === SINGLE_MODE) ? s_S2c_metadata : 
+                    (s_S3b_metadata.sp_mode === TWO_SP_MODE) ? s_S3b_metadata :
+                    s_S4_metadata;
 assign o_exp_a128 = s_S2b_exp_a128;
 assign o_exp_a64a = ENABLE_64 ? s_S3b_exp_a64a : '0;
 assign o_exp_a64b = ENABLE_64 ? s_S3b_exp_a64b : '0;
