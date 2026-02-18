@@ -286,7 +286,7 @@ localparam int S2_OFFSET = MUL_START_OFFSET + INTMUL_LATENCY; // s_pipe_valid[4]
 localparam int S3_OFFSET = S2_OFFSET + 1;                     // s_pipe_valid[5]
 localparam int S4_OFFSET = S3_OFFSET + 1;                     // s_pipe_valid[6]
 localparam int S5_OFFSET = S4_OFFSET + 1;                     // s_pipe_valid[7]
-localparam int PIPE_DEPTH = S5_OFFSET + 1; // 9
+localparam int PIPE_DEPTH = S5_OFFSET + 1; // 8
 logic [PIPE_DEPTH-1:0] s_pipe_valid;
 logic [PIPE_DEPTH-1:0] s_pipe_valid_next;
 logic s_mul_start;
