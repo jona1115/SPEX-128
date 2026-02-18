@@ -38,9 +38,9 @@ add wave -noupdate -label s_shift_amount_c /testrunner/__float_to_fixed_correctn
 add wave -noupdate -label s_shift_amount_d /testrunner/__float_to_fixed_correctness_ts_ts/float_to_fixed_correctness_ut/my_float_to_fixed/s_shift_amount_d
 add wave -noupdate -label s_current_sp /testrunner/__float_to_fixed_correctness_ts_ts/float_to_fixed_correctness_ut/my_float_to_fixed/s_current_sp
 add wave -noupdate -divider {New Divider}
-add wave -noupdate -label s_stage1_en /testrunner/__float_to_fixed_correctness_ts_ts/float_to_fixed_correctness_ut/my_float_to_fixed/s_stage1_en
-add wave -noupdate -label s_stage2_en /testrunner/__float_to_fixed_correctness_ts_ts/float_to_fixed_correctness_ut/my_float_to_fixed/s_stage2_en
-add wave -noupdate -label s_stage3_en /testrunner/__float_to_fixed_correctness_ts_ts/float_to_fixed_correctness_ut/my_float_to_fixed/s_stage3_en
+add wave -noupdate -label s_S1_en /testrunner/__float_to_fixed_correctness_ts_ts/float_to_fixed_correctness_ut/my_float_to_fixed/s_S1_en
+add wave -noupdate -label s_S2_en /testrunner/__float_to_fixed_correctness_ts_ts/float_to_fixed_correctness_ut/my_float_to_fixed/s_S2_en
+add wave -noupdate -label s_S3_en /testrunner/__float_to_fixed_correctness_ts_ts/float_to_fixed_correctness_ut/my_float_to_fixed/s_S3_en
 add wave -noupdate -label s_curr_state /testrunner/__float_to_fixed_correctness_ts_ts/float_to_fixed_correctness_ut/my_float_to_fixed/s_curr_state
 add wave -noupdate -label s_next_state /testrunner/__float_to_fixed_correctness_ts_ts/float_to_fixed_correctness_ut/my_float_to_fixed/s_next_state
 add wave -noupdate -divider {New Divider}
