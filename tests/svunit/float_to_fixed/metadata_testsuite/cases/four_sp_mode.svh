@@ -1,7 +1,8 @@
 // // This is to make sure four subword mode special type detection works
 // `SVTEST(four_sp_mode_special_type_test_0)
 //     s_i_float[126:0] = '0;
-//     #1;
+//     wait_n_ticks(`LATENCY);
+
 //     `FAIL_UNLESS_EQUAL(s_o_float_type_a, ZERO)
 // `SVTEST_END
 
@@ -50,7 +51,8 @@
     // Lane D: -0
     s_i_float[31]       = '1;  s_i_float[30:23]   = 8'd0;  s_i_float[22:0]   = '0;
 
-    #1;
+    wait_n_ticks(`LATENCY);
+    
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, ZERO)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, ZERO)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_c, ZERO)
@@ -70,7 +72,8 @@
     // Lane D: -INF
     s_i_float[31]       = '1;  s_i_float[30:23]   = 8'hFF; s_i_float[22:0]   = '0;
 
-    #1;
+    wait_n_ticks(`LATENCY);
+    
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, POS_INF)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, NEG_INF)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_c, POS_INF)
@@ -90,7 +93,8 @@
     // Lane D: NaN
     s_i_float[31]       = '1;  s_i_float[30:23]   = 8'hFF; s_i_float[22:0]   = 'd11;
 
-    #1;
+    wait_n_ticks(`LATENCY);
+    
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, NAN)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, NAN)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_c, NAN)
@@ -110,7 +114,8 @@
     // Lane D: -denormal
     s_i_float[31]       = '1;  s_i_float[30:23]   = 8'd0;  s_i_float[22:0]   = 'd9;
 
-    #1;
+    wait_n_ticks(`LATENCY);
+    
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, POS_DENORMAL)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, NEG_DENORMAL)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_c, POS_DENORMAL)
@@ -130,7 +135,8 @@
     // Lane D: normal (-)
     s_i_float[31]       = '1;  s_i_float[30:23]   = 8'd200; s_i_float[22:0]   = 'd89;
 
-    #1;
+    wait_n_ticks(`LATENCY);
+    
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, NORMAL)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, NORMAL)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_c, NORMAL)
@@ -153,7 +159,8 @@
     // Lane D: normal (-)
     s_i_float[31]       = '1;  s_i_float[30:23]   = 8'd80; s_i_float[22:0]   = 'd777;
 
-    #1;
+    wait_n_ticks(`LATENCY);
+    
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, NAN)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, NEG_INF)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_c, POS_DENORMAL)
@@ -176,7 +183,8 @@
     // Lane D: +0
     s_i_float[31]       = '0;  s_i_float[30:23]   = 8'd0;  s_i_float[22:0]   = '0;
 
-    #1;
+    wait_n_ticks(`LATENCY);
+    
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, NORMAL)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, ZERO)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_c, ZERO)

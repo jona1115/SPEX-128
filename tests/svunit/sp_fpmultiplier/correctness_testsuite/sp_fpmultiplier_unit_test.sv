@@ -63,7 +63,9 @@ module sp_fpmultiplier_unit_test;
     .NUM_BITS_64(`NUM_BITS_64),
     .NUM_BITS_32(`NUM_BITS_32),
     .ERROR_SIGNAL_NUM_BITS(`ERROR_SIGNAL_NUM_BITS),
-    .DEBUG_SIGNAL_NUM_BITS(`DEBUG_SIGNAL_NUM_BITS)
+    .DEBUG_SIGNAL_NUM_BITS(`DEBUG_SIGNAL_NUM_BITS),
+
+    .DEBUG_PRINT_EN(0)
   ) my_sp_fpmultiplier(
     .i_clk(s_i_clk),
     .i_rst_n(s_i_rst_n),
@@ -158,7 +160,7 @@ module sp_fpmultiplier_unit_test;
   string HEX_B_128 = "force_128b.hex";
   string HEX_C_128 = "jedi_128b.hex";
 
-  `define LATENCY (6 + my_sp_fpmultiplier.INTMUL_LATENCY)
+  `define LATENCY (5 + my_sp_fpmultiplier.INTMUL_LATENCY)
 
   // ----------------------------------
   // Helpers
@@ -320,6 +322,7 @@ module sp_fpmultiplier_unit_test;
 `ifndef ISOLATE
     `include "cases/correctness.svh"
     `include "cases/handwritten_sanity.svh"
+    `include "cases/pipeline_test.svh"
 `else
     `include "cases/isolate.svh"
 `endif

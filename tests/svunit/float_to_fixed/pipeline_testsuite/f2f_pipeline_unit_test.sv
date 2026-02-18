@@ -1,13 +1,6 @@
 `include "svunit_defines.svh"
 
-/**
- * 
- * This test checks for:
- * 1. Latency of the module (should be 2 cycles)
- * 2. Result of the module
- * 
- */
-module float_to_fixed_no_error_unit_test;
+module f2f_pipeline_unit_test;
 
 `define NUM_BITS_128 128
 `define NUM_BITS_64 64
@@ -32,13 +25,15 @@ module float_to_fixed_no_error_unit_test;
   // DUT IO
   logic                                   s_i_clk;
   logic                                   s_i_rst_n; // Synchronous
-  logic [`NUM_BITS_128-1:0]                s_i_float;
+  logic [`NUM_BITS_128-1:0]               s_i_float;
   logic [3:0]                             s_i_ctrl;
+  logic                                   s_i_valid;
   logic [127:0]                           s_o_fixed;
   float_metadata_t                        s_o_metadata;
+  logic                                   s_o_valid;
   logic [3:0]                             s_o_sanity_identifier;
-  logic [`ERROR_SIGNAL_NUM_BITS-1:0]       s_o_error;
-  logic [`DEBUG_SIGNAL_NUM_BITS-1:0]       s_o_debug;
+  logic [`ERROR_SIGNAL_NUM_BITS-1:0]      s_o_error;
+  logic [`DEBUG_SIGNAL_NUM_BITS-1:0]      s_o_debug;
 
   //===================================
   // This is the UUT that we're 
@@ -55,8 +50,10 @@ module float_to_fixed_no_error_unit_test;
     .i_rst_n(s_i_rst_n),
     .i_float(s_i_float),
     .i_ctrl(s_i_ctrl),
+    .i_valid(s_i_valid),
     .o_fixed(s_o_fixed),
     .o_metadata(s_o_metadata),
+    .o_valid(s_o_valid),
     .o_sanity_identifier(s_o_sanity_identifier),
     .o_error(s_o_error),
     .o_debug(s_o_debug)
@@ -75,25 +72,25 @@ module float_to_fixed_no_error_unit_test;
   // Setup for running the Unit Tests
   //===================================
   task setup();
-    // For testing latency
-    logic [127:0] prev_out;
-  
     svunit_ut.setup();
     /* Place Setup Code Here */
+    s_i_clk   = '0;
     s_i_float = '0;
-    s_i_ctrl = '0;
+    s_i_ctrl  = '0;
+    s_i_valid = '0;
 
-    s_i_rst_n = 1'b0;                 // assert sync reset
-    repeat (2) @(posedge s_i_clk);    // hold for > one posedge
-    s_i_rst_n = 1'b1;                 // deassert
-    @(posedge s_i_clk);               // let it stablize
+    s_i_rst_n   = 1'b0;                 // assert sync reset
+    repeat (2) @(posedge s_i_clk);      // hold for > one posedge
+    s_i_rst_n   = 1'b1;                 // deassert
+    @(posedge s_i_clk);                 // let it stablize
   endtask
 
-// Toggle clock
-initial begin
-  s_i_clk = 1'b0;
-  forever #1 s_i_clk = ~s_i_clk; // 2 unit period
-end
+  // Toggle clock
+  initial begin
+    s_i_clk = 1'b0;
+    forever #1 s_i_clk = ~s_i_clk; // 2 unit period
+  end
+
 
   //===================================
   // Here we deconstruct anything we 
@@ -103,6 +100,15 @@ end
     svunit_ut.teardown();
     /* Place Teardown Code Here */
 
+  endtask
+
+  // ----------------------------------
+  // Helpers
+  // ----------------------------------
+  `define LATENCY (my_float_to_fixed.MODULE_LATENCY)
+
+  task automatic wait_n_ticks(int n);
+    repeat (n) @(posedge s_i_clk) @(negedge s_i_clk);
   endtask
 
   //===================================
@@ -120,15 +126,13 @@ end
   //===================================
   `SVUNIT_TESTS_BEGIN
 
-    `SVTEST(no_error_anytimestep_0)
-      // This test is basically: ALWAYS !error (\square\neg error)
-      for (int i = 0; i < 100; ++i) begin
-        // $display(">>>>> i==%d: s_o_error: %x", i, s_o_error);
-        // $display(">>>>> i==%d: s_o_fixed: %x", i, s_o_fixed);
-        `FAIL_UNLESS_EQUAL(s_o_error, '0)
-        #1;
-      end
-    `SVTEST_END
+// `define ISOLATE
+
+`ifndef ISOLATE
+    `include "cases/pipeline.svh"
+`else
+    `include "cases/isolate.svh"
+`endif
 
   `SVUNIT_TESTS_END
 

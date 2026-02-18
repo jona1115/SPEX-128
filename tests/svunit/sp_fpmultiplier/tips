@@ -1,4 +1,5 @@
 ../svunit_run.sh -s modelsim --also float_classifier
 ../svunit_run.sh -s modelsim --also float_classifier --also sp_intmultiplier
 time ../svunit_run.sh -s modelsim --also float_classifier --also sp_intmultiplier
+../sim_and_gen_waveform.sh --also float_classifier --also sp_intmultiplier && vsim ./waves/svunit.wlf -do "./dos/wave.do" &
 

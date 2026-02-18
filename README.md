@@ -32,6 +32,7 @@ Below are easy, copy-pastable commands to do stuff. They, in theory, should "jus
     ```
 
 # Creating/running SVUnit Tests
+Note: If you are just running tests, you don't need to care about this.
 ```sh
 # To create a test when you dont have the UUT (Unit Under Test) code yet
 create_unit_test.pl -module_name name_of_module_you_wanna_test
@@ -42,9 +43,9 @@ create_unit_test.pl name_of_module_you_wanna_test.sv
 # Generate filelist (for verilator to pick up which files to compile)
 ./gen_filelist.sh # Run this in project root
 
-# Run the test using verilor simulator
+# Run the test using modelsim simulator
 # cd to tests/svunit/float_to_fixed
-runSVUnit -s verilator -f path/to/filelist.f # If you want to run svunit manually
+runSVUnit -s modelsim -f path/to/filelist.f # If you want to run svunit manually
 # --- OR ---
 ./svunit_run.sh -s <simulator> # This script is just cool, use it instead of manually 
                                # for <simulator>, use questasim, or modelsim, DO NOT use 
@@ -55,7 +56,8 @@ I want to dedicate this section to describing my testing/developing philosophy. 
 
 # Vivado
 I use Vivado to synthesize for FPGA.
-It tends to throw this error because of how big the ROM is for level 2 LUT, run this command to make Vivado happy: `set_param synth.elaboration.rodinMoreOptions "rt::set_parameter var_size_limit 1048576"`
+Common Vivado issues:
+- Vivado tends to throw an error saying level 2's lookup tables are too big, run this command to make Vivado happy: `set_param synth.elaboration.rodinMoreOptions "rt::set_parameter var_size_limit 1048576"`
 
 # Installation of Tools
 ## SVUnit (no need to install, see ["After cloning"](https://github.com/jona1115/SPEX-128?tab=readme-ov-file#after-cloning))
@@ -71,7 +73,7 @@ export PATH=$PATH:$SVUNIT_INSTALL"/bin"
 source Setup.bsh
 ```
 
-## Verilator (not used for this project)
+<!-- ## Verilator (not used for this project)
 ```sh
 git clone git@github.com:verilator/verilator.git
 cd verilator
@@ -90,7 +92,7 @@ autoconf         # Create ./configure script
 ./configure      # Configure and create Makefile
 make -j `nproc`  # Build Verilator itself (if error, try just 'make')
 sudo make install
-```
+``` -->
 
 ## Modelsim
 Follow [this link](https://gist.github.com/Razer6/cafc172b5cffae189b4ecda06cf6c64f).

@@ -157,7 +157,6 @@ always_ff @( posedge i_clk ) begin : defaulter
 end
 
 
-
 //=====================================================================================
 // Stage 0
 //=====================================================================================
@@ -276,20 +275,18 @@ float_classifier #() my_float_classifier_force (
   .o_metadata(s_S0_metadata_force)
 );
 
-
 /**
  * Fixed-latency pipeline control.
  * Each stage enable is a delayed version of the initial "fire" signal.
  */
-logic s_S0_en, s_S1_en, s_S2_en, s_S3_en, s_S4_en, s_S5_en, s_S6_en, s_S7_en;
+logic s_S1_en, s_S2_en, s_S3_en, s_S4_en, s_S5_en, s_S6_en, s_S7_en;
 logic s_fire;
-localparam int MUL_START_OFFSET = 1;
-localparam int S1_OFFSET = 0;
-localparam int S2_OFFSET = MUL_START_OFFSET + INTMUL_LATENCY;
-localparam int S3_OFFSET = S2_OFFSET + 1;
-localparam int S4_OFFSET = S3_OFFSET + 1;
-localparam int S5_OFFSET = S4_OFFSET + 1;
-localparam int PIPE_DEPTH = S5_OFFSET + 1; //6
+localparam int MUL_START_OFFSET = 0;
+localparam int S2_OFFSET = MUL_START_OFFSET + INTMUL_LATENCY; // s_pipe_valid[4]
+localparam int S3_OFFSET = S2_OFFSET + 1;                     // s_pipe_valid[5]
+localparam int S4_OFFSET = S3_OFFSET + 1;                     // s_pipe_valid[6]
+localparam int S5_OFFSET = S4_OFFSET + 1;                     // s_pipe_valid[7]
+localparam int PIPE_DEPTH = S5_OFFSET + 1; // 8
 logic [PIPE_DEPTH-1:0] s_pipe_valid;
 logic [PIPE_DEPTH-1:0] s_pipe_valid_next;
 logic s_mul_start;
@@ -316,6 +313,9 @@ always_comb begin : stage_fire_decode
   endcase
 end
 
+/**
+ * FSM
+ */
 always_ff @(posedge i_clk) begin : stage_valid_pipeline
   if (!i_rst_n) begin
     s_pipe_valid <= '0;
@@ -327,13 +327,12 @@ end
 
 assign s_pipe_valid_next = {s_pipe_valid[PIPE_DEPTH-2:0], s_fire};
 
-assign s_mul_start = s_pipe_valid_next[MUL_START_OFFSET];
-assign s_S0_en = 1'b0;
-assign s_S1_en = s_pipe_valid_next[S1_OFFSET];
-assign s_S2_en = s_pipe_valid_next[S2_OFFSET];
-assign s_S3_en = s_pipe_valid_next[S3_OFFSET];
-assign s_S4_en = s_pipe_valid_next[S4_OFFSET];
-assign s_S5_en = s_pipe_valid_next[S5_OFFSET];
+assign s_mul_start = s_pipe_valid[MUL_START_OFFSET];
+assign s_S1_en = s_fire;
+assign s_S2_en = s_pipe_valid[S2_OFFSET];
+assign s_S3_en = s_pipe_valid[S3_OFFSET];
+assign s_S4_en = s_pipe_valid[S4_OFFSET];
+assign s_S5_en = s_pipe_valid[S5_OFFSET];
 assign s_S6_en = 1'b0;
 assign s_S7_en = 1'b0;
 
@@ -509,11 +508,11 @@ logic [225:0] s_sp_intmultiplier_jedi;
 logic [3:0]   unused_sp_intmultiplier_sanity_identifier;
 logic [ERROR_SIGNAL_NUM_BITS-1:0] unused_sp_intmultiplier_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] unused_sp_intmultiplier_debug;
-logic [113-1 : 0]                 unused_ds_S1_pp [0 : 57-1];
-logic [6104 : 0]                  unused_ds_S2_S;
-logic [6104 : 0]                  unused_ds_S2_C;
-logic [225 : 0]                   unused_ds_S3_z0;
-logic [225 : 0]                   unused_ds_S3_z1;
+logic [115-1 : 0]                 unused_ds_S1_pp [0 : 58-1];
+logic [6327 : 0]                  unused_ds_S2_S;
+logic [6327 : 0]                  unused_ds_S2_C;
+logic [229 : 0]                   unused_ds_S3_z0;
+logic [229 : 0]                   unused_ds_S3_z1;
 logic [113*2-1:0]                 unused_ds_S4_jedi;
 logic                             unused_ds_S4_valid;
 sp_intmultiplier #(
@@ -561,12 +560,12 @@ always_ff @( posedge i_clk ) begin : stage2a_extended_mantissa_mult
   end
   else begin
     if (s_S2_en) begin
-      assert (s_S1_metadata_anikin.sp_mode === s_S1_metadata_force.sp_mode) else begin
+      assert (s_db_metadata_anikin[INTMUL_LATENCY-1].sp_mode === s_db_metadata_force[INTMUL_LATENCY-1].sp_mode) else begin
         s_o_error[7] <= 1'b1;
-        // $fatal(1, "Bad things had happened, (s_S1_metadata_anikin.sp_mode === s_S1_metadata_force.sp_mode) is false.");
+        // $fatal(1, "Bad things had happened, (s_db_metadata_anikin[INTMUL_LATENCY-1].sp_mode === s_db_metadata_force[INTMUL_LATENCY-1].sp_mode) is false.");
       end
 
-      case (s_S1_metadata_anikin.sp_mode)
+      case (s_db_metadata_anikin[INTMUL_LATENCY-1].sp_mode)
         SINGLE_MODE: begin
           s_S2_128_mult_out_full <= s_sp_intmultiplier_jedi;
         end
@@ -587,6 +586,115 @@ always_ff @( posedge i_clk ) begin : stage2a_extended_mantissa_mult
         end
       endcase // case (i_metadata.sp_mode)
     end
+  end // !i_rst_n else begin
+end // always_ff @( posedge i_clk )
+
+/**
+ * 2c: db = delay buffer
+ */
+binary128_t s_db_128_jedi           [INTMUL_LATENCY-1 : 0];
+binary128_t s_db_128_jedi_next      [INTMUL_LATENCY-1 : 0];
+binary64_t  s_db_64a_jedi           [INTMUL_LATENCY-1 : 0],
+            s_db_64b_jedi           [INTMUL_LATENCY-1 : 0];
+binary64_t  s_db_64a_jedi_next      [INTMUL_LATENCY-1 : 0],
+            s_db_64b_jedi_next      [INTMUL_LATENCY-1 : 0];
+binary32_t  s_db_32a_jedi           [INTMUL_LATENCY-1 : 0],
+            s_db_32b_jedi           [INTMUL_LATENCY-1 : 0],
+            s_db_32c_jedi           [INTMUL_LATENCY-1 : 0],
+            s_db_32d_jedi           [INTMUL_LATENCY-1 : 0];
+binary32_t  s_db_32a_jedi_next      [INTMUL_LATENCY-1 : 0],
+            s_db_32b_jedi_next      [INTMUL_LATENCY-1 : 0],
+            s_db_32c_jedi_next      [INTMUL_LATENCY-1 : 0],
+            s_db_32d_jedi_next      [INTMUL_LATENCY-1 : 0];
+logic       s_db_valid128_jedi      [INTMUL_LATENCY-1 : 0];
+logic       s_db_valid128_jedi_next [INTMUL_LATENCY-1 : 0];
+logic       s_db_valid64a_jedi      [INTMUL_LATENCY-1 : 0],
+            s_db_valid64b_jedi      [INTMUL_LATENCY-1 : 0];
+logic       s_db_valid64a_jedi_next [INTMUL_LATENCY-1 : 0],
+            s_db_valid64b_jedi_next [INTMUL_LATENCY-1 : 0];
+logic       s_db_valid32a_jedi      [INTMUL_LATENCY-1 : 0],
+            s_db_valid32b_jedi      [INTMUL_LATENCY-1 : 0],
+            s_db_valid32c_jedi      [INTMUL_LATENCY-1 : 0],
+            s_db_valid32d_jedi      [INTMUL_LATENCY-1 : 0];
+logic       s_db_valid32a_jedi_next [INTMUL_LATENCY-1 : 0],
+            s_db_valid32b_jedi_next [INTMUL_LATENCY-1 : 0],
+            s_db_valid32c_jedi_next [INTMUL_LATENCY-1 : 0],
+            s_db_valid32d_jedi_next [INTMUL_LATENCY-1 : 0];
+assign s_db_128_jedi_next       = {s_db_128_jedi[INTMUL_LATENCY-2 : 0], s_S1_128_jedi};
+assign s_db_valid128_jedi_next  = {s_db_valid128_jedi[INTMUL_LATENCY-2 : 0], s_S1_valid128_jedi};
+assign s_db_64a_jedi_next       = {s_db_64a_jedi[INTMUL_LATENCY-2 : 0], s_S1_64a_jedi};
+assign s_db_valid64a_jedi_next  = {s_db_valid64a_jedi[INTMUL_LATENCY-2 : 0], s_S1_valid64a_jedi};
+assign s_db_64b_jedi_next       = {s_db_64b_jedi[INTMUL_LATENCY-2 : 0], s_S1_64b_jedi};
+assign s_db_valid64b_jedi_next  = {s_db_valid64b_jedi[INTMUL_LATENCY-2 : 0], s_S1_valid64b_jedi};
+assign s_db_32a_jedi_next       = {s_db_32a_jedi[INTMUL_LATENCY-2 : 0], s_S1_32a_jedi};
+assign s_db_valid32a_jedi_next  = {s_db_valid32a_jedi[INTMUL_LATENCY-2 : 0], s_S1_valid32a_jedi};
+assign s_db_32b_jedi_next       = {s_db_32b_jedi[INTMUL_LATENCY-2 : 0], s_S1_32b_jedi};
+assign s_db_valid32b_jedi_next  = {s_db_valid32b_jedi[INTMUL_LATENCY-2 : 0], s_S1_valid32b_jedi};
+assign s_db_32c_jedi_next       = {s_db_32c_jedi[INTMUL_LATENCY-2 : 0], s_S1_32c_jedi};
+assign s_db_valid32c_jedi_next  = {s_db_valid32c_jedi[INTMUL_LATENCY-2 : 0], s_S1_valid32c_jedi};
+assign s_db_32d_jedi_next       = {s_db_32d_jedi[INTMUL_LATENCY-2 : 0], s_S1_32d_jedi};
+assign s_db_valid32d_jedi_next  = {s_db_valid32d_jedi[INTMUL_LATENCY-2 : 0], s_S1_valid32d_jedi};
+// Now the metadata
+float_metadata_t  s_db_metadata_anikin        [INTMUL_LATENCY-1 : 0],
+                  s_db_metadata_force         [INTMUL_LATENCY-1 : 0];
+float_metadata_t  s_db_metadata_anikin_next   [INTMUL_LATENCY-1 : 0],
+                  s_db_metadata_force_next    [INTMUL_LATENCY-1 : 0];
+assign s_db_metadata_anikin_next  = {s_db_metadata_anikin[INTMUL_LATENCY-2 : 0], s_S1_metadata_anikin};
+assign s_db_metadata_force_next   = {s_db_metadata_force[INTMUL_LATENCY-2 : 0], s_S1_metadata_force};
+/*DEBUG*/binary128_t s_db_128_jedi_0;
+/*DEBUG*/binary128_t s_db_128_jedi_1;
+/*DEBUG*/binary128_t s_db_128_jedi_2;
+/*DEBUG*/binary128_t s_db_128_jedi_3;
+/*DEBUG*/assign s_db_128_jedi_0 = s_db_128_jedi[0];
+/*DEBUG*/assign s_db_128_jedi_1 = s_db_128_jedi[1];
+/*DEBUG*/assign s_db_128_jedi_2 = s_db_128_jedi[2];
+/*DEBUG*/assign s_db_128_jedi_3 = s_db_128_jedi[3];
+/*DEBUG*/binary128_t s_db_128_jedi_next_0;
+/*DEBUG*/binary128_t s_db_128_jedi_next_1;
+/*DEBUG*/binary128_t s_db_128_jedi_next_2;
+/*DEBUG*/binary128_t s_db_128_jedi_next_3;
+/*DEBUG*/assign s_db_128_jedi_next_0 = s_db_128_jedi_next[0];
+/*DEBUG*/assign s_db_128_jedi_next_1 = s_db_128_jedi_next[1];
+/*DEBUG*/assign s_db_128_jedi_next_2 = s_db_128_jedi_next[2];
+/*DEBUG*/assign s_db_128_jedi_next_3 = s_db_128_jedi_next[3];
+always_ff @( posedge i_clk ) begin : stage2c_jedi_db
+  if (!i_rst_n) begin
+    s_db_128_jedi           <= '{default:'0};
+    s_db_64a_jedi           <= '{default:'0};
+    s_db_64b_jedi           <= '{default:'0};
+    s_db_32a_jedi           <= '{default:'0};
+    s_db_32b_jedi           <= '{default:'0};
+    s_db_32c_jedi           <= '{default:'0};
+    s_db_32d_jedi           <= '{default:'0};
+    s_db_valid128_jedi      <= '{default:'0};
+    s_db_valid64a_jedi      <= '{default:'0};
+    s_db_valid64b_jedi      <= '{default:'0};
+    s_db_valid32a_jedi      <= '{default:'0};
+    s_db_valid32b_jedi      <= '{default:'0};
+    s_db_valid32c_jedi      <= '{default:'0};
+    s_db_valid32d_jedi      <= '{default:'0};
+    
+    s_db_metadata_anikin    <= '{default:'0};
+    s_db_metadata_force     <= '{default:'0};
+  end
+  else begin
+    s_db_128_jedi           <= s_db_128_jedi_next;
+    s_db_64a_jedi           <= s_db_64a_jedi_next;
+    s_db_64b_jedi           <= s_db_64b_jedi_next;
+    s_db_32a_jedi           <= s_db_32a_jedi_next;
+    s_db_32b_jedi           <= s_db_32b_jedi_next;
+    s_db_32c_jedi           <= s_db_32c_jedi_next;
+    s_db_32d_jedi           <= s_db_32d_jedi_next;
+    s_db_valid128_jedi      <= s_db_valid128_jedi_next;
+    s_db_valid64a_jedi      <= s_db_valid64a_jedi_next;
+    s_db_valid64b_jedi      <= s_db_valid64b_jedi_next;
+    s_db_valid32a_jedi      <= s_db_valid32a_jedi_next;
+    s_db_valid32b_jedi      <= s_db_valid32b_jedi_next;
+    s_db_valid32c_jedi      <= s_db_valid32c_jedi_next;
+    s_db_valid32d_jedi      <= s_db_valid32d_jedi_next;
+
+    s_db_metadata_anikin    <= s_db_metadata_anikin_next;
+    s_db_metadata_force     <= s_db_metadata_force_next;
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
 
@@ -625,26 +733,26 @@ always_ff @( posedge i_clk ) begin : stage2b_signal_passthrough
   else begin
     if (s_S2_en) begin
       // jedi passthrough
-      s_S2_128_jedi         <= s_S1_128_jedi;
-      s_S2_64a_jedi         <= s_S1_64a_jedi;
-      s_S2_64b_jedi         <= s_S1_64b_jedi;
-      s_S2_32a_jedi         <= s_S1_32a_jedi;
-      s_S2_32b_jedi         <= s_S1_32b_jedi;
-      s_S2_32c_jedi         <= s_S1_32c_jedi;
-      s_S2_32d_jedi         <= s_S1_32d_jedi;
+      s_S2_128_jedi         <= s_db_128_jedi[INTMUL_LATENCY-1];
+      s_S2_64a_jedi         <= s_db_64a_jedi[INTMUL_LATENCY-1];
+      s_S2_64b_jedi         <= s_db_64b_jedi[INTMUL_LATENCY-1];
+      s_S2_32a_jedi         <= s_db_32a_jedi[INTMUL_LATENCY-1];
+      s_S2_32b_jedi         <= s_db_32b_jedi[INTMUL_LATENCY-1];
+      s_S2_32c_jedi         <= s_db_32c_jedi[INTMUL_LATENCY-1];
+      s_S2_32d_jedi         <= s_db_32d_jedi[INTMUL_LATENCY-1];
 
       // valid bit pass through
-      s_S2_valid128_jedi    <= s_S1_valid128_jedi;
-      s_S2_valid64a_jedi    <= s_S1_valid64a_jedi;
-      s_S2_valid64b_jedi    <= s_S1_valid64b_jedi;
-      s_S2_valid32a_jedi    <= s_S1_valid32a_jedi;
-      s_S2_valid32b_jedi    <= s_S1_valid32b_jedi;
-      s_S2_valid32c_jedi    <= s_S1_valid32c_jedi;
-      s_S2_valid32d_jedi    <= s_S1_valid32d_jedi;
+      s_S2_valid128_jedi    <= s_db_valid128_jedi[INTMUL_LATENCY-1];
+      s_S2_valid64a_jedi    <= s_db_valid64a_jedi[INTMUL_LATENCY-1];
+      s_S2_valid64b_jedi    <= s_db_valid64b_jedi[INTMUL_LATENCY-1];
+      s_S2_valid32a_jedi    <= s_db_valid32a_jedi[INTMUL_LATENCY-1];
+      s_S2_valid32b_jedi    <= s_db_valid32b_jedi[INTMUL_LATENCY-1];
+      s_S2_valid32c_jedi    <= s_db_valid32c_jedi[INTMUL_LATENCY-1];
+      s_S2_valid32d_jedi    <= s_db_valid32d_jedi[INTMUL_LATENCY-1];
 
       // metadata
-      s_S2_metadata_anikin  <= s_S1_metadata_anikin;  // Notes to myself: We shall pass this through and use it at the end
-      s_S2_metadata_force   <= s_S1_metadata_force;   // Notes to myself: We shall pass this through and use it at the end
+      s_S2_metadata_anikin  <= s_db_metadata_anikin[INTMUL_LATENCY-1];
+      s_S2_metadata_force   <= s_db_metadata_force[INTMUL_LATENCY-1];
     end
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
@@ -984,7 +1092,6 @@ always_ff @( posedge i_clk ) begin : stage3b_increment_exp
     end
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
-
 
 /**
  * 3c: Signal pass through
@@ -1387,7 +1494,10 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
 
           if (!(s_S4_metadata_anikin.float_type_b === ZERO || s_S4_metadata_force.float_type_b === ZERO) &&
               ((s_S4_metadata_anikin.float_type_b === NAN || s_S4_metadata_force.float_type_b === NAN) ||
-              (s_S4_64b_jedi.exp === '1 && s_S4_64a_potential_result[51:0] !== '0))) begin
+              (s_S4_64b_jedi.exp === '1 && s_S4_64b_potential_result[51:0] !== '0 && s_S4_64b_potential_result[51:0] !== '1))) begin
+          // if (!(s_S4_metadata_anikin.float_type_b === ZERO || s_S4_metadata_force.float_type_b === ZERO) &&
+          //     ((s_S4_metadata_anikin.float_type_b === NAN || s_S4_metadata_force.float_type_b === NAN) ||
+          //     (s_S4_64b_jedi.exp === '1 && s_S4_64a_potential_result[51:0] !== '0))) begin
             // If either is NaN, output will be NaN
             s_S5_64b_jedi.sign      <= s_S4_64b_jedi.sign;
             s_S5_64b_jedi.exp       <= '1;
@@ -1681,6 +1791,15 @@ always_ff @( posedge i_clk ) begin : stage5b_signal_passthrough
       s_S5_metadata_anikin  <= s_S4_metadata_anikin;  // Notes to myself: We shall pass this through and use it at the end
       s_S5_metadata_force   <= s_S4_metadata_force;   // Notes to myself: We shall pass this through and use it at the end
     end // if (s_S5_en) begin
+    else begin
+      s_S5_valid128_jedi    <= '0;
+      s_S5_valid64a_jedi    <= '0;
+      s_S5_valid64b_jedi    <= '0;
+      s_S5_valid32a_jedi    <= '0;
+      s_S5_valid32b_jedi    <= '0;
+      s_S5_valid32c_jedi    <= '0;
+      s_S5_valid32d_jedi    <= '0;
+    end
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
 

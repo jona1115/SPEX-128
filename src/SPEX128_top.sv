@@ -292,7 +292,7 @@ fixed_partition_sp #(
   .ENABLE_32(1'b1),
   .ADDR_BITS_128(13),
   .ADDR_BITS_64(13),
-  .ADDR_BITS_32(10),
+  .ADDR_BITS_32(13),
   .INIT_128_FILE({"fixed128_b_partition.", `SPEX_RAM_EXT})
 ) my_fixed_partition_sp_par_b (
   .i_clk(i_clk),
@@ -302,10 +302,10 @@ fixed_partition_sp #(
   .i_lane_128(s_my_float_to_fixed_fixed[116:104]),
   .i_lane_64a(s_my_float_to_fixed_fixed[116:104]), // not really tested since the TWO/FOUR sp mode test are never passed
   .i_lane_64b(s_my_float_to_fixed_fixed[52:40]), // not really tested since the TWO/FOUR sp mode test are never passed
-  .i_lane_32a(s_my_float_to_fixed_fixed[116:107]), // not really tested since the TWO/FOUR sp mode test are never passed
-  .i_lane_32b(s_my_float_to_fixed_fixed[84:75]), // not really tested since the TWO/FOUR sp mode test are never passed
-  .i_lane_32c(s_my_float_to_fixed_fixed[52:43]), // not really tested since the TWO/FOUR sp mode test are never passed
-  .i_lane_32d(s_my_float_to_fixed_fixed[20:11]), // not really tested since the TWO/FOUR sp mode test are never passed
+  .i_lane_32a(s_my_float_to_fixed_fixed[116:104]), // not really tested since the TWO/FOUR sp mode test are never passed
+  .i_lane_32b(s_my_float_to_fixed_fixed[84:72]), // not really tested since the TWO/FOUR sp mode test are never passed
+  .i_lane_32c(s_my_float_to_fixed_fixed[52:40]), // not really tested since the TWO/FOUR sp mode test are never passed
+  .i_lane_32d(s_my_float_to_fixed_fixed[20:8]), // not really tested since the TWO/FOUR sp mode test are never passed
   .o_exp_a128(s_my_fixed_partition_sp_par_b_exp_a128),
   .o_exp_a64a(s_my_fixed_partition_sp_par_b_exp_a64a),
   .o_exp_a64b(s_my_fixed_partition_sp_par_b_exp_a64b),

@@ -1,25 +1,29 @@
 // // This is to make sure two subword mode special type detection works
 // `SVTEST(two_sp_mode_special_type_test_0)
 //     s_i_float[126:0] = '0;
-//     #1;
+    // wait_n_ticks(`LATENCY);
+//     
 //     `FAIL_UNLESS_EQUAL(s_o_float_type_a, ZERO)
 // `SVTEST_END
 // `SVTEST(two_sp_mode_special_type_test_1)
 //     s_i_float[126:0] = '0;
-//     #1;
+    // wait_n_ticks(`LATENCY);
+//     
 //     `FAIL_UNLESS_EQUAL(s_o_float_type_b, ZERO)
 // `SVTEST_END
 
 // `SVTEST(two_sp_mode_special_type_test_2)
 //     s_i_float[126:116] = 'h5; // Not 0
 //     // $display("s_i_float=%x", s_i_float);
-//     #1;
+    // wait_n_ticks(`LATENCY);
+//     
 //     `FAIL_IF(s_o_float_type_a > NORMAL) // assert a is NORMAL
 // `SVTEST_END
 // `SVTEST(two_sp_mode_special_type_test_3)
 //     s_i_float[62:52] = 'h5; // Not 0
 //     // $display("s_i_float=%x", s_i_float);
-//     #1;
+    // wait_n_ticks(`LATENCY);
+//     
 //     `FAIL_UNLESS_EQUAL(s_o_float_type_b, NORMAL) // assert b is NORMAL
 // `SVTEST_END
 
@@ -58,7 +62,8 @@
     s_i_float[62:52]    = 11'd0;
     s_i_float[51:0]     = '0;
 
-    #1;
+    wait_n_ticks(`LATENCY);
+    
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, ZERO)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, ZERO)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_c, NA)
@@ -79,7 +84,8 @@
     s_i_float[62:52]    = 11'd0;
     s_i_float[51:0]     = '0;
 
-    #1;
+    wait_n_ticks(`LATENCY);
+    
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, ZERO)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, ZERO)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_c, NA)
@@ -100,7 +106,8 @@
     s_i_float[62:52]    = 11'h7FF;
     s_i_float[51:0]     = '0;
 
-    #1;
+    wait_n_ticks(`LATENCY);
+    
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, POS_INF)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, NEG_INF)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_c, NA)
@@ -121,7 +128,8 @@
     s_i_float[62:52]    = 11'h7FF;
     s_i_float[51:0]     = 'd9; // non-zero frac
 
-    #1;
+    wait_n_ticks(`LATENCY);
+    
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, NAN)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, NAN)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_c, NA)
@@ -142,7 +150,8 @@
     s_i_float[62:52]    = 11'd0;
     s_i_float[51:0]     = 'd11; // non-zero frac
 
-    #1;
+    wait_n_ticks(`LATENCY);
+    
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, POS_DENORMAL)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, NEG_DENORMAL)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_c, NA)
@@ -163,7 +172,8 @@
     s_i_float[62:52]    = 11'd100;
     s_i_float[51:0]     = 'd999;
 
-    #1;
+    wait_n_ticks(`LATENCY);
+    
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, NORMAL)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, NORMAL)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_c, NA)
@@ -184,7 +194,8 @@
     s_i_float[62:52]    = 11'd0;
     s_i_float[51:0]     = '0;
 
-    #1;
+    wait_n_ticks(`LATENCY);
+    
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, NORMAL)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, ZERO)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_c, NA)
@@ -205,7 +216,8 @@
     s_i_float[62:52]    = 11'd30;
     s_i_float[51:0]     = 'd55;
 
-    #1;
+    wait_n_ticks(`LATENCY);
+    
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_a, NAN)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_b, NORMAL)
     `FAIL_UNLESS_EQUAL(s_o_metadata.float_type_c, NA)

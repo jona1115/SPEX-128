@@ -1,3 +1,30 @@
+/*
+ * Stage marker guide (annotation only, no functional change):
+ * - "Stage N start" marks the first instance where dependency depth N appears in this generated
+ *   Dadda reduction netlist.
+ * - Dependency depth here means the longest S/C chain feeding that point (not a registered pipe stage).
+ * - These comments are for manual pipeline planning and quick navigation.
+ * 
+ * Stage summary:
+ * - Stage 1: depth-1, raw partial products reduced to first S/C outputs.
+ * - Stage 2: depth-2, first reuse of prior S/C outputs with remaining partial products.
+ * - Stage 3: depth-3, S/C zipper-style consolidation becomes dominant.
+ * - Stage 4: depth-4, continued zipper reduction.
+ * - Stage 5: depth-5, continued zipper reduction.
+ * - Stage 6: depth-6, continued zipper reduction.
+ * - Stage 7: depth-7, continued zipper reduction.
+ * - Stage 8: depth-8, continued zipper reduction.
+ * - Stage 9: depth-9, late-tree consolidation.
+ * - Stage 10: depth-10, near-final consolidation.
+ * - Stage 11: depth-11, deepest combinational region before terminal outputs.
+ * 
+ * Long-sequence markers:
+ * - "Long linear sequence A": long FA chain with pattern S[x], C[x-2], S[x+1].
+ * - "Long linear sequence B": long FA chain with pattern S[x], C[x-1], C[stride+2].
+*/
+
+
+// Stage 1 start (depth-1 reduction): raw partial products -> first S/C layer.
 ha HA_00000000 (s_S1_pp[0][94],s_S1_pp[1][93],S[0],C[0]);
 fa FA_00000001 (s_S1_pp[0][95],s_S1_pp[1][94],s_S1_pp[2][93],S[1],C[1]);
 ha HA_00000002 (s_S1_pp[3][92],s_S1_pp[4][91],S[2],C[2]);
@@ -874,6 +901,7 @@ fa FA_00000872 (s_S1_pp[81][12],s_S1_pp[82][11],s_S1_pp[83][10],S[872],C[872]);
 fa FA_00000873 (s_S1_pp[84][9],s_S1_pp[85][8],s_S1_pp[86][7],S[873],C[873]);
 fa FA_00000874 (s_S1_pp[87][6],s_S1_pp[88][5],s_S1_pp[89][4],S[874],C[874]);
 ha HA_00000875 (s_S1_pp[90][3],s_S1_pp[91][2],S[875],C[875]);
+// Stage 2 start (depth-2 reduction): first reuse of prior S/C results.
 fa FA_00000876 (S[0],s_S1_pp[2][92],s_S1_pp[3][91],S[876],C[876]);
 fa FA_00000877 (s_S1_pp[4][90],s_S1_pp[5][89],s_S1_pp[6][88],S[877],C[877]);
 fa FA_00000878 (s_S1_pp[7][87],s_S1_pp[8][86],s_S1_pp[9][85],S[878],C[878]);
@@ -3430,6 +3458,7 @@ fa FA_00003428 (C[840],S[871],C[841],S[3428],C[3428]);
 fa FA_00003429 (S[872],C[842],S[873],S[3429],C[3429]);
 fa FA_00003430 (C[843],S[874],C[844],S[3430],C[3430]);
 fa FA_00003431 (S[875],s_S1_pp[92][1],s_S1_pp[93][0],S[3431],C[3431]);
+// Stage 3 start (depth-3 reduction): alternating S/C zipper region begins.
 fa FA_00003432 (S[876],C[845],S[877],S[3432],C[3432]);
 fa FA_00003433 (C[846],S[878],C[847],S[3433],C[3433]);
 fa FA_00003434 (S[879],C[848],S[880],S[3434],C[3434]);
@@ -5943,6 +5972,7 @@ fa FA_00005941 (S[3426],C[3405],S[3427],S[5941],C[5941]);
 fa FA_00005942 (C[3406],S[3428],C[3407],S[5942],C[5942]);
 fa FA_00005943 (S[3429],C[3408],S[3430],S[5943],C[5943]);
 fa FA_00005944 (C[3409],S[3431],C[3410],S[5944],C[5944]);
+// Stage 4 start (depth-4 reduction).
 fa FA_00005945 (S[3432],C[3411],S[3433],S[5945],C[5945]);
 fa FA_00005946 (C[3412],S[3434],C[3413],S[5946],C[5946]);
 fa FA_00005947 (S[3435],C[3414],S[3436],S[5947],C[5947]);
@@ -7947,6 +7977,7 @@ fa FA_00007945 (C[5924],S[5939],C[5925],S[7945],C[7945]);
 fa FA_00007946 (S[5940],C[5926],S[5941],S[7946],C[7946]);
 fa FA_00007947 (C[5927],S[5942],C[5928],S[7947],C[7947]);
 fa FA_00007948 (S[5943],C[5929],S[5944],S[7948],C[7948]);
+// Stage 5 start (depth-5 reduction).
 fa FA_00007949 (S[5945],C[5931],S[5946],S[7949],C[7949]);
 fa FA_00007950 (C[5932],S[5947],C[5933],S[7950],C[7950]);
 fa FA_00007951 (S[5948],C[5934],S[5949],S[7951],C[7951]);
@@ -9399,6 +9430,7 @@ fa FA_00009397 (S[7943],C[7934],S[7944],S[9397],C[9397]);
 fa FA_00009398 (C[7935],S[7945],C[7936],S[9398],C[9398]);
 fa FA_00009399 (S[7946],C[7937],S[7947],S[9399],C[9399]);
 fa FA_00009400 (C[7938],S[7948],C[7939],S[9400],C[9400]);
+// Stage 6 start (depth-6 reduction).
 fa FA_00009401 (S[7949],C[7940],S[7950],S[9401],C[9401]);
 fa FA_00009402 (C[7941],S[7951],C[7942],S[9402],C[9402]);
 fa FA_00009403 (S[7952],C[7943],S[7953],S[9403],C[9403]);
@@ -10432,6 +10464,7 @@ fa FA_00010430 (S[9395],C[9389],S[9396],S[10430],C[10430]);
 fa FA_00010431 (C[9390],S[9397],C[9391],S[10431],C[10431]);
 fa FA_00010432 (S[9398],C[9392],S[9399],S[10432],C[10432]);
 fa FA_00010433 (C[9393],S[9400],C[9394],S[10433],C[10433]);
+// Stage 7 start (depth-7 reduction).
 fa FA_00010434 (S[9401],C[9395],S[9402],S[10434],C[10434]);
 fa FA_00010435 (C[9396],S[9403],C[9397],S[10435],C[10435]);
 fa FA_00010436 (S[9404],C[9398],S[9405],S[10436],C[10436]);
@@ -11179,6 +11212,7 @@ fa FA_00011177 (S[10429],C[10425],C[5916],S[11177],C[11177]);
 fa FA_00011178 (S[10430],C[10426],S[10431],S[11178],C[11178]);
 fa FA_00011179 (C[10427],S[10432],C[10428],S[11179],C[11179]);
 fa FA_00011180 (S[10433],C[10429],C[5930],S[11180],C[11180]);
+// Stage 8 start (depth-8 reduction).
 fa FA_00011181 (S[10434],C[10430],S[10435],S[11181],C[11181]);
 fa FA_00011182 (C[10431],S[10436],C[10432],S[11182],C[11182]);
 fa FA_00011183 (S[10437],C[10433],C[5944],S[11183],C[11183]);
@@ -11733,6 +11767,7 @@ fa FA_00011731 (S[11175],C[11172],S[11176],S[11731],C[11731]);
 fa FA_00011732 (C[11173],S[11177],C[11174],S[11732],C[11732]);
 fa FA_00011733 (S[11178],C[11175],S[11179],S[11733],C[11733]);
 fa FA_00011734 (C[11176],S[11180],C[11177],S[11734],C[11734]);
+// Stage 9 start (depth-9 reduction).
 fa FA_00011735 (S[11181],C[11178],S[11182],S[11735],C[11735]);
 fa FA_00011736 (C[11179],S[11183],C[11180],S[11736],C[11736]);
 fa FA_00011737 (S[11184],C[11181],S[11185],S[11737],C[11737]);
@@ -11991,6 +12026,7 @@ fa FA_00011989 (s_S1_pp[109][112],s_S1_pp[110][111],s_S1_pp[111][110],S[11989],C
 ha HA_00011990 (s_S1_pp[0][3],s_S1_pp[1][2],S[11990],C[11990]);
 fa FA_00011991 (S[11556],s_S1_pp[2][2],s_S1_pp[3][1],S[11991],C[11991]);
 fa FA_00011992 (S[11557],C[11556],S[11558],S[11992],C[11992]);
+// Long linear sequence A start (~215 FA chain): pattern S[x], C[x-2], S[x+1].
 fa FA_00011993 (S[11559],C[11557],S[11560],S[11993],C[11993]);
 fa FA_00011994 (S[11561],C[11559],S[11562],S[11994],C[11994]);
 fa FA_00011995 (S[11563],C[11561],S[11564],S[11995],C[11995]);
@@ -12079,6 +12115,7 @@ fa FA_00012077 (S[11727],C[11725],S[11728],S[12077],C[12077]);
 fa FA_00012078 (S[11729],C[11727],S[11730],S[12078],C[12078]);
 fa FA_00012079 (S[11731],C[11729],S[11732],S[12079],C[12079]);
 fa FA_00012080 (S[11733],C[11731],S[11734],S[12080],C[12080]);
+// Stage 10 start (depth-10 reduction).
 fa FA_00012081 (S[11735],C[11733],S[11736],S[12081],C[12081]);
 fa FA_00012082 (S[11737],C[11735],S[11738],S[12082],C[12082]);
 fa FA_00012083 (S[11739],C[11737],S[11740],S[12083],C[12083]);
@@ -12212,6 +12249,7 @@ ha HA_00012210 (s_S1_pp[0][2],s_S1_pp[1][1],S[12210],C[12210]);
 fa FA_00012211 (S[11990],s_S1_pp[2][1],s_S1_pp[3][0],S[12211],C[12211]);
 fa FA_00012212 (S[11991],C[11990],s_S1_pp[4][0],S[12212],C[12212]);
 fa FA_00012213 (S[11992],C[11991],s_S1_pp[5][0],S[12213],C[12213]);
+// Long linear sequence B start (~215 FA chain): pattern S[x], C[x-1], C[stride+2].
 fa FA_00012214 (S[11993],C[11992],C[11558],S[12214],C[12214]);
 fa FA_00012215 (S[11994],C[11993],C[11560],S[12215],C[12215]);
 fa FA_00012216 (S[11995],C[11994],C[11562],S[12216],C[12216]);
@@ -12300,6 +12338,7 @@ fa FA_00012298 (S[12077],C[12076],C[11726],S[12298],C[12298]);
 fa FA_00012299 (S[12078],C[12077],C[11728],S[12299],C[12299]);
 fa FA_00012300 (S[12079],C[12078],C[11730],S[12300],C[12300]);
 fa FA_00012301 (S[12080],C[12079],C[11732],S[12301],C[12301]);
+// Stage 11 start (depth-11 reduction): deepest combinational chain region.
 fa FA_00012302 (S[12081],C[12080],C[11734],S[12302],C[12302]);
 fa FA_00012303 (S[12082],C[12081],C[11736],S[12303],C[12303]);
 fa FA_00012304 (S[12083],C[12082],C[11738],S[12304],C[12304]);

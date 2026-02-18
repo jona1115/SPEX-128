@@ -5,9 +5,6 @@ module sp_mode_unit_test;
 `define NUM_BITS_128 128
 `define NUM_BITS_64 64
 `define NUM_BITS_32 32
-`define FIXED128_SHIFT_AMOUNT_INT_PORTION_OVERFLOW 9
-`define FIXED64_SHIFT_AMOUNT_INT_PORTION_OVERFLOW 9
-`define FIXED32_SHIFT_AMOUNT_INT_PORTION_OVERFLOW 9
 `define ERROR_SIGNAL_NUM_BITS 32
 `define DEBUG_SIGNAL_NUM_BITS 32
 
@@ -30,6 +27,7 @@ module sp_mode_unit_test;
   logic                                   s_i_rst_n; // Synchronous
   logic [`NUM_BITS_128-1:0]                s_i_float;
   logic [3:0]                             s_i_ctrl;
+  logic                                   s_i_valid;
   logic [127:0]                           s_o_fixed;
   float_metadata_t                        s_o_metadata;
   logic [3:0]                             s_o_sanity_identifier;
@@ -44,9 +42,6 @@ module sp_mode_unit_test;
     .NUM_BITS_128(`NUM_BITS_128),
     .NUM_BITS_64(`NUM_BITS_64),
     .NUM_BITS_32(`NUM_BITS_32),
-    .FIXED128_SHIFT_AMOUNT_INT_PORTION_OVERFLOW(`FIXED128_SHIFT_AMOUNT_INT_PORTION_OVERFLOW),
-    .FIXED64_SHIFT_AMOUNT_INT_PORTION_OVERFLOW(`FIXED64_SHIFT_AMOUNT_INT_PORTION_OVERFLOW),
-    .FIXED32_SHIFT_AMOUNT_INT_PORTION_OVERFLOW(`FIXED32_SHIFT_AMOUNT_INT_PORTION_OVERFLOW),
     .ERROR_SIGNAL_NUM_BITS(`ERROR_SIGNAL_NUM_BITS),
     .DEBUG_SIGNAL_NUM_BITS(`DEBUG_SIGNAL_NUM_BITS)
   ) my_float_to_fixed(
@@ -54,6 +49,7 @@ module sp_mode_unit_test;
     .i_rst_n(s_i_rst_n),
     .i_float(s_i_float),
     .i_ctrl(s_i_ctrl),
+    .i_valid(s_i_valid),
     .o_fixed(s_o_fixed),
     .o_metadata(s_o_metadata),
     .o_sanity_identifier(s_o_sanity_identifier),
@@ -80,7 +76,19 @@ module sp_mode_unit_test;
     s_i_float = '0;
     // s_i_ctrl = '0;
     s_i_ctrl = 4'd2;
+    s_i_valid = 1'b1;
+    
+    s_i_rst_n   = 1'b0;                 // assert sync reset
+    repeat (2) @(posedge s_i_clk);      // hold for > one posedge
+    s_i_rst_n   = 1'b1;                 // deassert
+    @(posedge s_i_clk);                 // let it stablize
   endtask
+
+  // Toggle clock
+  initial begin
+    s_i_clk = 1'b0;
+    forever #1 s_i_clk = ~s_i_clk; // 2 unit period
+  end
 
 
   //===================================
@@ -91,6 +99,15 @@ module sp_mode_unit_test;
     svunit_ut.teardown();
     /* Place Teardown Code Here */
 
+  endtask
+
+  // ----------------------------------
+  // Helpers
+  // ----------------------------------
+  `define LATENCY (my_float_to_fixed.MODULE_LATENCY)
+
+  task automatic wait_n_ticks(int n);
+    repeat (n) @(posedge s_i_clk) @(negedge s_i_clk);
   endtask
 
 

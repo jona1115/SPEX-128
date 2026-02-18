@@ -1,0 +1,3 @@
+time ../svunit_run.sh -s modelsim --also float_classifier
+time ../svunit_run.sh -s modelsim --also float_classifier --ci
+
