@@ -51,8 +51,8 @@ import fixed32_pkg::*;
 
 module fixed_partition_sp #(
   parameter int MODULE_LATENCY_128    = 2,
-  parameter int MODULE_LATENCY_64     = 2,
-  parameter int MODULE_LATENCY_32     = 3, //?
+  parameter int MODULE_LATENCY_64     = 3,
+  parameter int MODULE_LATENCY_32     = 4,
   
   // Behavior controls
   parameter bit HAS_SIGN              = 1'b0, // MSB is sign bit when set
