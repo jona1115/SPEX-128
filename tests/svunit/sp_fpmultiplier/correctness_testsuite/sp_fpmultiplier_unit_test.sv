@@ -160,7 +160,7 @@ module sp_fpmultiplier_unit_test;
   string HEX_B_128 = "force_128b.hex";
   string HEX_C_128 = "jedi_128b.hex";
 
-  `define LATENCY (5 + my_sp_fpmultiplier.INTMUL_LATENCY)
+  `define LATENCY (my_sp_fpmultiplier.MODULE_LATENCY)
 
   // ----------------------------------
   // Helpers
