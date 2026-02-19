@@ -9,12 +9,7 @@
     s_i_valid      = '1;                          \
     s_i_ctrl       = in_ctrl;                     \
     s_i_float      = in_float;                    \
-    @(posedge s_i_clk); /* +1 = 1 */              \
-    `FAIL_UNLESS_EQUAL(s_o_fixed, _prev)          \
-    @(posedge s_i_clk); /* +1 = 2 */              \
-    @(posedge s_i_clk); /* +1 = 3 */              \
-    @(posedge s_i_clk); /* +1 = 4 */              \
-    @(negedge s_i_clk);                           \
+    wait_n_ticks(`LATENCY);                       \
     `FAIL_UNLESS_EQUAL(s_o_fixed, expected)       \
   end
 
@@ -52,9 +47,10 @@ module float_to_fixed_correctness_unit_test;
   logic                                   s_i_rst_n; // Synchronous
   logic [`NUM_BITS_128-1:0]               s_i_float;
   logic [3:0]                             s_i_ctrl;
+  logic                                   s_i_valid;
   logic [127:0]                           s_o_fixed;
   float_metadata_t                        s_o_metadata;
-  logic                                   s_i_valid;
+  logic                                   s_o_valid;
   logic [3:0]                             s_o_sanity_identifier;
   logic [`ERROR_SIGNAL_NUM_BITS-1:0]      s_o_error;
   logic [`DEBUG_SIGNAL_NUM_BITS-1:0]      s_o_debug;
@@ -74,9 +70,10 @@ module float_to_fixed_correctness_unit_test;
     .i_rst_n(s_i_rst_n),
     .i_float(s_i_float),
     .i_ctrl(s_i_ctrl),
+    .i_valid(s_i_valid),
     .o_fixed(s_o_fixed),
     .o_metadata(s_o_metadata),
-    .i_valid(s_i_valid),
+    .o_valid(s_o_valid),
     .o_sanity_identifier(s_o_sanity_identifier),
     .o_error(s_o_error),
     .o_debug(s_o_debug)
@@ -95,14 +92,12 @@ module float_to_fixed_correctness_unit_test;
   // Setup for running the Unit Tests
   //===================================
   task setup();
-    // For testing latency
-    logic [127:0] prev_out;
-  
     svunit_ut.setup();
     /* Place Setup Code Here */
-    s_i_float   = '0;
-    s_i_ctrl    = '0;
-    s_i_valid   = '0;
+    s_i_clk   = '0;
+    s_i_float = '0;
+    s_i_ctrl  = '0;
+    s_i_valid = '0;
 
     s_i_rst_n   = 1'b0;                 // assert sync reset
     repeat (2) @(posedge s_i_clk);      // hold for > one posedge
@@ -110,11 +105,12 @@ module float_to_fixed_correctness_unit_test;
     @(posedge s_i_clk);                 // let it stablize
   endtask
 
-// Toggle clock
-initial begin
-  s_i_clk = 1'b0;
-  forever #1 s_i_clk = ~s_i_clk; // 2 unit period
-end
+  // Toggle clock
+  initial begin
+    s_i_clk = 1'b0;
+    forever #1 s_i_clk = ~s_i_clk; // 2 unit period
+  end
+
 
   //===================================
   // Here we deconstruct anything we 
@@ -124,6 +120,15 @@ end
     svunit_ut.teardown();
     /* Place Teardown Code Here */
 
+  endtask
+
+  // ----------------------------------
+  // Helpers
+  // ----------------------------------
+  `define LATENCY (my_float_to_fixed.MODULE_LATENCY)
+
+  task automatic wait_n_ticks(int n);
+    repeat (n) @(posedge s_i_clk) @(negedge s_i_clk);
   endtask
 
   //===================================
