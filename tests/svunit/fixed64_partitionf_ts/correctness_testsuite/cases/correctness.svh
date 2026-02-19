@@ -5,7 +5,7 @@
   // Zero → sign=0, exp=1023, mantissa all zeros
   s_i_f = '0;
 
-  wait_n_ticks(1);
+  wait_n_ticks(my_fixed64_partitionf_ts.MODULE_LATENCY);
   `FAIL_UNLESS_EQUAL(s_o_exp_f, {1'b0, 11'd1023, 26'b0, 26'b0})
 `SVTEST_END
 
@@ -31,7 +31,7 @@
       mantissa : {26'b0, s_i_f[26:1]}
     };
 
-    wait_n_ticks(1);
+    wait_n_ticks(my_fixed64_partitionf_ts.MODULE_LATENCY);
     `FAIL_UNLESS_EQUAL(s_o_exp_f, exp)
   end
 `SVTEST_END
@@ -53,7 +53,7 @@
       mantissa : {26'b0, val[26:1]}
     };
 
-    wait_n_ticks(1);
+    wait_n_ticks(my_fixed64_partitionf_ts.MODULE_LATENCY);
     `FAIL_UNLESS_EQUAL(s_o_exp_f, exp_rand)
   end
 `SVTEST_END
