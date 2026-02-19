@@ -3,7 +3,7 @@
 /**
  * 
  * This test checks for:
- * 1. Latency of the module (should be 2 cycles)
+ * 1. Latency of the module (should match MODULE_LATENCY, currently 1)
  * 2. Result of the module
  * 
  */

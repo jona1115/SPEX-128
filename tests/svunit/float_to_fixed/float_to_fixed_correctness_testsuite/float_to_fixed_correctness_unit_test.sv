@@ -1,7 +1,7 @@
 `include "svunit_defines.svh"
 
-// ChatGPT gave me this awesome macro
-// It checks that float_to_fixed convert float to fix correctly in 2 cycles.
+// ChatGPT gave me this awesome macro.
+// It checks conversion correctness after the configured module latency.
 `define CHECK_CORRECT_CONVERT_LATENCY_2_CYCLES(in_float, in_ctrl, expected) \
   begin \
     logic [127:0] _prev = s_o_fixed;              \
@@ -16,7 +16,7 @@
 /**
  * 
  * This test checks for:
- * 1. Latency of the module (should be 2 cycles)
+ * 1. Latency of the module (should match MODULE_LATENCY, currently 1)
  * 2. Result of the module
  * 
  */
