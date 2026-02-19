@@ -39,9 +39,12 @@ import fixed64_pkg::*;
 import fixed32_pkg::*;
 
 module fixed128_partitionf_ts #(
-  parameter int NUM_BITS_128  = 128,
-  parameter int NUM_BITS_64   = 64,
-  parameter int NUM_BITS_32   = 32,
+  parameter int MODULE_LATENCY        = 2, // This should match MODULE_LATENCY_128 in fixed_partition_sp.sv
+  parameter int DELAY_BUFFER_LATENCY  = MODULE_LATENCY - 1,
+  
+  parameter int NUM_BITS_128          = 128,
+  parameter int NUM_BITS_64           = 64,
+  parameter int NUM_BITS_32           = 32,
   
   // Error and debug parameters
   parameter int ERROR_SIGNAL_NUM_BITS = 32,
@@ -107,13 +110,54 @@ always_ff @( posedge i_clk ) begin : valid_cit_register
   end
 end // always_ff
 
+/**
+ * db = delay buffer
+ * We are delaying things to match the latency from fixed_partition_sp.sv
+ */
+binary128_t s_db_o_exp_f;
+logic       s_db_o_valid;
+
+generate
+  if (DELAY_BUFFER_LATENCY == 0) begin : db_bypass
+    always_comb begin
+      s_db_o_exp_f = s_o_exp_f;
+      s_db_o_valid = s_o_valid;
+    end
+  end
+  else begin : db_shift
+    binary128_t s_db_o_exp_f_pipe [DELAY_BUFFER_LATENCY-1 : 0];
+    logic       s_db_o_valid_pipe [DELAY_BUFFER_LATENCY-1 : 0];
+    int i;
+
+    always_ff @( posedge i_clk ) begin : delayyyyy
+      if (!i_rst_n) begin
+        s_db_o_exp_f_pipe <= '{default:'0};
+        s_db_o_valid_pipe <= '{default:'0};
+      end
+      else begin
+        s_db_o_exp_f_pipe[0] <= s_o_exp_f;
+        s_db_o_valid_pipe[0] <= s_o_valid;
+
+        for (i = 1; i < DELAY_BUFFER_LATENCY; i++) begin
+          s_db_o_exp_f_pipe[i] <= s_db_o_exp_f_pipe[i-1];
+          s_db_o_valid_pipe[i] <= s_db_o_valid_pipe[i-1];
+        end
+      end // !i_rst_n else begin
+    end // delayyyyy
+
+    always_comb begin
+      s_db_o_exp_f = s_db_o_exp_f_pipe[DELAY_BUFFER_LATENCY-1];
+      s_db_o_valid = s_db_o_valid_pipe[DELAY_BUFFER_LATENCY-1];
+    end
+  end
+endgenerate
 
 //=====================================================================================
 // Final assignment
 //=====================================================================================
 // assign o_metadata = i_metadata;
-assign o_exp_f = s_o_exp_f;
-assign o_valid = s_o_valid;
+assign o_exp_f = s_db_o_exp_f;
+assign o_valid = s_db_o_valid;
 assign o_sanity_identifier = 4'b0000;
 assign o_error = '0;
 assign o_debug = '0;
