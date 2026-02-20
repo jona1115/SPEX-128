@@ -277,8 +277,11 @@ always_ff @( posedge i_clk ) begin : stage3a
   else begin
     if (s_S3_en) begin
       s_S3_jedi   <= s_S3_jedi_full[EX_MAN_BITS_128*2-1:0];
-      s_S3_valid  <= z1;
+      s_S3_valid  <= 1'b1;
     end // if (s_S3_en)
+    else begin
+      s_S3_valid  <= '0;
+    end
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
 
