@@ -41,7 +41,7 @@ module sp_fpmultiplier #(
   parameter int NUM_BITS_32   = 32,
 
   // Multiplier pipeline latency (cycles from mul start to valid product)
-  parameter int INTMUL_LATENCY = 4,
+  parameter int INTMUL_LATENCY = 3, // this has to match sp_intmultiplier's MODULE_LATENCY
   parameter int MODULE_LATENCY = INTMUL_LATENCY + 3,
 
   // Error and debug parameters
@@ -507,8 +507,8 @@ logic [6327 : 0]                  unused_ds_S2_S;
 logic [6327 : 0]                  unused_ds_S2_C;
 logic [229 : 0]                   unused_ds_S3_z0;
 logic [229 : 0]                   unused_ds_S3_z1;
-logic [113*2-1:0]                 unused_ds_S4_jedi;
-logic                             unused_ds_S4_valid;
+logic [113*2-1:0]                 unused_ds_S3_jedi;
+logic                             unused_ds_S3_valid;
 sp_intmultiplier #(
   .MODULE_LATENCY(INTMUL_LATENCY)
 ) my_sp_intmultiplier (
@@ -531,14 +531,7 @@ sp_intmultiplier #(
   .o_valid_jedi(),
   .o_sanity_identifier(unused_sp_intmultiplier_sanity_identifier),
   .o_error(unused_sp_intmultiplier_error),
-  .o_debug(unused_sp_intmultiplier_debug),
-  .ds_S1_pp(unused_ds_S1_pp),
-  .ds_S2_S(unused_ds_S2_S),
-  .ds_S2_C(unused_ds_S2_C),
-  .ds_S3_z0(unused_ds_S3_z0),
-  .ds_S3_z1(unused_ds_S3_z1),
-  .ds_S4_jedi(unused_ds_S4_jedi),
-  .ds_S4_valid(unused_ds_S4_valid)
+  .o_debug(unused_sp_intmultiplier_debug)
 );
 always_comb begin : stage2a_extended_mantissa_mult
   s_S2_128_mult_out_full = '0;
