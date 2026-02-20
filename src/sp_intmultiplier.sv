@@ -67,9 +67,10 @@ module sp_intmultiplier #(
   parameter int RADIX4_ROWS           = (RADIX4_PP_NBITS + 1) / 2,
   parameter int RADIX4_DADDA_SC_NBITS = 6328,
   parameter int RADIX4_DADDA_Z_NBITS  = 230,
+  parameter int RADIX2_DADDA_Z_NBITS  = 226,
 
   // Multiplier pipeline latency (cycles from valid in to valid out)
-  parameter int MODULE_LATENCY        = 4,
+  parameter int MODULE_LATENCY        = 3, // This has to match sp_fpmultiplier's INTMUL_LATENCY
 
   // Error and debug parameters
   parameter int ERROR_SIGNAL_NUM_BITS = 32,
@@ -101,15 +102,7 @@ module sp_intmultiplier #(
 
   // Error and debug signals
   output  logic [ERROR_SIGNAL_NUM_BITS-1 : 0]     o_error,
-  output  logic [DEBUG_SIGNAL_NUM_BITS-1 : 0]     o_debug,
-
-  output  logic [RADIX4_PP_NBITS-1 : 0]           ds_S1_pp [0 : RADIX4_ROWS-1],
-  output  logic [RADIX4_DADDA_SC_NBITS-1 : 0]     ds_S2_S,
-  output  logic [RADIX4_DADDA_SC_NBITS-1 : 0]     ds_S2_C,
-  output  logic [RADIX4_DADDA_Z_NBITS-1 : 0]      ds_S3_z0,
-  output  logic [RADIX4_DADDA_Z_NBITS-1 : 0]      ds_S3_z1,
-  output  logic [EX_MAN_BITS_128*2-1:0]           ds_S4_jedi,
-  output  logic                                   ds_S4_valid
+  output  logic [DEBUG_SIGNAL_NUM_BITS-1 : 0]     o_debug
 );
 
 //=====================================================================================
@@ -132,7 +125,7 @@ logic [PIPE_DEPTH-1 : 0]  s_pipe_valid_next;
 
 localparam int S2_OFFSET = 0;
 localparam int S3_OFFSET = S2_OFFSET + 1;
-localparam int S4_OFFSET = S3_OFFSET + 1;
+// localparam int S4_OFFSET = S3_OFFSET + 1;
 
 // Decode the input valid signals
 logic s_fire;
@@ -144,7 +137,7 @@ logic s_S1_en, s_S2_en, s_S3_en, s_S4_en;
 assign s_S1_en = s_fire;
 assign s_S2_en = s_pipe_valid[S2_OFFSET];
 assign s_S3_en = s_pipe_valid[S3_OFFSET];
-assign s_S4_en = s_pipe_valid[S4_OFFSET];
+// assign s_S4_en = s_pipe_valid[S4_OFFSET];
 
 /**
  * FSM
@@ -260,59 +253,34 @@ end // always_ff @( posedge i_clk )
 //=====================================================================================
 `ifndef USE_RADIX4_RECODING
   // Vanila
-  logic [225 : 0] z0;
-  logic [225 : 0] z1;
+  logic [RADIX2_DADDA_Z_NBITS-1 : 0] z0;
+  logic [RADIX2_DADDA_Z_NBITS-1 : 0] z1;
   `include "helper/dadda_compressor_final_rows.svh"
-  logic [225 : 0] s_S3_z0;
-  logic [225 : 0] s_S3_z1;
+  logic [RADIX2_DADDA_Z_NBITS-1 : 0] s_S3_jedi_full;
+  assign s_S3_jedi_full = z0 + z1;
 `else
   // Radix 4
   logic [RADIX4_DADDA_Z_NBITS-1 : 0] z0;
   logic [RADIX4_DADDA_Z_NBITS-1 : 0] z1;
   `include "helper/radix4_dadda_compressor_final_rows.svh"
-  logic [RADIX4_DADDA_Z_NBITS-1 : 0] s_S3_z0;
-  logic [RADIX4_DADDA_Z_NBITS-1 : 0] s_S3_z1;
+  logic [RADIX4_DADDA_Z_NBITS-1 : 0] s_S3_jedi_full;
+  assign s_S3_jedi_full = z0 + z1;
 `endif
+logic [EX_MAN_BITS_128*2-1:0] s_S3_jedi;
+logic                         s_S3_valid;
+
 always_ff @( posedge i_clk ) begin : stage3a
   if (!i_rst_n) begin
-    s_S3_z0 <= '0;
-    s_S3_z1 <= '0;
+    s_S3_jedi     <= '0;
+    s_S3_valid    <= '0;
   end
   else begin
     if (s_S3_en) begin
-      s_S3_z0 <= z0;
-      s_S3_z1 <= z1;
+      s_S3_jedi   <= s_S3_jedi_full[EX_MAN_BITS_128*2-1:0];
+      s_S3_valid  <= 1'b1;
     end // if (s_S3_en)
-  end // !i_rst_n else begin
-end // always_ff @( posedge i_clk )
-
-
-//=====================================================================================
-// Stage 4
-//=====================================================================================
-logic [EX_MAN_BITS_128*2-1:0] s_S4_jedi;
-logic                         s_S4_valid;
-`ifdef USE_RADIX4_RECODING
-logic [RADIX4_DADDA_Z_NBITS-1:0] s_S4_jedi_full;
-assign s_S4_jedi_full = s_S3_z0 + s_S3_z1;
-`endif
-always_ff @( posedge i_clk ) begin : stage4a
-  if (!i_rst_n) begin
-    s_S4_jedi   <= '0;
-    s_S4_valid  <= '0;
-  end
-  else begin
-    if (s_S4_en) begin
-`ifdef USE_RADIX4_RECODING
-      // Keep the LSB EX_MAN_BITS_128*2 product bits; upper guard bits are out-of-range for 113x113.
-      s_S4_jedi   <= s_S4_jedi_full[EX_MAN_BITS_128*2-1:0];
-`else
-      s_S4_jedi   <= s_S3_z0 + s_S3_z1;
-`endif
-      s_S4_valid  <= '1;
-    end // if (s_S4_en)
     else begin
-      s_S4_valid  <= '0;
+      s_S3_valid  <= '0;
     end
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
@@ -321,21 +289,10 @@ end // always_ff @( posedge i_clk )
 //=====================================================================================
 // Final assignment
 //=====================================================================================
-assign o_jedi = s_S4_jedi;
-assign o_valid_jedi = s_S4_valid;
+assign o_jedi = s_S3_jedi;
+assign o_valid_jedi = s_S3_valid;
 assign o_sanity_identifier = MODULE_IDENTIFIER;
 assign o_error = s_o_error;
 assign o_debug = '0;
-
-// Debug signals
-`ifdef USE_RADIX4_RECODING
-assign ds_S1_pp = s_S1_pp;
-assign ds_S2_S = s_S2_S;
-assign ds_S2_C = s_S2_C;
-assign ds_S3_z0 = s_S3_z0;
-assign ds_S3_z1 = s_S3_z1;
-assign ds_S4_jedi = s_S4_jedi;
-assign ds_S4_valid = s_S4_valid;
-`endif
 
 endmodule // module sp_fpmultiplier #()

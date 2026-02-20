@@ -41,7 +41,8 @@ module sp_fpmultiplier #(
   parameter int NUM_BITS_32   = 32,
 
   // Multiplier pipeline latency (cycles from mul start to valid product)
-  parameter int INTMUL_LATENCY = 4,
+  parameter int INTMUL_LATENCY = 3, // this has to match sp_intmultiplier's MODULE_LATENCY
+  parameter int MODULE_LATENCY = INTMUL_LATENCY + 3,
 
   // Error and debug parameters
   parameter int ERROR_SIGNAL_NUM_BITS = 32,
@@ -279,14 +280,12 @@ float_classifier #() my_float_classifier_force (
  * Fixed-latency pipeline control.
  * Each stage enable is a delayed version of the initial "fire" signal.
  */
-logic s_S1_en, s_S2_en, s_S3_en, s_S4_en, s_S5_en, s_S6_en, s_S7_en;
+logic s_S1_en, s_S2_en, s_S5_en, s_S6_en, s_S7_en; // S3 and S4 are merged into S2 into S234 as part of optimization effort in issue #53
 logic s_fire;
 localparam int MUL_START_OFFSET = 0;
 localparam int S2_OFFSET = MUL_START_OFFSET + INTMUL_LATENCY; // s_pipe_valid[4]
-localparam int S3_OFFSET = S2_OFFSET + 1;                     // s_pipe_valid[5]
-localparam int S4_OFFSET = S3_OFFSET + 1;                     // s_pipe_valid[6]
-localparam int S5_OFFSET = S4_OFFSET + 1;                     // s_pipe_valid[7]
-localparam int PIPE_DEPTH = S5_OFFSET + 1; // 8
+localparam int S5_OFFSET = S2_OFFSET + 1;                     // s_pipe_valid[5]
+localparam int PIPE_DEPTH = S5_OFFSET + 1; // 6
 logic [PIPE_DEPTH-1:0] s_pipe_valid;
 logic [PIPE_DEPTH-1:0] s_pipe_valid_next;
 logic s_mul_start;
@@ -330,8 +329,6 @@ assign s_pipe_valid_next = {s_pipe_valid[PIPE_DEPTH-2:0], s_fire};
 assign s_mul_start = s_pipe_valid[MUL_START_OFFSET];
 assign s_S1_en = s_fire;
 assign s_S2_en = s_pipe_valid[S2_OFFSET];
-assign s_S3_en = s_pipe_valid[S3_OFFSET];
-assign s_S4_en = s_pipe_valid[S4_OFFSET];
 assign s_S5_en = s_pipe_valid[S5_OFFSET];
 assign s_S6_en = 1'b0;
 assign s_S7_en = 1'b0;
@@ -471,11 +468,8 @@ end // always_ff @( posedge i_clk )
 
 
 //=====================================================================================
-// Stage 2: Multiply
+// Stage between 1 and 2: Multiply
 //=====================================================================================
-/**
- * 2a: Process the multiply
- */
 // extended mantissa (hs, helper signals)
 logic [112:0] hs_S1_128_anikin_mantissa_extended, hs_S1_128_force_mantissa_extended;
 logic [52:0]  hs_S1_64a_anikin_mantissa_extended, hs_S1_64a_force_mantissa_extended;
@@ -513,8 +507,8 @@ logic [6327 : 0]                  unused_ds_S2_S;
 logic [6327 : 0]                  unused_ds_S2_C;
 logic [229 : 0]                   unused_ds_S3_z0;
 logic [229 : 0]                   unused_ds_S3_z1;
-logic [113*2-1:0]                 unused_ds_S4_jedi;
-logic                             unused_ds_S4_valid;
+logic [113*2-1:0]                 unused_ds_S3_jedi;
+logic                             unused_ds_S3_valid;
 sp_intmultiplier #(
   .MODULE_LATENCY(INTMUL_LATENCY)
 ) my_sp_intmultiplier (
@@ -537,58 +531,41 @@ sp_intmultiplier #(
   .o_valid_jedi(),
   .o_sanity_identifier(unused_sp_intmultiplier_sanity_identifier),
   .o_error(unused_sp_intmultiplier_error),
-  .o_debug(unused_sp_intmultiplier_debug),
-  .ds_S1_pp(unused_ds_S1_pp),
-  .ds_S2_S(unused_ds_S2_S),
-  .ds_S2_C(unused_ds_S2_C),
-  .ds_S3_z0(unused_ds_S3_z0),
-  .ds_S3_z1(unused_ds_S3_z1),
-  .ds_S4_jedi(unused_ds_S4_jedi),
-  .ds_S4_valid(unused_ds_S4_valid)
+  .o_debug(unused_sp_intmultiplier_debug)
 );
-always_ff @( posedge i_clk ) begin : stage2a_extended_mantissa_mult
-  if (!i_rst_n) begin
-    s_S2_128_mult_out_full  <= '0;
-    s_S2_64a_mult_out_full  <= '0;
-    s_S2_64b_mult_out_full  <= '0;
-    s_S2_32a_mult_out_full  <= '0;
-    s_S2_32b_mult_out_full  <= '0;
-    s_S2_32c_mult_out_full  <= '0;
-    s_S2_32d_mult_out_full  <= '0;
-    s_o_error[3]            <= 1'b0;
-    s_o_error[7]            <= 1'b0;
-  end
-  else begin
-    if (s_S2_en) begin
-      assert (s_db_metadata_anikin[INTMUL_LATENCY-1].sp_mode === s_db_metadata_force[INTMUL_LATENCY-1].sp_mode) else begin
-        s_o_error[7] <= 1'b1;
-        // $fatal(1, "Bad things had happened, (s_db_metadata_anikin[INTMUL_LATENCY-1].sp_mode === s_db_metadata_force[INTMUL_LATENCY-1].sp_mode) is false.");
-      end
+always_comb begin : stage2a_extended_mantissa_mult
+  s_S2_128_mult_out_full = '0;
+  s_S2_64a_mult_out_full = '0;
+  s_S2_64b_mult_out_full = '0;
+  s_S2_32a_mult_out_full = '0;
+  s_S2_32b_mult_out_full = '0;
+  s_S2_32c_mult_out_full = '0;
+  s_S2_32d_mult_out_full = '0;
 
-      case (s_db_metadata_anikin[INTMUL_LATENCY-1].sp_mode)
-        SINGLE_MODE: begin
-          s_S2_128_mult_out_full <= s_sp_intmultiplier_jedi;
-        end
-        TWO_SP_MODE: begin
-          s_S2_64a_mult_out_full <= s_sp_intmultiplier_jedi[215:110];
-          s_S2_64b_mult_out_full <= s_sp_intmultiplier_jedi[105:0];
-        end
-        FOUR_SP_MODE: begin
-          s_S2_32a_mult_out_full <= s_sp_intmultiplier_jedi[205:158];
-          s_S2_32b_mult_out_full <= s_sp_intmultiplier_jedi[153:106];
-          s_S2_32c_mult_out_full <= s_sp_intmultiplier_jedi[99:52];
-          s_S2_32d_mult_out_full <= s_sp_intmultiplier_jedi[47:0];
-        end
-        default: begin
-          assert (0) else begin
-            s_o_error[3] <= 1'b1;
-          end
-        end
-      endcase // case (i_metadata.sp_mode)
+  case (s_db_metadata_anikin[INTMUL_LATENCY-1].sp_mode)
+    SINGLE_MODE: begin
+      s_S2_128_mult_out_full = s_sp_intmultiplier_jedi;
     end
-  end // !i_rst_n else begin
-end // always_ff @( posedge i_clk )
+    TWO_SP_MODE: begin
+      s_S2_64a_mult_out_full = s_sp_intmultiplier_jedi[215:110];
+      s_S2_64b_mult_out_full = s_sp_intmultiplier_jedi[105:0];
+    end
+    FOUR_SP_MODE: begin
+      s_S2_32a_mult_out_full = s_sp_intmultiplier_jedi[205:158];
+      s_S2_32b_mult_out_full = s_sp_intmultiplier_jedi[153:106];
+      s_S2_32c_mult_out_full = s_sp_intmultiplier_jedi[99:52];
+      s_S2_32d_mult_out_full = s_sp_intmultiplier_jedi[47:0];
+    end
+    default: begin
+      // Keep all-zero defaults.
+    end
+  endcase // case (i_metadata.sp_mode)
+end
 
+
+//=====================================================================================
+// Stage 2/3/4: Rounding and re-normalization
+//=====================================================================================
 /**
  * 2c: db = delay buffer
  */
@@ -641,22 +618,6 @@ float_metadata_t  s_db_metadata_anikin_next   [INTMUL_LATENCY-1 : 0],
                   s_db_metadata_force_next    [INTMUL_LATENCY-1 : 0];
 assign s_db_metadata_anikin_next  = {s_db_metadata_anikin[INTMUL_LATENCY-2 : 0], s_S1_metadata_anikin};
 assign s_db_metadata_force_next   = {s_db_metadata_force[INTMUL_LATENCY-2 : 0], s_S1_metadata_force};
-/*DEBUG*/binary128_t s_db_128_jedi_0;
-/*DEBUG*/binary128_t s_db_128_jedi_1;
-/*DEBUG*/binary128_t s_db_128_jedi_2;
-/*DEBUG*/binary128_t s_db_128_jedi_3;
-/*DEBUG*/assign s_db_128_jedi_0 = s_db_128_jedi[0];
-/*DEBUG*/assign s_db_128_jedi_1 = s_db_128_jedi[1];
-/*DEBUG*/assign s_db_128_jedi_2 = s_db_128_jedi[2];
-/*DEBUG*/assign s_db_128_jedi_3 = s_db_128_jedi[3];
-/*DEBUG*/binary128_t s_db_128_jedi_next_0;
-/*DEBUG*/binary128_t s_db_128_jedi_next_1;
-/*DEBUG*/binary128_t s_db_128_jedi_next_2;
-/*DEBUG*/binary128_t s_db_128_jedi_next_3;
-/*DEBUG*/assign s_db_128_jedi_next_0 = s_db_128_jedi_next[0];
-/*DEBUG*/assign s_db_128_jedi_next_1 = s_db_128_jedi_next[1];
-/*DEBUG*/assign s_db_128_jedi_next_2 = s_db_128_jedi_next[2];
-/*DEBUG*/assign s_db_128_jedi_next_3 = s_db_128_jedi_next[3];
 always_ff @( posedge i_clk ) begin : stage2c_jedi_db
   if (!i_rst_n) begin
     s_db_128_jedi           <= '{default:'0};
@@ -699,7 +660,7 @@ always_ff @( posedge i_clk ) begin : stage2c_jedi_db
 end // always_ff @( posedge i_clk )
 
 /**
- * 2b: Signal passthrough, for proper pipelining
+ * 2b: Aligned signal aliases (no extra register stage)
  */
 // Outputs
 binary128_t       s_S2_128_jedi;
@@ -709,439 +670,74 @@ logic             s_S2_valid128_jedi;
 logic             s_S2_valid64a_jedi, s_S2_valid64b_jedi;
 logic             s_S2_valid32a_jedi, s_S2_valid32b_jedi, s_S2_valid32c_jedi, s_S2_valid32d_jedi;
 float_metadata_t  s_S2_metadata_anikin, s_S2_metadata_force;
-always_ff @( posedge i_clk ) begin : stage2b_signal_passthrough
-  if (!i_rst_n) begin
-    s_S2_128_jedi         <= '0;
-    s_S2_64a_jedi         <= '0;
-    s_S2_64b_jedi         <= '0;
-    s_S2_32a_jedi         <= '0;
-    s_S2_32b_jedi         <= '0;
-    s_S2_32c_jedi         <= '0;
-    s_S2_32d_jedi         <= '0;
+assign s_S2_128_jedi        = s_db_128_jedi[INTMUL_LATENCY-1];
+assign s_S2_64a_jedi        = s_db_64a_jedi[INTMUL_LATENCY-1];
+assign s_S2_64b_jedi        = s_db_64b_jedi[INTMUL_LATENCY-1];
+assign s_S2_32a_jedi        = s_db_32a_jedi[INTMUL_LATENCY-1];
+assign s_S2_32b_jedi        = s_db_32b_jedi[INTMUL_LATENCY-1];
+assign s_S2_32c_jedi        = s_db_32c_jedi[INTMUL_LATENCY-1];
+assign s_S2_32d_jedi        = s_db_32d_jedi[INTMUL_LATENCY-1];
+assign s_S2_valid128_jedi   = s_db_valid128_jedi[INTMUL_LATENCY-1];
+assign s_S2_valid64a_jedi   = s_db_valid64a_jedi[INTMUL_LATENCY-1];
+assign s_S2_valid64b_jedi   = s_db_valid64b_jedi[INTMUL_LATENCY-1];
+assign s_S2_valid32a_jedi   = s_db_valid32a_jedi[INTMUL_LATENCY-1];
+assign s_S2_valid32b_jedi   = s_db_valid32b_jedi[INTMUL_LATENCY-1];
+assign s_S2_valid32c_jedi   = s_db_valid32c_jedi[INTMUL_LATENCY-1];
+assign s_S2_valid32d_jedi   = s_db_valid32d_jedi[INTMUL_LATENCY-1];
+assign s_S2_metadata_anikin = s_db_metadata_anikin[INTMUL_LATENCY-1];
+assign s_S2_metadata_force  = s_db_metadata_force[INTMUL_LATENCY-1];
 
-    s_S2_valid128_jedi    <= '0;
-    s_S2_valid64a_jedi    <= '0;
-    s_S2_valid64b_jedi    <= '0;
-    s_S2_valid32a_jedi    <= '0;
-    s_S2_valid32b_jedi    <= '0;
-    s_S2_valid32c_jedi    <= '0;
-    s_S2_valid32d_jedi    <= '0;
-    
-    s_S2_metadata_anikin  <= '0;
-    s_S2_metadata_force   <= '0;
+
+`define CARRY_IS_A_ONE(cb) ((cb) === 1'b1) // Checks if the top carry bit from n*n multiply is a 1.
+
+function automatic logic [113:0] fn_stage234_round_128(input logic [225:0] i_full);
+  logic hs_carry, hs_guard, hs_round, hs_sticky, hs_lsb, hs_round_up;
+  logic [112:0] hs_kept;
+  begin
+    hs_carry = `CARRY_IS_A_ONE(i_full[225]);
+    hs_kept  = hs_carry ? i_full[225:113] : i_full[224:112];
+    hs_guard = hs_carry ? i_full[112] : i_full[111];
+    hs_round = hs_carry ? i_full[111] : i_full[110];
+    hs_sticky = hs_carry ? |i_full[110:0] : |i_full[109:0];
+    hs_lsb = hs_carry ? i_full[113] : i_full[112];
+    hs_round_up = (hs_guard === 1'b1) &&
+                  ((hs_round === 1'b1) || (hs_sticky === 1'b1) || (hs_lsb === 1'b1));
+    fn_stage234_round_128 = {1'b0, hs_kept} + hs_round_up;
   end
-  else begin
-    if (s_S2_en) begin
-      // jedi passthrough
-      s_S2_128_jedi         <= s_db_128_jedi[INTMUL_LATENCY-1];
-      s_S2_64a_jedi         <= s_db_64a_jedi[INTMUL_LATENCY-1];
-      s_S2_64b_jedi         <= s_db_64b_jedi[INTMUL_LATENCY-1];
-      s_S2_32a_jedi         <= s_db_32a_jedi[INTMUL_LATENCY-1];
-      s_S2_32b_jedi         <= s_db_32b_jedi[INTMUL_LATENCY-1];
-      s_S2_32c_jedi         <= s_db_32c_jedi[INTMUL_LATENCY-1];
-      s_S2_32d_jedi         <= s_db_32d_jedi[INTMUL_LATENCY-1];
+endfunction
 
-      // valid bit pass through
-      s_S2_valid128_jedi    <= s_db_valid128_jedi[INTMUL_LATENCY-1];
-      s_S2_valid64a_jedi    <= s_db_valid64a_jedi[INTMUL_LATENCY-1];
-      s_S2_valid64b_jedi    <= s_db_valid64b_jedi[INTMUL_LATENCY-1];
-      s_S2_valid32a_jedi    <= s_db_valid32a_jedi[INTMUL_LATENCY-1];
-      s_S2_valid32b_jedi    <= s_db_valid32b_jedi[INTMUL_LATENCY-1];
-      s_S2_valid32c_jedi    <= s_db_valid32c_jedi[INTMUL_LATENCY-1];
-      s_S2_valid32d_jedi    <= s_db_valid32d_jedi[INTMUL_LATENCY-1];
-
-      // metadata
-      s_S2_metadata_anikin  <= s_db_metadata_anikin[INTMUL_LATENCY-1];
-      s_S2_metadata_force   <= s_db_metadata_force[INTMUL_LATENCY-1];
-    end
-  end // !i_rst_n else begin
-end // always_ff @( posedge i_clk )
-
-
-//=====================================================================================
-// Stage 3: Rounding and normalization
-//=====================================================================================
-/**
- * 3a: 
- * After multiplication, we have the product (using binary128 as example):
- *              P_full = 1.b_1b_2b_3...b_112b_113b_114b_115...
- * To round it, or "normalize" it to 113 bits (including implicit 1), we need not only
- * the 113 bits (1.b_1b_2b_3...b_112), but also:
- *                              guard bit G = b_113
- *                              round bit R = b_114
- *                              sticky bit S = OR(b_115, b_116, ...)
- * 
- * So, rounding rule is:
- * 1. if G == 0: 1.b_1b_2b_3...b_112 is the rounded product P_norm
- * 2. if G == 1:
- *        if R == 1 or S == 1, P_norm = 1.b_1b_2b_3...b_112 + 1
- *        if R == 0 and S == 0,
- *            if b_112 == 1, P_norm = 1.b_1b_2b_3...b_112 + 1
- *            if b_112 == 0, P_norm = 1.b_1b_2b_3...b_112
- * 
- * Stage 4 will be:
- * After rounding, we need to check that the rounding didn't cause overflow (ie we 
- * get a 10.0000.... after we increment by 1)
- * if that is the case (overflow), we increment the exponent by 1 again and shift
- * P_norm right by 1 so that it goes back to being 1.000000....
- * 
- * This is called RN-even: Round to nearest, ties to even
- */
-/**
- * 3a: Normalization
- */
-// Guard bits:
-logic s_S3_128_mult_out_full_G, s_S3_128_mult_out_full_R, s_S3_128_mult_out_full_S;
-logic s_S3_64a_mult_out_full_G, s_S3_64a_mult_out_full_R, s_S3_64a_mult_out_full_S;
-logic s_S3_64b_mult_out_full_G, s_S3_64b_mult_out_full_R, s_S3_64b_mult_out_full_S;
-logic s_S3_32a_mult_out_full_G, s_S3_32a_mult_out_full_R, s_S3_32a_mult_out_full_S;
-logic s_S3_32b_mult_out_full_G, s_S3_32b_mult_out_full_R, s_S3_32b_mult_out_full_S;
-logic s_S3_32c_mult_out_full_G, s_S3_32c_mult_out_full_R, s_S3_32c_mult_out_full_S;
-logic s_S3_32d_mult_out_full_G, s_S3_32d_mult_out_full_R, s_S3_32d_mult_out_full_S;
-`define CARRY_IS_A_ONE(cb) ((cb) === 1'b1) // When you take n-bits * n-bits the result is a carry bit + (2n-1)-bits, this checks if the carry bit is a 1 or not
-// G
-assign s_S3_128_mult_out_full_G = `CARRY_IS_A_ONE(s_S2_128_mult_out_full[225])  ? s_S2_128_mult_out_full[112] : s_S2_128_mult_out_full[111];
-assign s_S3_64a_mult_out_full_G = `CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105])  ? s_S2_64a_mult_out_full[52]  : s_S2_64a_mult_out_full[51];
-assign s_S3_64b_mult_out_full_G = `CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105])  ? s_S2_64b_mult_out_full[52]  : s_S2_64b_mult_out_full[51];
-assign s_S3_32a_mult_out_full_G = `CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47])   ? s_S2_32a_mult_out_full[23]  : s_S2_32a_mult_out_full[22];
-assign s_S3_32b_mult_out_full_G = `CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47])   ? s_S2_32b_mult_out_full[23]  : s_S2_32b_mult_out_full[22];
-assign s_S3_32c_mult_out_full_G = `CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47])   ? s_S2_32c_mult_out_full[23]  : s_S2_32c_mult_out_full[22];
-assign s_S3_32d_mult_out_full_G = `CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47])   ? s_S2_32d_mult_out_full[23]  : s_S2_32d_mult_out_full[22];
-// R
-assign s_S3_128_mult_out_full_R = `CARRY_IS_A_ONE(s_S2_128_mult_out_full[225])  ? s_S2_128_mult_out_full[111] : s_S2_128_mult_out_full[110];
-assign s_S3_64a_mult_out_full_R = `CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105])  ? s_S2_64a_mult_out_full[51]  : s_S2_64a_mult_out_full[50];
-assign s_S3_64b_mult_out_full_R = `CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105])  ? s_S2_64b_mult_out_full[51]  : s_S2_64b_mult_out_full[50];
-assign s_S3_32a_mult_out_full_R = `CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47])   ? s_S2_32a_mult_out_full[22]  : s_S2_32a_mult_out_full[21];
-assign s_S3_32b_mult_out_full_R = `CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47])   ? s_S2_32b_mult_out_full[22]  : s_S2_32b_mult_out_full[21];
-assign s_S3_32c_mult_out_full_R = `CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47])   ? s_S2_32c_mult_out_full[22]  : s_S2_32c_mult_out_full[21];
-assign s_S3_32d_mult_out_full_R = `CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47])   ? s_S2_32d_mult_out_full[22]  : s_S2_32d_mult_out_full[21];
-// S                                                                              // |logic infers an OR tree according to ChatGPT
-assign s_S3_128_mult_out_full_S = `CARRY_IS_A_ONE(s_S2_128_mult_out_full[225])  ? |s_S2_128_mult_out_full[110:0] : |s_S2_128_mult_out_full[109:0];
-assign s_S3_64a_mult_out_full_S = `CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105])  ? |s_S2_64a_mult_out_full[50:0]  : |s_S2_64a_mult_out_full[49:0];
-assign s_S3_64b_mult_out_full_S = `CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105])  ? |s_S2_64b_mult_out_full[50:0]  : |s_S2_64b_mult_out_full[49:0];
-assign s_S3_32a_mult_out_full_S = `CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47])   ? |s_S2_32a_mult_out_full[21:0]  : |s_S2_32a_mult_out_full[20:0];
-assign s_S3_32b_mult_out_full_S = `CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47])   ? |s_S2_32b_mult_out_full[21:0]  : |s_S2_32b_mult_out_full[20:0];
-assign s_S3_32c_mult_out_full_S = `CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47])   ? |s_S2_32c_mult_out_full[21:0]  : |s_S2_32c_mult_out_full[20:0];
-assign s_S3_32d_mult_out_full_S = `CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47])   ? |s_S2_32d_mult_out_full[21:0]  : |s_S2_32d_mult_out_full[20:0];
-// Potential (partial, candidate, etc whatever you want to call it) results
-logic [113:0] s_S3_128_potential_result;
-logic [53:0]  s_S3_64a_potential_result;
-logic [53:0]  s_S3_64b_potential_result;
-logic [24:0]  s_S3_32a_potential_result;
-logic [24:0]  s_S3_32b_potential_result;
-logic [24:0]  s_S3_32c_potential_result;
-logic [24:0]  s_S3_32d_potential_result;
-always_ff @( posedge i_clk ) begin : stage3a_ex_man_normalization
-  if (!i_rst_n) begin
-    s_S3_128_potential_result <= '0;
-    s_S3_64a_potential_result <= '0;
-    s_S3_64b_potential_result <= '0;
-    s_S3_32a_potential_result <= '0;
-    s_S3_32b_potential_result <= '0;
-    s_S3_32c_potential_result <= '0;
-    s_S3_32d_potential_result <= '0;
-    s_o_error[4]              <= 1'b0;
-    s_o_error[8]              <= 1'b0;
+function automatic logic [53:0] fn_stage234_round_64(input logic [105:0] i_full);
+  logic hs_carry, hs_guard, hs_round, hs_sticky, hs_lsb, hs_round_up;
+  logic [52:0] hs_kept;
+  begin
+    hs_carry = `CARRY_IS_A_ONE(i_full[105]);
+    hs_kept  = hs_carry ? i_full[105:53] : i_full[104:52];
+    hs_guard = hs_carry ? i_full[52] : i_full[51];
+    hs_round = hs_carry ? i_full[51] : i_full[50];
+    hs_sticky = hs_carry ? |i_full[50:0] : |i_full[49:0];
+    hs_lsb = hs_carry ? i_full[53] : i_full[52];
+    hs_round_up = (hs_guard === 1'b1) &&
+                  ((hs_round === 1'b1) || (hs_sticky === 1'b1) || (hs_lsb === 1'b1));
+    fn_stage234_round_64 = {1'b0, hs_kept} + hs_round_up;
   end
-  else begin
-    if (s_S3_en) begin
-      assert (s_S2_metadata_anikin.sp_mode === s_S2_metadata_force.sp_mode) else begin
-        s_o_error[8] <= 1'b1;
-        // $fatal(1, "Bad things had happened, (s_S2_metadata_anikin.sp_mode === s_S2_metadata_force.sp_mode) is false.");
-      end
-      
-      case (s_S2_metadata_anikin.sp_mode)
-        SINGLE_MODE: begin
-          if (s_S3_128_mult_out_full_G === 1'b0) begin
-            s_S3_128_potential_result <= {1'b0, (`CARRY_IS_A_ONE(s_S2_128_mult_out_full[225]) ? 
-                                                  s_S2_128_mult_out_full[225:113] : s_S2_128_mult_out_full[224:112])};
-          end
-          else begin // s_S3_128_mult_out_full_G === 1'b1
-            if (s_S3_128_mult_out_full_R === 1'b1 || s_S3_128_mult_out_full_S === 1'b1) begin
-              s_S3_128_potential_result <= (`CARRY_IS_A_ONE(s_S2_128_mult_out_full[225]) ? 
-                                            s_S2_128_mult_out_full[225:113] : s_S2_128_mult_out_full[224:112]) + 1'b1;
-            end
-            else if (s_S3_128_mult_out_full_R === 1'b0 && s_S3_128_mult_out_full_S === 1'b0) begin
-              // Even rule
-              if ((`CARRY_IS_A_ONE(s_S2_128_mult_out_full[225]) && s_S2_128_mult_out_full[113] === 1'b1) ||
-                  (!(`CARRY_IS_A_ONE(s_S2_128_mult_out_full[225])) && s_S2_128_mult_out_full[112] === 1'b1)) begin
-                s_S3_128_potential_result <= (`CARRY_IS_A_ONE(s_S2_128_mult_out_full[225]) ? 
-                                              s_S2_128_mult_out_full[225:113] : s_S2_128_mult_out_full[224:112]) + 1'b1;
-              end
-              else begin // s_S2_128_mult_out_full[113/112] === 1'b0
-                s_S3_128_potential_result <= {1'b0, (`CARRY_IS_A_ONE(s_S2_128_mult_out_full[225]) ? 
-                                                      s_S2_128_mult_out_full[225:113] : s_S2_128_mult_out_full[224:112])};
-              end
-            end // R==0 && S==0
-            else begin
-              // this shouldnt logically happen, right?
-            end // else
-          end // s_S3_128_mult_out_full_G === 1'b1
-        end // SINGLE_MODE
+endfunction
 
-        TWO_SP_MODE: begin
-          if (s_S3_64a_mult_out_full_G === 1'b0) begin
-            s_S3_64a_potential_result <= (`CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105]) ?
-                                           s_S2_64a_mult_out_full[105:53] : s_S2_64a_mult_out_full[104:52]);
-          end
-          else begin // s_S3_64a_mult_out_full_G === 1'b1
-            if (s_S3_64a_mult_out_full_R === 1'b1 || s_S3_64a_mult_out_full_S === 1'b1) begin
-              s_S3_64a_potential_result <= (`CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105]) ?
-                                             s_S2_64a_mult_out_full[105:53] : s_S2_64a_mult_out_full[104:52]) + 1'b1;
-            end
-            else if (s_S3_64a_mult_out_full_R === 1'b0 && s_S3_64a_mult_out_full_S === 1'b0) begin
-              // Even rule
-              if ((`CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105]) && s_S2_64a_mult_out_full[53] === 1'b1) ||
-                  (!(`CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105])) && s_S2_64a_mult_out_full[52] === 1'b1)) begin
-                s_S3_64a_potential_result <= (`CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105]) ?
-                                               s_S2_64a_mult_out_full[105:53] : s_S2_64a_mult_out_full[104:52]) + 1'b1;
-              end
-              else begin // s_S2_64a_mult_out_full[53/52] === 1'b0
-                s_S3_64a_potential_result <= (`CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105]) ?
-                                               s_S2_64a_mult_out_full[105:53] : s_S2_64a_mult_out_full[104:52]);
-              end
-            end // R==0 && S==0
-            else begin
-              // this shouldnt logically happen, right?
-            end // else
-          end // s_S3_64a_mult_out_full_G === 1'b1
-
-          if (s_S3_64b_mult_out_full_G === 1'b0) begin
-            s_S3_64b_potential_result <= (`CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105]) ?
-                                           s_S2_64b_mult_out_full[105:53] : s_S2_64b_mult_out_full[104:52]);
-          end
-          else begin // s_S3_64b_mult_out_full_G === 1'b1
-            if (s_S3_64b_mult_out_full_R === 1'b1 || s_S3_64b_mult_out_full_S === 1'b1) begin
-              s_S3_64b_potential_result <= (`CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105]) ?
-                                             s_S2_64b_mult_out_full[105:53] : s_S2_64b_mult_out_full[104:52]) + 1'b1;
-            end
-            else if (s_S3_64b_mult_out_full_R === 1'b0 && s_S3_64b_mult_out_full_S === 1'b0) begin
-              // Even rule
-              if ((`CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105]) && s_S2_64b_mult_out_full[53] === 1'b1) ||
-                  (!(`CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105])) && s_S2_64b_mult_out_full[52] === 1'b1)) begin
-                s_S3_64b_potential_result <= (`CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105]) ?
-                                               s_S2_64b_mult_out_full[105:53] : s_S2_64b_mult_out_full[104:52]) + 1'b1;
-              end
-              else begin // s_S2_64b_mult_out_full[53/52] === 1'b0
-                s_S3_64b_potential_result <= (`CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105]) ?
-                                               s_S2_64b_mult_out_full[105:53] : s_S2_64b_mult_out_full[104:52]);
-              end
-            end // R==0 && S==0
-            else begin
-              // this shouldnt logically happen, right?
-            end // else
-          end // s_S3_64b_mult_out_full_G === 1'b1
-        end // TWO_SP_MODE
-
-        FOUR_SP_MODE: begin
-          if (s_S3_32a_mult_out_full_G === 1'b0) begin
-            s_S3_32a_potential_result <= (`CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47]) ?
-                                           s_S2_32a_mult_out_full[47:24] : s_S2_32a_mult_out_full[46:23]);
-          end
-          else begin // s_S3_32a_mult_out_full_G === 1'b1
-            if (s_S3_32a_mult_out_full_R === 1'b1 || s_S3_32a_mult_out_full_S === 1'b1) begin
-              s_S3_32a_potential_result <= (`CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47]) ?
-                                             s_S2_32a_mult_out_full[47:24] : s_S2_32a_mult_out_full[46:23]) + 1'b1;
-            end
-            else if (s_S3_32a_mult_out_full_R === 1'b0 && s_S3_32a_mult_out_full_S === 1'b0) begin
-              // Even rule
-              if ((`CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47]) && s_S2_32a_mult_out_full[24] === 1'b1) ||
-                  (!(`CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47])) && s_S2_32a_mult_out_full[23] === 1'b1)) begin
-                s_S3_32a_potential_result <= (`CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47]) ?
-                                               s_S2_32a_mult_out_full[47:24] : s_S2_32a_mult_out_full[47:24]) + 1'b1;
-              end
-              else begin // s_S2_32a_mult_out_full[53/52] === 1'b0
-                s_S3_32a_potential_result <= (`CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47]) ?
-                                               s_S2_32a_mult_out_full[47:24] : s_S2_32a_mult_out_full[47:24]);
-              end
-            end // R==0 && S==0
-            else begin
-              // this shouldnt logically happen, right?
-            end // else
-          end // s_S3_32a_mult_out_full_G === 1'b1
-
-          if (s_S3_32b_mult_out_full_G === 1'b0) begin
-            s_S3_32b_potential_result <= (`CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47]) ?
-                                           s_S2_32b_mult_out_full[47:24] : s_S2_32b_mult_out_full[46:23]);
-          end
-          else begin // s_S3_32b_mult_out_full_G === 1'b1
-            if (s_S3_32b_mult_out_full_R === 1'b1 || s_S3_32b_mult_out_full_S === 1'b1) begin
-              s_S3_32b_potential_result <= (`CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47]) ?
-                                             s_S2_32b_mult_out_full[47:24] : s_S2_32b_mult_out_full[46:23]) + 1'b1;
-            end
-            else if (s_S3_32b_mult_out_full_R === 1'b0 && s_S3_32b_mult_out_full_S === 1'b0) begin
-              // Even rule
-              if ((`CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47]) && s_S2_32b_mult_out_full[24] === 1'b1) ||
-                  (!(`CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47])) && s_S2_32b_mult_out_full[23] === 1'b1)) begin
-                s_S3_32b_potential_result <= (`CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47]) ?
-                                               s_S2_32b_mult_out_full[47:24] : s_S2_32b_mult_out_full[47:24]) + 1'b1;
-              end
-              else begin // s_S2_32b_mult_out_full[53/52] === 1'b0
-                s_S3_32b_potential_result <= (`CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47]) ?
-                                               s_S2_32b_mult_out_full[47:24] : s_S2_32b_mult_out_full[47:24]);
-              end
-            end // R==0 && S==0
-            else begin
-              // this shouldnt logically happen, right?
-            end // else
-          end // s_S3_32b_mult_out_full_G === 1'b1
-
-          if (s_S3_32c_mult_out_full_G === 1'b0) begin
-            s_S3_32c_potential_result <= (`CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47]) ?
-                                           s_S2_32c_mult_out_full[47:24] : s_S2_32c_mult_out_full[46:23]);
-          end
-          else begin // s_S3_32c_mult_out_full_G === 1'b1
-            if (s_S3_32c_mult_out_full_R === 1'b1 || s_S3_32c_mult_out_full_S === 1'b1) begin
-              s_S3_32c_potential_result <= (`CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47]) ?
-                                             s_S2_32c_mult_out_full[47:24] : s_S2_32c_mult_out_full[46:23]) + 1'b1;
-            end
-            else if (s_S3_32c_mult_out_full_R === 1'b0 && s_S3_32c_mult_out_full_S === 1'b0) begin
-              // Even rule
-              if ((`CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47]) && s_S2_32c_mult_out_full[24] === 1'b1) ||
-                  (!(`CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47])) && s_S2_32c_mult_out_full[23] === 1'b1)) begin
-                s_S3_32c_potential_result <= (`CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47]) ?
-                                               s_S2_32c_mult_out_full[47:24] : s_S2_32c_mult_out_full[47:24]) + 1'b1;
-              end
-              else begin // s_S2_32c_mult_out_full[53/52] === 1'b0
-                s_S3_32c_potential_result <= (`CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47]) ?
-                                               s_S2_32c_mult_out_full[47:24] : s_S2_32c_mult_out_full[47:24]);
-              end
-            end // R==0 && S==0
-            else begin
-              // this shouldnt logically happen, right?
-            end // else
-          end // s_S3_32c_mult_out_full_G === 1'b1
-
-          if (s_S3_32d_mult_out_full_G === 1'b0) begin
-            s_S3_32d_potential_result <= (`CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47]) ?
-                                           s_S2_32d_mult_out_full[47:24] : s_S2_32d_mult_out_full[46:23]);
-          end
-          else begin // s_S3_32d_mult_out_full_G === 1'b1
-            if (s_S3_32d_mult_out_full_R === 1'b1 || s_S3_32d_mult_out_full_S === 1'b1) begin
-              s_S3_32d_potential_result <= (`CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47]) ?
-                                             s_S2_32d_mult_out_full[47:24] : s_S2_32d_mult_out_full[46:23]) + 1'b1;
-            end
-            else if (s_S3_32d_mult_out_full_R === 1'b0 && s_S3_32d_mult_out_full_S === 1'b0) begin
-              // Even rule
-              if ((`CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47]) && s_S2_32d_mult_out_full[24] === 1'b1) ||
-                  (!(`CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47])) && s_S2_32d_mult_out_full[23] === 1'b1)) begin
-                s_S3_32d_potential_result <= (`CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47]) ?
-                                               s_S2_32d_mult_out_full[47:24] : s_S2_32d_mult_out_full[47:24]) + 1'b1;
-              end
-              else begin // s_S2_32d_mult_out_full[53/52] === 1'b0
-                s_S3_32d_potential_result <= (`CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47]) ?
-                                               s_S2_32d_mult_out_full[47:24] : s_S2_32d_mult_out_full[47:24]);
-              end
-            end // R==0 && S==0
-            else begin
-              // this shouldnt logically happen, right?
-            end // else
-          end // s_S3_32d_mult_out_full_G === 1'b1
-        end // FOUR_SP_MODE
-
-        default: begin
-          assert (0) else begin
-            s_o_error[4] <= 1'b1;
-          end
-        end
-      endcase // case (i_metadata.sp_mode)
-    end
-  end // !i_rst_n else begin
-end // always_ff @( posedge i_clk )
-
-/**
- * 3b: Add 1 to the exponent
- */
-binary128_t       s_S3_128_jedi;
-binary64_t        s_S3_64a_jedi, s_S3_64b_jedi;
-binary32_t        s_S3_32a_jedi, s_S3_32b_jedi, s_S3_32c_jedi, s_S3_32d_jedi;
-always_ff @( posedge i_clk ) begin : stage3b_increment_exp
-  if (!i_rst_n) begin
-    s_S3_128_jedi <= '0;
-    s_S3_64a_jedi <= '0;
-    s_S3_64b_jedi <= '0;
-    s_S3_32a_jedi <= '0;
-    s_S3_32b_jedi <= '0;
-    s_S3_32c_jedi <= '0;
-    s_S3_32d_jedi <= '0;
+function automatic logic [24:0] fn_stage234_round_32(input logic [47:0] i_full);
+  logic hs_carry, hs_guard, hs_round, hs_sticky, hs_lsb, hs_round_up;
+  logic [23:0] hs_kept;
+  begin
+    hs_carry = `CARRY_IS_A_ONE(i_full[47]);
+    hs_kept  = hs_carry ? i_full[47:24] : i_full[46:23];
+    hs_guard = hs_carry ? i_full[23] : i_full[22];
+    hs_round = hs_carry ? i_full[22] : i_full[21];
+    hs_sticky = hs_carry ? |i_full[21:0] : |i_full[20:0];
+    hs_lsb = hs_carry ? i_full[24] : i_full[23];
+    hs_round_up = (hs_guard === 1'b1) &&
+                  ((hs_round === 1'b1) || (hs_sticky === 1'b1) || (hs_lsb === 1'b1));
+    fn_stage234_round_32 = {1'b0, hs_kept} + hs_round_up;
   end
-  else begin
-    if (s_S3_en) begin
-      s_S3_128_jedi.exp <= `CARRY_IS_A_ONE(s_S2_128_mult_out_full[225]) ? (s_S2_128_jedi.exp + 1'b1)
-                                                                          : s_S2_128_jedi.exp;
-      s_S3_64a_jedi.exp <= `CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105]) ? (s_S2_64a_jedi.exp + 1'b1)
-                                                                          : s_S2_64a_jedi.exp;
-      s_S3_64b_jedi.exp <= `CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105]) ? (s_S2_64b_jedi.exp + 1'b1)
-                                                                          : s_S2_64b_jedi.exp;
-      s_S3_32a_jedi.exp <= `CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47])  ? (s_S2_32a_jedi.exp + 1'b1)
-                                                                          : s_S2_32a_jedi.exp;
-      s_S3_32b_jedi.exp <= `CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47])  ? (s_S2_32b_jedi.exp + 1'b1)
-                                                                          : s_S2_32b_jedi.exp;
-      s_S3_32c_jedi.exp <= `CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47])  ? (s_S2_32c_jedi.exp + 1'b1)
-                                                                          : s_S2_32c_jedi.exp;
-      s_S3_32d_jedi.exp <= `CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47])  ? (s_S2_32d_jedi.exp + 1'b1)
-                                                                          : s_S2_32d_jedi.exp;
+endfunction
 
-      s_S3_128_jedi.sign <= s_S2_128_jedi.sign;
-      s_S3_64a_jedi.sign <= s_S2_64a_jedi.sign;
-      s_S3_64b_jedi.sign <= s_S2_64b_jedi.sign;
-      s_S3_32a_jedi.sign <= s_S2_32a_jedi.sign;
-      s_S3_32b_jedi.sign <= s_S2_32b_jedi.sign;
-      s_S3_32c_jedi.sign <= s_S2_32c_jedi.sign;
-      s_S3_32d_jedi.sign <= s_S2_32d_jedi.sign;
-    end
-  end // !i_rst_n else begin
-end // always_ff @( posedge i_clk )
-
-/**
- * 3c: Signal pass through
- */
-// Outputs
-logic             s_S3_valid128_jedi;
-logic             s_S3_valid64a_jedi, s_S3_valid64b_jedi;
-logic             s_S3_valid32a_jedi, s_S3_valid32b_jedi, s_S3_valid32c_jedi, s_S3_valid32d_jedi;
-float_metadata_t  s_S3_metadata_anikin, s_S3_metadata_force;
-always_ff @( posedge i_clk ) begin : stage3c_signal_passthrough
-  if (!i_rst_n) begin
-    s_S3_valid128_jedi    <= '0;
-    s_S3_valid64a_jedi    <= '0;
-    s_S3_valid64b_jedi    <= '0;
-    s_S3_valid32a_jedi    <= '0;
-    s_S3_valid32b_jedi    <= '0;
-    s_S3_valid32c_jedi    <= '0;
-    s_S3_valid32d_jedi    <= '0;
-
-    s_S3_metadata_anikin  <= '0;
-    s_S3_metadata_force   <= '0;
-  end
-  else begin
-    if (s_S3_en) begin
-      // valid bit pass through
-      s_S3_valid128_jedi    <= s_S2_valid128_jedi;
-      s_S3_valid64a_jedi    <= s_S2_valid64a_jedi;
-      s_S3_valid64b_jedi    <= s_S2_valid64b_jedi;
-      s_S3_valid32a_jedi    <= s_S2_valid32a_jedi;
-      s_S3_valid32b_jedi    <= s_S2_valid32b_jedi;
-      s_S3_valid32c_jedi    <= s_S2_valid32c_jedi;
-      s_S3_valid32d_jedi    <= s_S2_valid32d_jedi;
-
-      // metadata
-      s_S3_metadata_anikin  <= s_S2_metadata_anikin;  // Notes to myself: We shall pass this through and use it at the end
-      s_S3_metadata_force   <= s_S2_metadata_force;   // Notes to myself: We shall pass this through and use it at the end
-    end
-  end // !i_rst_n else begin
-end // always_ff @( posedge i_clk )
-
-
-//=====================================================================================
-// Stage 4: Re-rounding and re-normalization
-//=====================================================================================
-/**
- * 
- * 4a: As stated in the comments of stage 3, there might be cases where overflow 
- * occured. The goal for this stage is to deal with that.
- * 
- */
 logic [113:0] s_S4_128_potential_result;
 logic [53:0]  s_S4_64a_potential_result;
 logic [53:0]  s_S4_64b_potential_result;
@@ -1152,7 +748,23 @@ logic [24:0]  s_S4_32d_potential_result;
 binary128_t   s_S4_128_jedi;
 binary64_t    s_S4_64a_jedi, s_S4_64b_jedi;
 binary32_t    s_S4_32a_jedi, s_S4_32b_jedi, s_S4_32c_jedi, s_S4_32d_jedi;
-always_ff @( posedge i_clk ) begin : stage4a_renormalize
+logic         s_S4_valid128_jedi;
+logic         s_S4_valid64a_jedi, s_S4_valid64b_jedi;
+logic         s_S4_valid32a_jedi, s_S4_valid32b_jedi, s_S4_valid32c_jedi, s_S4_valid32d_jedi;
+float_metadata_t s_S4_metadata_anikin, s_S4_metadata_force;
+
+always_ff @( posedge i_clk ) begin : stage234_round_and_renormalize
+  logic [113:0] hs_S234_128_potential_result;
+  logic [53:0]  hs_S234_64a_potential_result;
+  logic [53:0]  hs_S234_64b_potential_result;
+  logic [24:0]  hs_S234_32a_potential_result;
+  logic [24:0]  hs_S234_32b_potential_result;
+  logic [24:0]  hs_S234_32c_potential_result;
+  logic [24:0]  hs_S234_32d_potential_result;
+  binary128_t   hs_S234_128_jedi;
+  binary64_t    hs_S234_64a_jedi, hs_S234_64b_jedi;
+  binary32_t    hs_S234_32a_jedi, hs_S234_32b_jedi, hs_S234_32c_jedi, hs_S234_32d_jedi;
+
   if (!i_rst_n) begin
     s_S4_128_jedi             <= '0;
     s_S4_64a_jedi             <= '0;
@@ -1161,7 +773,6 @@ always_ff @( posedge i_clk ) begin : stage4a_renormalize
     s_S4_32b_jedi             <= '0;
     s_S4_32c_jedi             <= '0;
     s_S4_32d_jedi             <= '0;
-
     s_S4_128_potential_result <= '0;
     s_S4_64a_potential_result <= '0;
     s_S4_64b_potential_result <= '0;
@@ -1169,189 +780,159 @@ always_ff @( posedge i_clk ) begin : stage4a_renormalize
     s_S4_32b_potential_result <= '0;
     s_S4_32c_potential_result <= '0;
     s_S4_32d_potential_result <= '0;
+    s_S4_valid128_jedi        <= '0;
+    s_S4_valid64a_jedi        <= '0;
+    s_S4_valid64b_jedi        <= '0;
+    s_S4_valid32a_jedi        <= '0;
+    s_S4_valid32b_jedi        <= '0;
+    s_S4_valid32c_jedi        <= '0;
+    s_S4_valid32d_jedi        <= '0;
+    s_S4_metadata_anikin      <= '0;
+    s_S4_metadata_force       <= '0;
+
+    s_o_error[3]              <= 1'b0;
+    s_o_error[4]              <= 1'b0;
+    s_o_error[7]              <= 1'b0;
+    s_o_error[8]              <= 1'b0;
     s_o_error[9]              <= 1'b0;
     s_o_error[10]             <= 1'b0;
   end
   else begin
-    if (s_S4_en) begin
-      assert (s_S3_metadata_anikin.sp_mode === s_S3_metadata_force.sp_mode) else begin
+    if (s_S2_en) begin
+      hs_S234_128_potential_result = fn_stage234_round_128(s_S2_128_mult_out_full);
+      hs_S234_64a_potential_result = fn_stage234_round_64(s_S2_64a_mult_out_full);
+      hs_S234_64b_potential_result = fn_stage234_round_64(s_S2_64b_mult_out_full);
+      hs_S234_32a_potential_result = fn_stage234_round_32(s_S2_32a_mult_out_full);
+      hs_S234_32b_potential_result = fn_stage234_round_32(s_S2_32b_mult_out_full);
+      hs_S234_32c_potential_result = fn_stage234_round_32(s_S2_32c_mult_out_full);
+      hs_S234_32d_potential_result = fn_stage234_round_32(s_S2_32d_mult_out_full);
+
+      hs_S234_128_jedi = s_S2_128_jedi;
+      hs_S234_64a_jedi = s_S2_64a_jedi;
+      hs_S234_64b_jedi = s_S2_64b_jedi;
+      hs_S234_32a_jedi = s_S2_32a_jedi;
+      hs_S234_32b_jedi = s_S2_32b_jedi;
+      hs_S234_32c_jedi = s_S2_32c_jedi;
+      hs_S234_32d_jedi = s_S2_32d_jedi;
+      hs_S234_128_jedi.exp = `CARRY_IS_A_ONE(s_S2_128_mult_out_full[225]) ? (s_S2_128_jedi.exp + 1'b1) : s_S2_128_jedi.exp;
+      hs_S234_64a_jedi.exp = `CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105]) ? (s_S2_64a_jedi.exp + 1'b1) : s_S2_64a_jedi.exp;
+      hs_S234_64b_jedi.exp = `CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105]) ? (s_S2_64b_jedi.exp + 1'b1) : s_S2_64b_jedi.exp;
+      hs_S234_32a_jedi.exp = `CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47])  ? (s_S2_32a_jedi.exp + 1'b1) : s_S2_32a_jedi.exp;
+      hs_S234_32b_jedi.exp = `CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47])  ? (s_S2_32b_jedi.exp + 1'b1) : s_S2_32b_jedi.exp;
+      hs_S234_32c_jedi.exp = `CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47])  ? (s_S2_32c_jedi.exp + 1'b1) : s_S2_32c_jedi.exp;
+      hs_S234_32d_jedi.exp = `CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47])  ? (s_S2_32d_jedi.exp + 1'b1) : s_S2_32d_jedi.exp;
+
+      assert (s_S2_metadata_anikin.sp_mode === s_S2_metadata_force.sp_mode) else begin
+        s_o_error[7] <= 1'b1;
+        s_o_error[8] <= 1'b1;
         s_o_error[9] <= 1'b1;
-        // $fatal(1, "Bad things had happened, (s_S3_metadata_anikin.sp_mode === s_S3_metadata_force.sp_mode) is false.");
       end
 
-      case (s_S3_metadata_anikin.sp_mode)
+      case (s_S2_metadata_anikin.sp_mode)
         SINGLE_MODE: begin
-          if (s_S3_128_potential_result[113] === 1'b1) begin
-            // s_S3_128_potential_result[113] will be a 1 if overflow occurred 
-            // 1. Increment exponent
-            s_S4_128_jedi.exp         <= s_S3_128_jedi.exp + 1'b1;
-            // 2. Right shift
-            s_S4_128_potential_result <= {1'b0, s_S3_128_potential_result[113:1]};
-
-            // Pass through the rest
-            s_S4_128_jedi.sign        <= s_S3_128_jedi.sign;
-            s_S4_128_jedi.mantissa    <= s_S3_128_jedi.mantissa;
+          if (hs_S234_128_potential_result[113] === 1'b1) begin
+            s_S4_128_jedi.exp         <= hs_S234_128_jedi.exp + 1'b1;
+            s_S4_128_jedi.sign        <= hs_S234_128_jedi.sign;
+            s_S4_128_jedi.mantissa    <= hs_S234_128_jedi.mantissa;
+            s_S4_128_potential_result <= {1'b0, hs_S234_128_potential_result[113:1]};
           end
           else begin
-            // No overflow, pass through
-            s_S4_128_jedi             <= s_S3_128_jedi;
-            s_S4_128_potential_result <= s_S3_128_potential_result;
+            s_S4_128_jedi             <= hs_S234_128_jedi;
+            s_S4_128_potential_result <= hs_S234_128_potential_result;
           end
-        end // SINGLE_MODE
+        end
 
         TWO_SP_MODE: begin
-          if (s_S3_64a_potential_result[53] === 1'b1) begin
-            // s_S3_64a_potential_result[53] will be a 1 if overflow occurred 
-            // 1. Increment exponent
-            s_S4_64a_jedi.exp         <= s_S3_64a_jedi.exp + 1'b1;
-            // 2. Right shift
-            s_S4_64a_potential_result <= {1'b0, s_S3_64a_potential_result[53:1]};
-
-            // Pass through the rest
-            s_S4_64a_jedi.sign        <= s_S3_64a_jedi.sign;
-            s_S4_64a_jedi.mantissa    <= s_S3_64a_jedi.mantissa;
+          if (hs_S234_64a_potential_result[53] === 1'b1) begin
+            s_S4_64a_jedi.exp         <= hs_S234_64a_jedi.exp + 1'b1;
+            s_S4_64a_jedi.sign        <= hs_S234_64a_jedi.sign;
+            s_S4_64a_jedi.mantissa    <= hs_S234_64a_jedi.mantissa;
+            s_S4_64a_potential_result <= {1'b0, hs_S234_64a_potential_result[53:1]};
           end
           else begin
-            // No overflow, pass through
-            s_S4_64a_jedi             <= s_S3_64a_jedi;
-            s_S4_64a_potential_result <= s_S3_64a_potential_result;
+            s_S4_64a_jedi             <= hs_S234_64a_jedi;
+            s_S4_64a_potential_result <= hs_S234_64a_potential_result;
           end
 
-          if (s_S3_64b_potential_result[53] === 1'b1) begin
-            // s_S3_64b_potential_result[53] will be a 1 if overflow occurred 
-            // 1. Increment exponent
-            s_S4_64b_jedi.exp         <= s_S3_64b_jedi.exp + 1'b1;
-            // 2. Right shift
-            s_S4_64b_potential_result <= {1'b0, s_S3_64b_potential_result[53:1]};
-
-            // Pass through the rest
-            s_S4_64b_jedi.sign        <= s_S3_64b_jedi.sign;
-            s_S4_64b_jedi.mantissa    <= s_S3_64b_jedi.mantissa;
+          if (hs_S234_64b_potential_result[53] === 1'b1) begin
+            s_S4_64b_jedi.exp         <= hs_S234_64b_jedi.exp + 1'b1;
+            s_S4_64b_jedi.sign        <= hs_S234_64b_jedi.sign;
+            s_S4_64b_jedi.mantissa    <= hs_S234_64b_jedi.mantissa;
+            s_S4_64b_potential_result <= {1'b0, hs_S234_64b_potential_result[53:1]};
           end
           else begin
-            // No overflow, pass through
-            s_S4_64b_jedi             <= s_S3_64b_jedi;
-            s_S4_64b_potential_result <= s_S3_64b_potential_result;
+            s_S4_64b_jedi             <= hs_S234_64b_jedi;
+            s_S4_64b_potential_result <= hs_S234_64b_potential_result;
           end
-        end // TWO_SP_MODE
+        end
 
         FOUR_SP_MODE: begin
-          if (s_S3_32a_potential_result[24] === 1'b1) begin
-            // s_S3_32a_potential_result[24] will be a 1 if overflow occurred 
-            // 1. Increment exponent
-            s_S4_32a_jedi.exp         <= s_S3_32a_jedi.exp + 1'b1;
-            // 2. Right shift
-            s_S4_32a_potential_result <= {1'b0, s_S3_32a_potential_result[24:1]};
-
-            // Pass through the rest
-            s_S4_32a_jedi.sign        <= s_S3_32a_jedi.sign;
-            s_S4_32a_jedi.mantissa    <= s_S3_32a_jedi.mantissa;
+          if (hs_S234_32a_potential_result[24] === 1'b1) begin
+            s_S4_32a_jedi.exp         <= hs_S234_32a_jedi.exp + 1'b1;
+            s_S4_32a_jedi.sign        <= hs_S234_32a_jedi.sign;
+            s_S4_32a_jedi.mantissa    <= hs_S234_32a_jedi.mantissa;
+            s_S4_32a_potential_result <= {1'b0, hs_S234_32a_potential_result[24:1]};
           end
           else begin
-            // No overflow, pass through
-            s_S4_32a_jedi             <= s_S3_32a_jedi;
-            s_S4_32a_potential_result <= s_S3_32a_potential_result;
+            s_S4_32a_jedi             <= hs_S234_32a_jedi;
+            s_S4_32a_potential_result <= hs_S234_32a_potential_result;
           end
 
-          if (s_S3_32b_potential_result[24] === 1'b1) begin
-            // s_S3_32b_potential_result[24] will be a 1 if overflow occurred 
-            // 1. Increment exponent
-            s_S4_32b_jedi.exp         <= s_S3_32b_jedi.exp + 1'b1;
-            // 2. Right shift
-            s_S4_32b_potential_result <= {1'b0, s_S3_32b_potential_result[24:1]};
-
-            // Pass through the rest
-            s_S4_32b_jedi.sign        <= s_S3_32b_jedi.sign;
-            s_S4_32b_jedi.mantissa    <= s_S3_32b_jedi.mantissa;
+          if (hs_S234_32b_potential_result[24] === 1'b1) begin
+            s_S4_32b_jedi.exp         <= hs_S234_32b_jedi.exp + 1'b1;
+            s_S4_32b_jedi.sign        <= hs_S234_32b_jedi.sign;
+            s_S4_32b_jedi.mantissa    <= hs_S234_32b_jedi.mantissa;
+            s_S4_32b_potential_result <= {1'b0, hs_S234_32b_potential_result[24:1]};
           end
           else begin
-            // No overflow, pass through
-            s_S4_32b_jedi             <= s_S3_32b_jedi;
-            s_S4_32b_potential_result <= s_S3_32b_potential_result;
+            s_S4_32b_jedi             <= hs_S234_32b_jedi;
+            s_S4_32b_potential_result <= hs_S234_32b_potential_result;
           end
 
-          if (s_S3_32c_potential_result[24] === 1'b1) begin
-            // s_S3_32c_potential_result[24] will be a 1 if overflow occurred 
-            // 1. Increment exponent
-            s_S4_32c_jedi.exp         <= s_S3_32c_jedi.exp + 1'b1;
-            // 2. Right shift
-            s_S4_32c_potential_result <= {1'b0, s_S3_32c_potential_result[24:1]};
-
-            // Pass through the rest
-            s_S4_32c_jedi.sign        <= s_S3_32c_jedi.sign;
-            s_S4_32c_jedi.mantissa    <= s_S3_32c_jedi.mantissa;
+          if (hs_S234_32c_potential_result[24] === 1'b1) begin
+            s_S4_32c_jedi.exp         <= hs_S234_32c_jedi.exp + 1'b1;
+            s_S4_32c_jedi.sign        <= hs_S234_32c_jedi.sign;
+            s_S4_32c_jedi.mantissa    <= hs_S234_32c_jedi.mantissa;
+            s_S4_32c_potential_result <= {1'b0, hs_S234_32c_potential_result[24:1]};
           end
           else begin
-            // No overflow, pass through
-            s_S4_32c_jedi             <= s_S3_32c_jedi;
-            s_S4_32c_potential_result <= s_S3_32c_potential_result;
+            s_S4_32c_jedi             <= hs_S234_32c_jedi;
+            s_S4_32c_potential_result <= hs_S234_32c_potential_result;
           end
 
-          if (s_S3_32d_potential_result[24] === 1'b1) begin
-            // s_S3_32d_potential_result[24] will be a 1 if overflow occurred 
-            // 1. Increment exponent
-            s_S4_32d_jedi.exp         <= s_S3_32d_jedi.exp + 1'b1;
-            // 2. Right shift
-            s_S4_32d_potential_result <= {1'b0, s_S3_32d_potential_result[24:1]};
-
-            // Pass through the rest
-            s_S4_32d_jedi.sign        <= s_S3_32d_jedi.sign;
-            s_S4_32d_jedi.mantissa    <= s_S3_32d_jedi.mantissa;
+          if (hs_S234_32d_potential_result[24] === 1'b1) begin
+            s_S4_32d_jedi.exp         <= hs_S234_32d_jedi.exp + 1'b1;
+            s_S4_32d_jedi.sign        <= hs_S234_32d_jedi.sign;
+            s_S4_32d_jedi.mantissa    <= hs_S234_32d_jedi.mantissa;
+            s_S4_32d_potential_result <= {1'b0, hs_S234_32d_potential_result[24:1]};
           end
           else begin
-            // No overflow, pass through
-            s_S4_32d_jedi             <= s_S3_32d_jedi;
-            s_S4_32d_potential_result <= s_S3_32d_potential_result;
+            s_S4_32d_jedi             <= hs_S234_32d_jedi;
+            s_S4_32d_potential_result <= hs_S234_32d_potential_result;
           end
-        end // FOUR_SP_MODE
+        end
 
         default: begin
           assert (0) else begin
+            s_o_error[3]  <= 1'b1;
+            s_o_error[4]  <= 1'b1;
             s_o_error[10] <= 1'b1;
           end
         end
-      endcase // case (i_metadata.sp_mode)
-    end // if (s_S4_en) begin
-  end // !i_rst_n else begin
-end // always_ff @( posedge i_clk )
+      endcase
 
-/**
- * 4b: Signal passthrough
- */
-logic             s_S4_valid128_jedi;
-logic             s_S4_valid64a_jedi, s_S4_valid64b_jedi;
-logic             s_S4_valid32a_jedi, s_S4_valid32b_jedi, s_S4_valid32c_jedi, s_S4_valid32d_jedi;
-float_metadata_t  s_S4_metadata_anikin, s_S4_metadata_force;
-always_ff @( posedge i_clk ) begin : stage4b_signal_passthrough
-  if (!i_rst_n) begin
-    s_S4_valid128_jedi    <= '0;
-    s_S4_valid64a_jedi    <= '0;
-    s_S4_valid64b_jedi    <= '0;
-    s_S4_valid32a_jedi    <= '0;
-    s_S4_valid32b_jedi    <= '0;
-    s_S4_valid32c_jedi    <= '0;
-    s_S4_valid32d_jedi    <= '0;
-
-    s_S4_metadata_anikin  <= '0;
-    s_S4_metadata_force   <= '0;
+      s_S4_valid128_jedi   <= s_S2_valid128_jedi;
+      s_S4_valid64a_jedi   <= s_S2_valid64a_jedi;
+      s_S4_valid64b_jedi   <= s_S2_valid64b_jedi;
+      s_S4_valid32a_jedi   <= s_S2_valid32a_jedi;
+      s_S4_valid32b_jedi   <= s_S2_valid32b_jedi;
+      s_S4_valid32c_jedi   <= s_S2_valid32c_jedi;
+      s_S4_valid32d_jedi   <= s_S2_valid32d_jedi;
+      s_S4_metadata_anikin <= s_S2_metadata_anikin;
+      s_S4_metadata_force  <= s_S2_metadata_force;
+    end
   end
-  else begin
-    if (s_S4_en) begin
-      // valid bit pass through
-      s_S4_valid128_jedi    <= s_S3_valid128_jedi;
-      s_S4_valid64a_jedi    <= s_S3_valid64a_jedi;
-      s_S4_valid64b_jedi    <= s_S3_valid64b_jedi;
-      s_S4_valid32a_jedi    <= s_S3_valid32a_jedi;
-      s_S4_valid32b_jedi    <= s_S3_valid32b_jedi;
-      s_S4_valid32c_jedi    <= s_S3_valid32c_jedi;
-      s_S4_valid32d_jedi    <= s_S3_valid32d_jedi;
-
-      // metadata
-      s_S4_metadata_anikin  <= s_S3_metadata_anikin;  // Notes to myself: We shall pass this through and use it at the end
-      s_S4_metadata_force   <= s_S3_metadata_force;   // Notes to myself: We shall pass this through and use it at the end
-    end // if (s_S4_en) begin
-  end // !i_rst_n else begin
-end // always_ff @( posedge i_clk )
+end
 
 
 //=====================================================================================
@@ -1752,7 +1333,7 @@ always_ff @( posedge i_clk ) begin : stage5a_map_pot_res_into_mantissa
           end
         end
       endcase // case (i_metadata.sp_mode)
-    end // if (s_S4_en) begin
+    end // if (s_S5_en) begin
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
 

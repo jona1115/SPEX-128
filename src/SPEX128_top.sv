@@ -61,10 +61,7 @@ module SPEX128_top #(
   // Module identifier
   output  logic [3:0]                             o_sanity_identifier,
 
-  // Error and debug signals
-  output  logic [ERROR_SIGNAL_NUM_BITS-1:0]       o_error,
-  output  logic [DEBUG_SIGNAL_NUM_BITS-1:0]       o_debug,
-
+`ifndef RUNNING_VIVADO_SYNTHESIS
   // These are temporary... probably "ds" = debug signals
   logic [127:0]     ds_my_float_to_fixed_fixed,
   binary128_t       ds_my_fixed_partition_sp_par_a_exp_a128,
@@ -152,8 +149,12 @@ module SPEX128_top #(
   logic             ds_my_sp_fpmultiplier_3_valid32b_jedi,
   logic             ds_my_sp_fpmultiplier_3_valid32c_jedi,
   logic             ds_my_sp_fpmultiplier_3_valid32d_jedi,
-  logic             ds_my_sp_fpmultiplier_4_valid128_jedi
+  logic             ds_my_sp_fpmultiplier_4_valid128_jedi,
+`endif
 
+  // Error and debug signals
+  output  logic [ERROR_SIGNAL_NUM_BITS-1:0]       o_error,
+  output  logic [DEBUG_SIGNAL_NUM_BITS-1:0]       o_debug
 );
 
 //=====================================================================================
@@ -1126,6 +1127,7 @@ assign o_error              = s_my_float_to_fixed_error &
                               s_my_sp_fpmultiplier_4_error;
 assign o_debug              = '0;
 
+`ifndef RUNNING_VIVADO_SYNTHESIS
 // Temp, maybe
 assign ds_my_float_to_fixed_fixed = s_my_float_to_fixed_fixed;
 assign ds_my_fixed_partition_sp_par_a_exp_a128 = s_my_fixed_partition_sp_par_a_exp_a128;
@@ -1214,5 +1216,6 @@ assign ds_my_sp_fpmultiplier_3_valid32b_jedi = s_my_sp_fpmultiplier_3_valid32b_j
 assign ds_my_sp_fpmultiplier_3_valid32c_jedi = s_my_sp_fpmultiplier_3_valid32c_jedi;
 assign ds_my_sp_fpmultiplier_3_valid32d_jedi = s_my_sp_fpmultiplier_3_valid32d_jedi;
 assign ds_my_sp_fpmultiplier_4_valid128_jedi = s_my_sp_fpmultiplier_4_valid128_jedi;
+`endif
 
 endmodule // module SPEX128_top #()

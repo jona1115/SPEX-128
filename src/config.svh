@@ -67,4 +67,12 @@
 // `define EN_DEBUG_PRINT
 `define USE_RADIX4_RECODING
 
+/**
+ * Sometimes, if code changed when Vivado is closed, it won't know something changed. In that case,
+ * feel free to use this flag to trigger a "file changed" detection.
+ * 
+ * This flag should not be used in any where. It is... "for fun"!
+ */
+`define FOR_FUN_FLAG
+
 `endif // CONFIG_SVH
