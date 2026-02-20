@@ -2,7 +2,7 @@
 
 // ChatGPT gave me this awesome macro.
 // It checks conversion correctness after the configured module latency.
-`define CHECK_CORRECT_CONVERT_LATENCY_2_CYCLES(in_float, in_ctrl, expected) \
+`define CHECK_CORRECT_CONVERT_AND_LATENCY(in_float, in_ctrl, expected) \
   begin \
     logic [127:0] _prev = s_o_fixed;              \
     @(negedge s_i_clk);                           \
