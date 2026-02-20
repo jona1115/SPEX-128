@@ -29,7 +29,7 @@ package binary128_convert_pkg;
   localparam int BIAS_32  = 127;
 
   // Part-1 payload for binary128 -> binary64 conversion.
-  // This captures everything needed for a later round/pack stage.
+  // This stage classifies and normalizes, but does not shift/round yet.
   typedef struct packed {
     logic               sign;
     logic               is_nan;
@@ -39,14 +39,26 @@ package binary128_convert_pkg;
     logic               is_subnormal;
     logic [50:0]        nan_payload;
     logic signed [15:0] exp_norm;
-    logic [52:0]        keep;
-    logic               guard;
-    logic               round;
-    logic               sticky;
+    logic [112:0]       sig_norm;
+    logic [6:0]         shift_sub;
   } binary128_to_binary64_rne_p1_t;
 
+  // Part-2 payload for binary128 -> binary64 conversion.
+  // This stage does shift + GRS extraction + rounding add.
+  typedef struct packed {
+    logic               sign;
+    logic               is_nan;
+    logic               is_inf;
+    logic               is_zero;
+    logic               is_overflow;
+    logic               is_subnormal;
+    logic [50:0]        nan_payload;
+    logic signed [15:0] exp_norm;
+    logic [53:0]        rounded;
+  } binary128_to_binary64_rne_p2_t;
+
   // Part-1 payload for binary128 -> binary32 conversion.
-  // Same intent as above, with precision-specific widths.
+  // This stage classifies and normalizes, but does not shift/round yet.
   typedef struct packed {
     logic               sign;
     logic               is_nan;
@@ -56,11 +68,23 @@ package binary128_convert_pkg;
     logic               is_subnormal;
     logic [21:0]        nan_payload;
     logic signed [15:0] exp_norm;
-    logic [23:0]        keep;
-    logic               guard;
-    logic               round;
-    logic               sticky;
+    logic [112:0]       sig_norm;
+    logic [6:0]         shift_sub;
   } binary128_to_binary32_rne_p1_t;
+
+  // Part-2 payload for binary128 -> binary32 conversion.
+  // This stage does shift + GRS extraction + rounding add.
+  typedef struct packed {
+    logic               sign;
+    logic               is_nan;
+    logic               is_inf;
+    logic               is_zero;
+    logic               is_overflow;
+    logic               is_subnormal;
+    logic [21:0]        nan_payload;
+    logic signed [15:0] exp_norm;
+    logic [24:0]        rounded;
+  } binary128_to_binary32_rne_p2_t;
 
   // Leading-zero count in one byte (MSB-first).
   function automatic int unsigned lzc_8(input logic [7:0] in);
@@ -156,7 +180,6 @@ package binary128_convert_pkg;
     binary128_t in;
     logic [112:0] full_sig;
     logic [112:0] sig_norm;
-    logic [112:0] sig_shifted;
     int unsigned lz;
     int signed exp_unbiased;
     int signed exp_norm;
@@ -193,6 +216,7 @@ package binary128_convert_pkg;
     // Step 4: Normalize significand and apply normalization shift to exponent.
     lz = lzc_113(full_sig);
     sig_norm = full_sig << lz;
+    out.sig_norm = sig_norm;
     exp_norm = exp_unbiased - $signed(lz);
     out.exp_norm = exp_norm[15:0];
 
@@ -212,27 +236,60 @@ package binary128_convert_pkg;
     else begin
       shift_sub = 0;
     end
-    sig_shifted = sig_norm >> shift_sub;
-
-    // Step 7: Extract keep+GRS bits for RNE in part2.
-    out.keep = sig_shifted[112 -: 53];
-    out.guard = sig_shifted[112-53];
-    out.round = sig_shifted[112-54];
-    out.sticky = |sig_shifted[112-55:0];
+    out.shift_sub = shift_sub[6:0];
 
     return out;
   endfunction
 
-  function automatic binary64_t binary128_to_binary64_rne_part2(
+  function automatic binary128_to_binary64_rne_p2_t binary128_to_binary64_rne_part2(
     input binary128_to_binary64_rne_p1_t in
+  );
+    binary128_to_binary64_rne_p2_t out;
+    logic [112:0] sig_shifted;
+    logic [52:0] keep;
+    logic guard;
+    logic round;
+    logic sticky;
+    logic round_inc;
+
+    // Step 0: Initialize output with passthrough payload.
+    out = '0;
+    out.sign = in.sign;
+    out.is_nan = in.is_nan;
+    out.is_inf = in.is_inf;
+    out.is_zero = in.is_zero;
+    out.is_overflow = in.is_overflow;
+    out.is_subnormal = in.is_subnormal;
+    out.nan_payload = in.nan_payload;
+    out.exp_norm = in.exp_norm;
+
+    // Step 1: Specials/zero/overflow do not need shift+round.
+    if (in.is_nan || in.is_inf || in.is_overflow || in.is_zero) begin
+      return out;
+    end
+
+    // Step 2: Shift to subnormal boundary if needed and extract G/R/S bits.
+    sig_shifted = in.sig_norm >> in.shift_sub;
+    keep = sig_shifted[112 -: 53];
+    guard = sig_shifted[112-53];
+    round = sig_shifted[112-54];
+    sticky = |sig_shifted[112-55:0];
+
+    // Step 3: RNE increment and adder.
+    round_inc = guard && (round || sticky || keep[0]);
+    out.rounded = {1'b0, keep} + round_inc;
+
+    return out;
+  endfunction
+
+  function automatic binary64_t binary128_to_binary64_rne_part3(
+    input binary128_to_binary64_rne_p2_t in
   );
     localparam int E_MAX_64 = 1023;
     binary64_t out;
-    logic round_inc;
-    logic [53:0] rounded;
     int signed exp_out;
 
-    // Step 0: Initialize output with sign propagated from part1.
+    // Step 0: Initialize output with sign propagated from part2.
     out = '0;
     out.sign = in.sign;
 
@@ -255,36 +312,32 @@ package binary128_convert_pkg;
       return out;
     end
 
-    // Step 2: Round-to-nearest-even increment decision from G/R/S + LSB.
-    round_inc = in.guard && (in.round || in.sticky || in.keep[0]);
-    rounded = {1'b0, in.keep} + round_inc;
-
-    // Step 3: Normal path pack (with post-round carry into exponent).
+    // Step 2: Normal path pack (with post-round carry into exponent).
     if (!in.is_subnormal) begin
-      exp_out = in.exp_norm + (rounded[53] ? 1 : 0);
+      exp_out = in.exp_norm + (in.rounded[53] ? 1 : 0);
       if (exp_out > E_MAX_64) begin
         out.exp = 11'h7ff;
         out.mantissa = '0;
       end
       else begin
         out.exp = exp_out + BIAS_64;
-        if (rounded[53]) begin
-          out.mantissa = rounded[52:1];
+        if (in.rounded[53]) begin
+          out.mantissa = in.rounded[52:1];
         end
         else begin
-          out.mantissa = rounded[51:0];
+          out.mantissa = in.rounded[51:0];
         end
       end
     end
-    // Step 4: Subnormal path pack (including subnormal-to-normal bump).
+    // Step 3: Subnormal path pack (including subnormal-to-normal bump).
     else begin
-      if (rounded[53] || rounded[52]) begin
+      if (in.rounded[53] || in.rounded[52]) begin
         out.exp = 11'd1;
         out.mantissa = '0;
       end
       else begin
         out.exp = '0;
-        out.mantissa = rounded[51:0];
+        out.mantissa = in.rounded[51:0];
       end
     end
 
@@ -300,7 +353,6 @@ package binary128_convert_pkg;
     binary128_t in;
     logic [112:0] full_sig;
     logic [112:0] sig_norm;
-    logic [112:0] sig_shifted;
     int unsigned lz;
     int signed exp_unbiased;
     int signed exp_norm;
@@ -336,6 +388,7 @@ package binary128_convert_pkg;
     // Step 4: Normalize significand and apply normalization shift to exponent.
     lz = lzc_113(full_sig);
     sig_norm = full_sig << lz;
+    out.sig_norm = sig_norm;
     exp_norm = exp_unbiased - $signed(lz);
     out.exp_norm = exp_norm[15:0];
 
@@ -355,27 +408,60 @@ package binary128_convert_pkg;
     else begin
       shift_sub = 0;
     end
-    sig_shifted = sig_norm >> shift_sub;
-
-    // Step 7: Extract keep+GRS bits for RNE in part2.
-    out.keep = sig_shifted[112 -: 24];
-    out.guard = sig_shifted[112-24];
-    out.round = sig_shifted[112-25];
-    out.sticky = |sig_shifted[112-26:0];
+    out.shift_sub = shift_sub[6:0];
 
     return out;
   endfunction
 
-  function automatic binary32_t binary128_to_binary32_rne_part2(
+  function automatic binary128_to_binary32_rne_p2_t binary128_to_binary32_rne_part2(
     input binary128_to_binary32_rne_p1_t in
+  );
+    binary128_to_binary32_rne_p2_t out;
+    logic [112:0] sig_shifted;
+    logic [23:0] keep;
+    logic guard;
+    logic round;
+    logic sticky;
+    logic round_inc;
+
+    // Step 0: Initialize output with passthrough payload.
+    out = '0;
+    out.sign = in.sign;
+    out.is_nan = in.is_nan;
+    out.is_inf = in.is_inf;
+    out.is_zero = in.is_zero;
+    out.is_overflow = in.is_overflow;
+    out.is_subnormal = in.is_subnormal;
+    out.nan_payload = in.nan_payload;
+    out.exp_norm = in.exp_norm;
+
+    // Step 1: Specials/zero/overflow do not need shift+round.
+    if (in.is_nan || in.is_inf || in.is_overflow || in.is_zero) begin
+      return out;
+    end
+
+    // Step 2: Shift to subnormal boundary if needed and extract G/R/S bits.
+    sig_shifted = in.sig_norm >> in.shift_sub;
+    keep = sig_shifted[112 -: 24];
+    guard = sig_shifted[112-24];
+    round = sig_shifted[112-25];
+    sticky = |sig_shifted[112-26:0];
+
+    // Step 3: RNE increment and adder.
+    round_inc = guard && (round || sticky || keep[0]);
+    out.rounded = {1'b0, keep} + round_inc;
+
+    return out;
+  endfunction
+
+  function automatic binary32_t binary128_to_binary32_rne_part3(
+    input binary128_to_binary32_rne_p2_t in
   );
     localparam int E_MAX_32 = 127;
     binary32_t out;
-    logic round_inc;
-    logic [24:0] rounded;
     int signed exp_out;
 
-    // Step 0: Initialize output with sign propagated from part1.
+    // Step 0: Initialize output with sign propagated from part2.
     out = '0;
     out.sign = in.sign;
 
@@ -398,36 +484,32 @@ package binary128_convert_pkg;
       return out;
     end
 
-    // Step 2: Round-to-nearest-even increment decision from G/R/S + LSB.
-    round_inc = in.guard && (in.round || in.sticky || in.keep[0]);
-    rounded = {1'b0, in.keep} + round_inc;
-
-    // Step 3: Normal path pack (with post-round carry into exponent).
+    // Step 2: Normal path pack (with post-round carry into exponent).
     if (!in.is_subnormal) begin
-      exp_out = in.exp_norm + (rounded[24] ? 1 : 0);
+      exp_out = in.exp_norm + (in.rounded[24] ? 1 : 0);
       if (exp_out > E_MAX_32) begin
         out.exp = 8'hff;
         out.mantissa = '0;
       end
       else begin
         out.exp = exp_out + BIAS_32;
-        if (rounded[24]) begin
-          out.mantissa = rounded[23:1];
+        if (in.rounded[24]) begin
+          out.mantissa = in.rounded[23:1];
         end
         else begin
-          out.mantissa = rounded[22:0];
+          out.mantissa = in.rounded[22:0];
         end
       end
     end
-    // Step 4: Subnormal path pack (including subnormal-to-normal bump).
+    // Step 3: Subnormal path pack (including subnormal-to-normal bump).
     else begin
-      if (rounded[24] || rounded[23]) begin
+      if (in.rounded[24] || in.rounded[23]) begin
         out.exp = 8'd1;
         out.mantissa = '0;
       end
       else begin
         out.exp = '0;
-        out.mantissa = rounded[22:0];
+        out.mantissa = in.rounded[22:0];
       end
     end
 
@@ -435,13 +517,21 @@ package binary128_convert_pkg;
   endfunction
 
   function automatic binary64_t binary128_to_binary64_rne(input logic [127:0] in_bits);
-    // Backward-compatible 1-call wrapper: part1 then part2.
-    return binary128_to_binary64_rne_part2(binary128_to_binary64_rne_part1(in_bits));
+    // Backward-compatible 1-call wrapper: part1 then part2 then part3.
+    return binary128_to_binary64_rne_part3(
+      binary128_to_binary64_rne_part2(
+        binary128_to_binary64_rne_part1(in_bits)
+      )
+    );
   endfunction
 
   function automatic binary32_t binary128_to_binary32_rne(input logic [127:0] in_bits);
-    // Backward-compatible 1-call wrapper: part1 then part2.
-    return binary128_to_binary32_rne_part2(binary128_to_binary32_rne_part1(in_bits));
+    // Backward-compatible 1-call wrapper: part1 then part2 then part3.
+    return binary128_to_binary32_rne_part3(
+      binary128_to_binary32_rne_part2(
+        binary128_to_binary32_rne_part1(in_bits)
+      )
+    );
   endfunction
 
 endpackage : binary128_convert_pkg

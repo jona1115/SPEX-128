@@ -70,8 +70,8 @@ module fixed_partition_sp_pipeline_unit_test;
 
   fixed_partition_sp #(
     .MODULE_LATENCY_128(2),
-    .MODULE_LATENCY_64(2),
-    .MODULE_LATENCY_32(3),
+    .MODULE_LATENCY_64(4),
+    .MODULE_LATENCY_32(5),
     .HAS_SIGN(1'b0),
     .USE_128_FOR_64(1'b1),
     .USE_128_FOR_32(1'b1),

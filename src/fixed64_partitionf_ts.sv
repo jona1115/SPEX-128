@@ -31,7 +31,7 @@ import fixed64_pkg::*;
 import fixed32_pkg::*;
 
 module fixed64_partitionf_ts #(
-  parameter int MODULE_LATENCY        = 3, // This should match MODULE_LATENCY_128 in fixed_partition_sp.sv
+  parameter int MODULE_LATENCY        = 4, // This should match MODULE_LATENCY_64 in fixed_partition_sp.sv
   parameter int DELAY_BUFFER_LATENCY  = MODULE_LATENCY - 1,
   
   parameter int NUM_BITS_128  = 128,
