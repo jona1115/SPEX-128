@@ -688,8 +688,34 @@ assign s_S2_metadata_anikin = s_db_metadata_anikin[INTMUL_LATENCY-1];
 assign s_S2_metadata_force  = s_db_metadata_force[INTMUL_LATENCY-1];
 
 
+/**
+ * Rounding rules:
+ *  
+ * After multiplication, we have the product (using binary128 as example):
+ *              P_full = 1.b_1b_2b_3...b_112b_113b_114b_115...
+ * To round it, or "normalize" it to 113 bits (including implicit 1), we need not only
+ * the 113 bits (1.b_1b_2b_3...b_112), but also:
+ *                              guard bit G = b_113
+ *                              round bit R = b_114
+ *                              sticky bit S = OR(b_115, b_116, ...)
+ * 
+ * So, rounding rule is:
+ * 1. if G == 0: 1.b_1b_2b_3...b_112 is the rounded product P_norm
+ * 2. if G == 1:
+ *        if R == 1 or S == 1, P_norm = 1.b_1b_2b_3...b_112 + 1
+ *        if R == 0 and S == 0,
+ *            if b_112 == 1, P_norm = 1.b_1b_2b_3...b_112 + 1
+ *            if b_112 == 0, P_norm = 1.b_1b_2b_3...b_112
+ * 
+ * Stage 4 will be:
+ * After rounding, we need to check that the rounding didn't cause overflow (ie we 
+ * get a 10.0000.... after we increment by 1)
+ * if that is the case (overflow), we increment the exponent by 1 again and shift
+ * P_norm right by 1 so that it goes back to being 1.000000....
+ * 
+ * This is called RN-even: Round to nearest, ties to even
+ */
 `define CARRY_IS_A_ONE(cb) ((cb) === 1'b1) // Checks if the top carry bit from n*n multiply is a 1.
-
 function automatic logic [113:0] fn_stage234_round_128(input logic [225:0] i_full);
   logic hs_carry, hs_guard, hs_round, hs_sticky, hs_lsb, hs_round_up;
   logic [112:0] hs_kept;
