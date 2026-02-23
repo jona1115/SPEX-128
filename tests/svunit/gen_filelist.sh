@@ -126,6 +126,9 @@ fi
   echo "# Policy: packages first; then modules; final ordering refined by reorder_filelist.sh"
 } > "$OUTFILE"
 
+# Common include root for `include "config.svh"` and `include "helper/..."`.
+echo "+incdir+$SRC" >> "$OUTFILE"
+
 # --- write packages ---
 for p in "${PKG_FILES[@]}"; do echo "$p"; done >> "$OUTFILE"
 

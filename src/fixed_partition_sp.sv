@@ -157,8 +157,10 @@ endfunction
 //=====================================================================================
 // LUTs
 //=====================================================================================
-(* rom_style = "block" *) logic [127:0] mem128_pos  [0:DEPTH_128-1];
-(* rom_style = "block" *) logic [127:0] mem128_neg  [0:DEPTH_128-1];
+// Force BRAM inference even for smaller partitions (e.g., partition A), otherwise
+// Vivado may choose to implement the ROM as distributed (LUT) ROM and consume LUTs.
+(* ram_style = "block", rom_style = "block" *) logic [127:0] mem128_pos  [0:DEPTH_128-1];
+(* ram_style = "block", rom_style = "block" *) logic [127:0] mem128_neg  [0:DEPTH_128-1];
 
 initial begin
   if (HAS_SIGN) begin
@@ -185,6 +187,23 @@ always_ff @( posedge i_clk ) begin : defaulter
 end
 
 /**
+ * Stage 1b registers: Propogate valid bits and metadata across stages.
+ *
+ * Note: in FOUR_SP_MODE, lanes c/d are read one stage later (time-muxed)
+ * from the same BRAM, so we must buffer i_lane_32c/d here.
+ */
+logic                     s_S1b_valid128;
+logic                     s_S1b_valid64a;
+logic                     s_S1b_valid64b;
+logic                     s_S1b_valid32a;
+logic                     s_S1b_valid32b;
+logic                     s_S1b_valid32c;
+logic                     s_S1b_valid32d;
+logic [LANE_BITS_32-1:0]  s_S1b_lane_32c;
+logic [LANE_BITS_32-1:0]  s_S1b_lane_32d;
+float_metadata_t          s_S1b_metadata;
+
+/**
  *
  * State transition control
  *
@@ -199,11 +218,27 @@ localparam int S4_OFFSET = S3_OFFSET + 1;
 localparam int S5_OFFSET = S4_OFFSET + 1;
 
 // Decode the input valid signals
+logic s_fire_raw;
+assign s_fire_raw = i_metadata.sp_mode == SINGLE_MODE  ? i_valid128 :
+                    i_metadata.sp_mode == TWO_SP_MODE  ? (i_valid64a & i_valid64b) :
+                    i_metadata.sp_mode == FOUR_SP_MODE ? (i_valid32a & i_valid32b & i_valid32c & i_valid32d) :
+                    '0;
+
+/**
+ * In FOUR_SP_MODE, we need 4 reads (a/b/c/d). Since the LUT is a true dual-port
+ * ROM, lanes c/d are read in stage 2 (one cycle later). During that cycle the
+ * BRAM ports are fully occupied, so we must not accept a new input.
+ */
+logic s_stage2_four_read;
+assign s_stage2_four_read = s_pipe_valid[S2_OFFSET] &&
+                            ENABLE_32 && USE_128_FOR_32 &&
+                            (s_S1b_metadata.sp_mode == FOUR_SP_MODE);
+
+logic s_mem_busy;
+assign s_mem_busy = s_stage2_four_read;
+
 logic s_fire;
-assign s_fire = i_metadata.sp_mode == SINGLE_MODE  ? i_valid128 :
-                i_metadata.sp_mode == TWO_SP_MODE  ? (i_valid64a & i_valid64b) :
-                i_metadata.sp_mode == FOUR_SP_MODE ? (i_valid32a & i_valid32b & i_valid32c & i_valid32d) :
-                '0;
+assign s_fire = s_fire_raw & ~s_mem_busy;
 
 assign s_pipe_valid_next = {s_pipe_valid[PIPE_DEPTH-2 : 0], s_fire};
 
@@ -227,7 +262,7 @@ always_ff @( posedge i_clk ) begin : sp_intmultiplier_FSM
 end
 
 //=====================================================================================
-// Stage 1: Read LUTs (vector registers for BRAM inference)
+// Stage 1/2: Read LUTs (single true dual-port BRAM inference)
 //=====================================================================================
 logic [63:0]  s_S1a_exp_a64a_64_bits;
 logic [63:0]  s_S1a_exp_a64b_64_bits;
@@ -236,149 +271,96 @@ logic [31:0]  s_S1a_exp_a32b_32_bits;
 logic [31:0]  s_S2a_exp_a32c_32_bits;
 logic [31:0]  s_S2a_exp_a32d_32_bits;
 
-/**
- * Stage 1: Reads lane A, i.e., 128/64a/32a
- */
-logic [127:0] s_S1a_exp_a128_bits;
-logic [127:0] s_S1a_exp_a64a_128_bits;
-logic [127:0] s_S1a_exp_a32a_128_bits;
-always_ff @( posedge i_clk ) begin : stage_1_mem128_port_a
-  if (!i_rst_n) begin
-    s_S1a_exp_a128_bits   <= '0;
-    s_S1a_exp_a64a_128_bits <= '0;
-    s_S1a_exp_a32a_128_bits <= '0;
-  end
-  else begin
-    if (s_S1_en) begin
-      case (i_metadata.sp_mode)
-        SINGLE_MODE: begin
-          if (i_valid128 === 1'b1) begin
-            if (HAS_SIGN) begin
-              if (i_lane_128[LANE_BITS_128-1] === 1'b0) begin
-                s_S1a_exp_a128_bits <= mem128_pos[i_lane_128[ADDR_BITS_128-1:0]];
-              end
-              else begin
-                s_S1a_exp_a128_bits <= mem128_neg[i_lane_128[ADDR_BITS_128-1:0]];
-              end
-            end
-            else begin
-              s_S1a_exp_a128_bits <= mem128_pos[i_lane_128[ADDR_BITS_128-1:0]];
-            end
-          end
-        end
+logic [ADDR_BITS_128-1:0] s_mem_addra;
+logic [ADDR_BITS_128-1:0] s_mem_addrb;
+logic                     s_mem_ena;
+logic                     s_mem_enb;
+logic                     s_mem_use_neg_a;
+logic                     s_mem_use_neg_b;
+logic [127:0]             s_mem_douta;
+logic [127:0]             s_mem_doutb;
 
-        TWO_SP_MODE: begin
-          if (ENABLE_64 && USE_128_FOR_64) begin
-            if (HAS_SIGN) begin
-              if (i_lane_64a[LANE_BITS_64-1] === 1'b0) begin
-                s_S1a_exp_a64a_128_bits <= mem128_pos[addr128_from_64(i_lane_64a[ADDR_BITS_64-1:0])];
-              end
-              else begin
-                s_S1a_exp_a64a_128_bits <= mem128_neg[addr128_from_64(i_lane_64a[ADDR_BITS_64-1:0])];
-              end
-            end
-            else begin
-              s_S1a_exp_a64a_128_bits <= mem128_pos[addr128_from_64(i_lane_64a[ADDR_BITS_64-1:0])];
-            end
-          end
-        end
+always_comb begin : mem128_port_select
+  s_mem_ena       = 1'b0;
+  s_mem_enb       = 1'b0;
+  s_mem_addra     = '0;
+  s_mem_addrb     = '0;
+  s_mem_use_neg_a = 1'b0;
+  s_mem_use_neg_b = 1'b0;
 
-        FOUR_SP_MODE: begin
-          if (ENABLE_32 && USE_128_FOR_32) begin
-            if (HAS_SIGN) begin
-              if (i_lane_32a[LANE_BITS_32-1] === 1'b0) begin
-                s_S1a_exp_a32a_128_bits <= mem128_pos[addr128_from_32(i_lane_32a[ADDR_BITS_32-1:0])];
-              end
-              else begin
-                s_S1a_exp_a32a_128_bits <= mem128_neg[addr128_from_32(i_lane_32a[ADDR_BITS_32-1:0])];
-              end
-            end
-            else begin
-              s_S1a_exp_a32a_128_bits <= mem128_pos[addr128_from_32(i_lane_32a[ADDR_BITS_32-1:0])];
-            end
-          end
-        end
-
-        default: begin
-          assert (0) else begin
-            $error("[%0t] Invalid mode detected in fixed_partition", $time); 
-            // s_o_error[0] <= 1'b1;
-          end
-        end
-      endcase
-    end // if (s_S1_en)
-  end // else begin
-end // stage_1_mem128_port_a
-
-/**
- * Stage 1: Reads lane B, i.e., 64b/32b
- */
-logic [127:0] s_S1a_exp_a64b_128_bits;
-logic [127:0] s_S1a_exp_a32b_128_bits;
-always_ff @( posedge i_clk ) begin : stage_1_mem128_port_b
-  if (!i_rst_n) begin
-    s_S1a_exp_a64b_128_bits <= '0;
-    s_S1a_exp_a32b_128_bits <= '0;
-  end
-  else begin
-    if (s_S1_en) begin
-      case (i_metadata.sp_mode)
-        TWO_SP_MODE: begin
-          if (ENABLE_64 && USE_128_FOR_64 &&
-              i_valid64a === 1'b1 && i_valid64b === 1'b1) begin
-            if (HAS_SIGN) begin
-              if (i_lane_64b[LANE_BITS_64-1] === 1'b0) begin
-                s_S1a_exp_a64b_128_bits <= mem128_pos[addr128_from_64(i_lane_64b[ADDR_BITS_64-1:0])];
-              end
-              else begin
-                s_S1a_exp_a64b_128_bits <= mem128_neg[addr128_from_64(i_lane_64b[ADDR_BITS_64-1:0])];
-              end
-            end
-            else begin
-              s_S1a_exp_a64b_128_bits <= mem128_pos[addr128_from_64(i_lane_64b[ADDR_BITS_64-1:0])];
-            end
-          end
-        end
-
-        FOUR_SP_MODE: begin
-          if (ENABLE_32 && USE_128_FOR_32 &&
-              i_valid32a === 1'b1 && i_valid32b === 1'b1 &&
-              i_valid32c === 1'b1 && i_valid32d === 1'b1) begin
-            if (HAS_SIGN) begin
-              if (i_lane_32b[LANE_BITS_32-1] === 1'b0) begin
-                s_S1a_exp_a32b_128_bits <= mem128_pos[addr128_from_32(i_lane_32b[ADDR_BITS_32-1:0])];
-              end
-              else begin
-                s_S1a_exp_a32b_128_bits <= mem128_neg[addr128_from_32(i_lane_32b[ADDR_BITS_32-1:0])];
-              end
-            end
-            else begin
-              s_S1a_exp_a32b_128_bits <= mem128_pos[addr128_from_32(i_lane_32b[ADDR_BITS_32-1:0])];
-            end
-          end
-        end
-
-        default: begin
-          // No-op
-        end
-      endcase
+  if (s_stage2_four_read) begin
+    // Stage 2 FOUR_SP_MODE read: lanes c/d
+    s_mem_ena   = 1'b1;
+    s_mem_enb   = 1'b1;
+    s_mem_addra = addr128_from_32(s_S1b_lane_32c[ADDR_BITS_32-1:0]);
+    s_mem_addrb = addr128_from_32(s_S1b_lane_32d[ADDR_BITS_32-1:0]);
+    if (HAS_SIGN) begin
+      s_mem_use_neg_a = s_S1b_lane_32c[LANE_BITS_32-1];
+      s_mem_use_neg_b = s_S1b_lane_32d[LANE_BITS_32-1];
     end
-  end // else begin
-end // stage_1_mem128_port_b
+  end
+  else if (s_S1_en) begin
+    // Stage 1 read: SINGLE/TWO/FOUR (lanes a/b)
+    case (i_metadata.sp_mode)
+      SINGLE_MODE: begin
+        s_mem_ena   = 1'b1;
+        s_mem_addra = i_lane_128[ADDR_BITS_128-1:0];
+        if (HAS_SIGN) begin
+          s_mem_use_neg_a = i_lane_128[LANE_BITS_128-1];
+        end
+      end
+
+      TWO_SP_MODE: begin
+        if (ENABLE_64 && USE_128_FOR_64) begin
+          s_mem_ena   = 1'b1;
+          s_mem_enb   = 1'b1;
+          s_mem_addra = addr128_from_64(i_lane_64a[ADDR_BITS_64-1:0]);
+          s_mem_addrb = addr128_from_64(i_lane_64b[ADDR_BITS_64-1:0]);
+          if (HAS_SIGN) begin
+            s_mem_use_neg_a = i_lane_64a[LANE_BITS_64-1];
+            s_mem_use_neg_b = i_lane_64b[LANE_BITS_64-1];
+          end
+        end
+      end
+
+      FOUR_SP_MODE: begin
+        if (ENABLE_32 && USE_128_FOR_32) begin
+          s_mem_ena   = 1'b1;
+          s_mem_enb   = 1'b1;
+          s_mem_addra = addr128_from_32(i_lane_32a[ADDR_BITS_32-1:0]);
+          s_mem_addrb = addr128_from_32(i_lane_32b[ADDR_BITS_32-1:0]);
+          if (HAS_SIGN) begin
+            s_mem_use_neg_a = i_lane_32a[LANE_BITS_32-1];
+            s_mem_use_neg_b = i_lane_32b[LANE_BITS_32-1];
+          end
+        end
+      end
+
+      default: begin
+        // No-op
+      end
+    endcase
+  end
+end
+
+always_ff @( posedge i_clk ) begin : mem128_tdp_rom
+  if (!i_rst_n) begin
+    s_mem_douta <= '0;
+    s_mem_doutb <= '0;
+  end
+  else begin
+    if (s_mem_ena) begin
+      s_mem_douta <= (HAS_SIGN && s_mem_use_neg_a) ? mem128_neg[s_mem_addra] : mem128_pos[s_mem_addra];
+    end
+    if (s_mem_enb) begin
+      s_mem_doutb <= (HAS_SIGN && s_mem_use_neg_b) ? mem128_neg[s_mem_addrb] : mem128_pos[s_mem_addrb];
+    end
+  end
+end
 
 /**
  * Stage 1b block: Propogate valid bit and metadata bits
  */
-logic                     s_S1b_valid128;
-logic                     s_S1b_valid64a;
-logic                     s_S1b_valid64b;
-logic                     s_S1b_valid32a;
-logic                     s_S1b_valid32b;
-logic                     s_S1b_valid32c;
-logic                     s_S1b_valid32d;
-logic [LANE_BITS_32-1:0]  s_S1b_lane_32c;
-logic [LANE_BITS_32-1:0]  s_S1b_lane_32d;
-float_metadata_t          s_S1b_metadata;
 always_ff @( posedge i_clk ) begin : stage1b
   if (!i_rst_n) begin
     s_S1b_valid128 <= '0;
@@ -414,60 +396,6 @@ end
 //          128b "early exit" here
 //=====================================================================================
 /**
- * Stage 2a: This stage reads lane c when sp_mode is FOUR_SP_MODE
- */
-logic [127:0] s_S2a_exp_a32c_128_bits;
-always_ff @( posedge i_clk ) begin : stage2a_reading_lane_c
-  if (!i_rst_n) begin
-    s_S2a_exp_a32c_128_bits <= '0;
-  end
-  else begin
-    if (s_S2_en) begin
-      if (ENABLE_32 && USE_128_FOR_32 && s_S1b_metadata.sp_mode == FOUR_SP_MODE) begin
-        if (HAS_SIGN) begin
-          if (s_S1b_lane_32c[LANE_BITS_32-1] === 1'b0) begin
-            s_S2a_exp_a32c_128_bits <= mem128_pos[addr128_from_32(s_S1b_lane_32c[ADDR_BITS_32-1:0])];
-          end
-          else begin
-            s_S2a_exp_a32c_128_bits <= mem128_neg[addr128_from_32(s_S1b_lane_32c[ADDR_BITS_32-1:0])];
-          end
-        end
-        else begin
-          s_S2a_exp_a32c_128_bits <= mem128_pos[addr128_from_32(s_S1b_lane_32c[ADDR_BITS_32-1:0])];
-        end
-      end // if (ENABLE_32 && USE_128_FOR_32...
-    end // if (s_S2_en)
-  end // else begin
-end // stage2a_reading_lane_cd
-
-/**
- * Stage 2a: This stage reads lane d when sp_mode is FOUR_SP_MODE
- */
-logic [127:0] s_S2a_exp_a32d_128_bits;
-always_ff @( posedge i_clk ) begin : stage2a_reading_lane_d
-  if (!i_rst_n) begin
-    s_S2a_exp_a32d_128_bits <= '0;
-  end
-  else begin
-    if (s_S2_en) begin
-      if (ENABLE_32 && USE_128_FOR_32 && s_S1b_metadata.sp_mode == FOUR_SP_MODE) begin
-        if (HAS_SIGN) begin
-          if (s_S1b_lane_32d[LANE_BITS_32-1] === 1'b0) begin
-            s_S2a_exp_a32d_128_bits <= mem128_pos[addr128_from_32(s_S1b_lane_32d[ADDR_BITS_32-1:0])];
-          end
-          else begin
-            s_S2a_exp_a32d_128_bits <= mem128_neg[addr128_from_32(s_S1b_lane_32d[ADDR_BITS_32-1:0])];
-          end
-        end
-        else begin
-          s_S2a_exp_a32d_128_bits <= mem128_pos[addr128_from_32(s_S1b_lane_32d[ADDR_BITS_32-1:0])];
-        end
-      end
-    end // if (s_S2_en)
-  end // else begin
-end // stage2a_reading_lane_cd
-
-/**
  * Stage 2b: Convert lane a/b (part 1) for 64b and 32b.
  *           128b "early exit" is still here.
  */
@@ -493,27 +421,27 @@ always_ff @( posedge i_clk ) begin : stage2b
     s_S2b_exp_a32b_p1 <= '0;
   end
   else begin
-    if (s_S2_en) begin
-      case (s_S1b_metadata.sp_mode)
-        SINGLE_MODE: begin
-          s_S2b_exp_a128 <= binary128_t'(s_S1a_exp_a128_bits);
-        end
-
-        TWO_SP_MODE: begin
-          if (ENABLE_64) begin
-            if (USE_128_FOR_64) begin
-              s_S2b_exp_a64a_p1 <= binary128_to_binary64_rne_part1(binary128_t'(s_S1a_exp_a64a_128_bits));
-              s_S2b_exp_a64b_p1 <= binary128_to_binary64_rne_part1(binary128_t'(s_S1a_exp_a64b_128_bits));
-              s_S2b_exp_a64a <= '0;
-              s_S2b_exp_a64b <= '0;
-            end
-            else begin
+	    if (s_S2_en) begin
+	      case (s_S1b_metadata.sp_mode)
+	        SINGLE_MODE: begin
+	          s_S2b_exp_a128 <= binary128_t'(s_mem_douta);
+	        end
+	
+	        TWO_SP_MODE: begin
+	          if (ENABLE_64) begin
+	            if (USE_128_FOR_64) begin
+	              s_S2b_exp_a64a_p1 <= binary128_to_binary64_rne_part1(binary128_t'(s_mem_douta));
+	              s_S2b_exp_a64b_p1 <= binary128_to_binary64_rne_part1(binary128_t'(s_mem_doutb));
+	              s_S2b_exp_a64a <= '0;
+	              s_S2b_exp_a64b <= '0;
+	            end
+	            else begin
               s_S2b_exp_a64a <= binary64_t'(s_S1a_exp_a64a_64_bits);
               s_S2b_exp_a64b <= binary64_t'(s_S1a_exp_a64b_64_bits);
               s_S2b_exp_a64a_p1 <= '0;
               s_S2b_exp_a64b_p1 <= '0;
+              end
             end
-          end
           else begin
             s_S2b_exp_a64a <= '0;
             s_S2b_exp_a64b <= '0;
@@ -522,15 +450,15 @@ always_ff @( posedge i_clk ) begin : stage2b
           end
         end
 
-        FOUR_SP_MODE: begin
-          if (ENABLE_32) begin
-            if (USE_128_FOR_32) begin
-              s_S2b_exp_a32a_p1 <= binary128_to_binary32_rne_part1(binary128_t'(s_S1a_exp_a32a_128_bits));
-              s_S2b_exp_a32b_p1 <= binary128_to_binary32_rne_part1(binary128_t'(s_S1a_exp_a32b_128_bits));
-              s_S2b_exp_a32a <= '0;
-              s_S2b_exp_a32b <= '0;
-            end
-            else begin
+	        FOUR_SP_MODE: begin
+	          if (ENABLE_32) begin
+	            if (USE_128_FOR_32) begin
+	              s_S2b_exp_a32a_p1 <= binary128_to_binary32_rne_part1(binary128_t'(s_mem_douta));
+	              s_S2b_exp_a32b_p1 <= binary128_to_binary32_rne_part1(binary128_t'(s_mem_doutb));
+	              s_S2b_exp_a32a <= '0;
+	              s_S2b_exp_a32b <= '0;
+	            end
+	            else begin
               s_S2b_exp_a32a <= binary32_t'(s_S1a_exp_a32a_32_bits);
               s_S2b_exp_a32b <= binary32_t'(s_S1a_exp_a32b_32_bits);
               s_S2b_exp_a32a_p1 <= '0;
@@ -673,8 +601,8 @@ always_ff @( posedge i_clk ) begin : stage3_conversion_part2_and_cd_part1
       if (ENABLE_32 && USE_128_FOR_32 && s_S2c_metadata.sp_mode == FOUR_SP_MODE) begin
         s_S3_exp_a32a_p2    <= binary128_to_binary32_rne_part2(s_S2b_exp_a32a_p1);
         s_S3_exp_a32b_p2    <= binary128_to_binary32_rne_part2(s_S2b_exp_a32b_p1);
-        s_S3_exp_a32c_p1    <= binary128_to_binary32_rne_part1(binary128_t'(s_S2a_exp_a32c_128_bits));
-        s_S3_exp_a32d_p1    <= binary128_to_binary32_rne_part1(binary128_t'(s_S2a_exp_a32d_128_bits));
+        s_S3_exp_a32c_p1    <= binary128_to_binary32_rne_part1(binary128_t'(s_mem_douta));
+        s_S3_exp_a32d_p1    <= binary128_to_binary32_rne_part1(binary128_t'(s_mem_doutb));
         s_S3_exp_a32a       <= '0;
         s_S3_exp_a32b       <= '0;
         s_S3_exp_a32c       <= '0;
