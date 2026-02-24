@@ -57,9 +57,9 @@
  * When this macro is set, those lines of code will be excluded by the compilation like a c
  * macro and will not be included in the synthesized hardware, hence "hardware" "blockout".
  */
-`ifdef RUNNING_VIVADO_SYNTHESIS
-  `define HARDWARE_BLOCKOUT
-`endif
+// `ifdef RUNNING_VIVADO_SYNTHESIS
+//   `define HARDWARE_BLOCKOUT
+// `endif
 
 /**
  * Used in sp_intmultiplier
