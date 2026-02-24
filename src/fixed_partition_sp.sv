@@ -37,18 +37,6 @@ import fixed128_pkg::*;
 import fixed64_pkg::*;
 import fixed32_pkg::*;
 
-/**
- * Some parts of this module is written in a way that make this module highly reusable
- * whether you want to use 128 reusable LUT or not, and those parts are gated by parameters
- * which the synthesizer should be smart enough to exclude when compiling, as long as you
- * set the correct parameter flags. But to be safe this macro gates the compilation of those
- * parts if needed.
- * 
- * When this macro is set, those lines of code will be excluded by the compilation like a c
- * macro and will not be included in the synthesized hardware, hence "hardware" "blockout".
- */
-// `define HARDWARE_BLOCKOUT
-
 module fixed_partition_sp #(
   parameter int MODULE_LATENCY_128    = 2,
   parameter int MODULE_LATENCY_64     = 4,
