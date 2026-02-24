@@ -276,7 +276,11 @@ always_ff @( posedge i_clk ) begin : stage3a
   end
   else begin
     if (s_S3_en) begin
+  `ifndef USE_DSP
       s_S3_jedi   <= s_S3_jedi_full[EX_MAN_BITS_128*2-1:0];
+  `else
+      s_S3_jedi   <= i_anikin * i_force; // Infer DSP use, as mentioned in config.svh, this should NOT be used in production code, will cause wrong result
+  `endif
       s_S3_valid  <= 1'b1;
     end // if (s_S3_en)
     else begin

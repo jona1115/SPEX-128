@@ -65,7 +65,10 @@
  * Used in sp_intmultiplier
  */
 // `define EN_DEBUG_PRINT
-`define USE_RADIX4_RECODING
+// `define USE_DSP // DO NOT turn on in final product! Will cause output to be very wrong
+`ifndef USE_DSP // If using DSP, we won't need a custom multiplier anymore
+  `define USE_RADIX4_RECODING // this is also a knob
+`endif
 
 /**
  * Sometimes, if code changed when Vivado is closed, it won't know something changed. In that case,
