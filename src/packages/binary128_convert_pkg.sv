@@ -213,6 +213,7 @@ package binary128_convert_pkg;
     // For subnormal binary128, hidden bit is 0; otherwise hidden bit is 1.
     exp_unbiased = (in.exp == 15'd0) ? (1 - BIAS_128) : ($signed({1'b0, in.exp}) - BIAS_128);
     full_sig = {(in.exp == 15'd0) ? 1'b0 : 1'b1, in.mantissa};
+
     // Step 4: Normalize significand and apply normalization shift to exponent.
     lz = lzc_113(full_sig);
     sig_norm = full_sig << lz;
@@ -299,13 +300,11 @@ package binary128_convert_pkg;
       out.mantissa = in.nan_payload;
       return out;
     end
-
     if (in.is_inf || in.is_overflow) begin
       out.exp = 11'h7ff;
       out.mantissa = '0;
       return out;
     end
-
     if (in.is_zero) begin
       out.exp = '0;
       out.mantissa = '0;
@@ -329,6 +328,7 @@ package binary128_convert_pkg;
         end
       end
     end
+
     // Step 3: Subnormal path pack (including subnormal-to-normal bump).
     else begin
       if (in.rounded[53] || in.rounded[52]) begin
@@ -385,6 +385,7 @@ package binary128_convert_pkg;
     // Step 3: Build unbiased exponent and 113-bit significand.
     exp_unbiased = (in.exp == 15'd0) ? (1 - BIAS_128) : ($signed({1'b0, in.exp}) - BIAS_128);
     full_sig = {(in.exp == 15'd0) ? 1'b0 : 1'b1, in.mantissa};
+
     // Step 4: Normalize significand and apply normalization shift to exponent.
     lz = lzc_113(full_sig);
     sig_norm = full_sig << lz;
@@ -501,6 +502,7 @@ package binary128_convert_pkg;
         end
       end
     end
+    
     // Step 3: Subnormal path pack (including subnormal-to-normal bump).
     else begin
       if (in.rounded[24] || in.rounded[23]) begin
