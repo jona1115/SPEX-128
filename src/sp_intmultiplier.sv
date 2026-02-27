@@ -166,6 +166,10 @@ end
   `include "helper/radix4_pp_generator.svh"
   logic [RADIX4_PP_NBITS-1 : 0]     s_S1_pp [0 : RADIX4_ROWS-1];
 `endif
+`ifdef USE_DSP
+  logic [EX_MAN_BITS_128-1 : 0]     s_S1_i_anikin;
+  logic [EX_MAN_BITS_128-1 : 0]     s_S1_i_force;
+`endif
 
 logic s_S1_valid;
 int debug_col, debug_row, debug_num_rows, debug_num_cols;
@@ -173,11 +177,21 @@ always_ff @( posedge i_clk ) begin : stage1a
   if (!i_rst_n) begin
     s_S1_valid  <= '0;
     s_S1_pp     <= '{default:'0};
+
+`ifdef USE_DSP
+    s_S1_i_anikin <= '0; 
+    s_S1_i_force  <= '0; 
+`endif
   end
   else begin
     if (s_S1_en) begin
       s_S1_valid <= '1;
       s_S1_pp <= s_pp;
+
+`ifdef USE_DSP
+      s_S1_i_anikin <= i_anikin; 
+      s_S1_i_force  <= i_force; 
+`endif
 
 `ifdef EN_DEBUG_PRINT
   `ifndef USE_RADIX4_RECODING
@@ -219,15 +233,26 @@ end // always_ff @( posedge i_clk )
   logic [RADIX4_DADDA_SC_NBITS-1 : 0] s_S2_S;
   logic [RADIX4_DADDA_SC_NBITS-1 : 0] s_S2_C;
 `endif
+`ifdef USE_DSP
+  logic [EX_MAN_BITS_128*2-1 : 0]     s_S2_jedi;
+`endif
 always_ff @( posedge i_clk ) begin : stage2a
   if (!i_rst_n) begin
     s_S2_S <= '0;
     s_S2_C <= '0;
+
+  `ifdef USE_DSP
+      s_S2_jedi <= '0;
+  `endif
   end
   else begin
     if (s_S2_en) begin
       s_S2_S <= S;
       s_S2_C <= C;
+
+  `ifdef USE_DSP
+      s_S2_jedi <= s_S1_i_anikin * s_S1_i_force; // Infer DSP use, as mentioned in config.svh, this should NOT be used in production code, will cause wrong result
+  `endif
     end // if (s_S2_en)
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
@@ -253,21 +278,21 @@ end // always_ff @( posedge i_clk )
 //=====================================================================================
 `ifndef USE_RADIX4_RECODING
   // Vanila
-  logic [RADIX2_DADDA_Z_NBITS-1 : 0] z0;
-  logic [RADIX2_DADDA_Z_NBITS-1 : 0] z1;
+  logic [RADIX2_DADDA_Z_NBITS-1 : 0]  z0;
+  logic [RADIX2_DADDA_Z_NBITS-1 : 0]  z1;
   `include "helper/dadda_compressor_final_rows.svh"
-  logic [RADIX2_DADDA_Z_NBITS-1 : 0] s_S3_jedi_full;
+  logic [RADIX2_DADDA_Z_NBITS-1 : 0]  s_S3_jedi_full;
   assign s_S3_jedi_full = z0 + z1;
 `else
   // Radix 4
-  logic [RADIX4_DADDA_Z_NBITS-1 : 0] z0;
-  logic [RADIX4_DADDA_Z_NBITS-1 : 0] z1;
+  logic [RADIX4_DADDA_Z_NBITS-1 : 0]  z0;
+  logic [RADIX4_DADDA_Z_NBITS-1 : 0]  z1;
   `include "helper/radix4_dadda_compressor_final_rows.svh"
-  logic [RADIX4_DADDA_Z_NBITS-1 : 0] s_S3_jedi_full;
+  logic [RADIX4_DADDA_Z_NBITS-1 : 0]  s_S3_jedi_full;
   assign s_S3_jedi_full = z0 + z1;
 `endif
-logic [EX_MAN_BITS_128*2-1:0] s_S3_jedi;
-logic                         s_S3_valid;
+logic [EX_MAN_BITS_128*2-1 : 0]       s_S3_jedi;
+logic                                 s_S3_valid;
 
 always_ff @( posedge i_clk ) begin : stage3a
   if (!i_rst_n) begin
@@ -279,7 +304,7 @@ always_ff @( posedge i_clk ) begin : stage3a
   `ifndef USE_DSP
       s_S3_jedi   <= s_S3_jedi_full[EX_MAN_BITS_128*2-1:0];
   `else
-      s_S3_jedi   <= i_anikin * i_force; // Infer DSP use, as mentioned in config.svh, this should NOT be used in production code, will cause wrong result
+      s_S3_jedi   <= s_S2_jedi;
   `endif
       s_S3_valid  <= 1'b1;
     end // if (s_S3_en)
