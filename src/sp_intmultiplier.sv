@@ -299,4 +299,4 @@ assign o_sanity_identifier = MODULE_IDENTIFIER;
 assign o_error = s_o_error;
 assign o_debug = '0;
 
-endmodule // module sp_fpmultiplier #()
+endmodule // module sp_intmultiplier #()
