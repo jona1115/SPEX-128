@@ -243,9 +243,9 @@ always_comb begin : valid_bit_decoder
       end
     end // FOUR_SP_MODE
 
-    // default: begin
+    default: begin
     //   assert (0);
-    // end
+    end
   endcase // case (i_metadata.sp_mode)
 end
 
