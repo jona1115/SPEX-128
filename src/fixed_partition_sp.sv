@@ -58,6 +58,7 @@ module fixed_partition_sp #(
   parameter int LANE_BITS_32          = ADDR_BITS_32  + (HAS_SIGN ? 1 : 0),
 
   // LUT files (use *_POS/_NEG when HAS_SIGN=1, otherwise *_FILE)
+`ifndef RUNNING_GENUS_SYNTHESIS
   parameter string INIT_128_POS_FILE  = "",
   parameter string INIT_128_NEG_FILE  = "",
   parameter string INIT_128_FILE      = "",
@@ -67,6 +68,17 @@ module fixed_partition_sp #(
   parameter string INIT_32_POS_FILE   = "",
   parameter string INIT_32_NEG_FILE   = "",
   parameter string INIT_32_FILE       = "",
+`else
+  parameter INIT_128_POS_FILE  = "",
+  parameter INIT_128_NEG_FILE  = "",
+  parameter INIT_128_FILE      = "",
+  parameter INIT_64_POS_FILE   = "",
+  parameter INIT_64_NEG_FILE   = "",
+  parameter INIT_64_FILE       = "",
+  parameter INIT_32_POS_FILE   = "",
+  parameter INIT_32_NEG_FILE   = "",
+  parameter INIT_32_FILE       = "",
+`endif
 
   // Error and debug parameters
   parameter int ERROR_SIGNAL_NUM_BITS = 32,
