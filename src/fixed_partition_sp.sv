@@ -156,9 +156,18 @@ endfunction
 
 //=====================================================================================
 // LUTs
+// 
+// Here lives "real" and "fake" code. The "fake" stuff are stubs for Genus synthesis
+// in which I don't want memory to be synthesized (because I don't have access to 
+// memory macros/libraries). So for the stubs, they are a pseudo random deterministic
+// function that will ensure that the datapaths won't get optimized away. They do not
+// produce a valid result. This version is enabled if the RUNNING_GENUS_SYNTHESIS flag
+// is set.
+// 
+// The "real" stuff are memory initialization code that will actually create lookup 
+// tables and produce valid results. This version is enabled if the RUNNING_GENUS_SYNTHESIS
+// flag is cleared (commented out).
 //=====================================================================================
-// Force BRAM inference even for smaller partitions (e.g., partition A), otherwise
-// Vivado may choose to implement the ROM as distributed (LUT) ROM and consume LUTs.
 `ifndef SPEX_LUT_DUMMY
 (* ram_style = "block", rom_style = "block" *) logic [127:0] mem128_pos  [0:DEPTH_128-1];
 (* ram_style = "block", rom_style = "block" *) logic [127:0] mem128_neg  [0:DEPTH_128-1];
@@ -200,6 +209,8 @@ initial begin
 end
 `endif
 
+`ifdef SPEX_LUT_DUMMY
+// Part of the stub
 function automatic logic [31:0] spex_lut_dummy_xorshift32(
   input logic [31:0] i_state
 );
@@ -211,72 +222,79 @@ function automatic logic [31:0] spex_lut_dummy_xorshift32(
   return state;
 endfunction
 
-function automatic logic [127:0] spex_lut128_read(
+// Part of the stub
+function automatic logic [127:0] spex_lut128_read_stub(
   input logic                   i_use_neg,
   input logic [ADDR_BITS_128-1:0] i_addr
 );
-  `ifdef SPEX_LUT_DUMMY
-    logic [31:0] seed;
-    logic [127:0] result;
-    seed = 32'hc1f6_a09d ^ {28'h0, MODULE_IDENTIFIER} ^ {{(32-ADDR_BITS_128){1'b0}}, i_addr};
-    if (HAS_SIGN && i_use_neg) begin
-      seed ^= 32'h7f4a_7c15;
-    end
-    for (int word_idx = 0; word_idx < 4; word_idx++) begin
-      seed = spex_lut_dummy_xorshift32(seed);
-      result[word_idx*32 +: 32] = seed;
-    end
-    return result;
-  `else
-    if (HAS_SIGN && i_use_neg) begin
-      return mem128_neg[i_addr];
-    end
-    return mem128_pos[i_addr];
-  `endif
+  logic [31:0] seed;
+  logic [127:0] result;
+  seed = 32'hc1f6_a09d ^ {28'h0, MODULE_IDENTIFIER} ^ {{(32-ADDR_BITS_128){1'b0}}, i_addr};
+  if (HAS_SIGN && i_use_neg) begin
+    seed ^= 32'h7f4a_7c15;
+  end
+  for (int word_idx = 0; word_idx < 4; word_idx++) begin
+    seed = spex_lut_dummy_xorshift32(seed);
+    result[word_idx*32 +: 32] = seed;
+  end
+  return result;
 endfunction
 
-function automatic logic [63:0] spex_lut64_read(
+// Part of the stub
+function automatic logic [63:0] spex_lut64_read_stub(
   input logic                  i_use_neg,
   input logic [ADDR_BITS_64-1:0] i_addr
 );
-  `ifdef SPEX_LUT_DUMMY
-    logic [31:0] seed;
-    logic [63:0] result;
-    seed = 32'h4a2c_7d91 ^ {28'h0, MODULE_IDENTIFIER} ^ {{(32-ADDR_BITS_64){1'b0}}, i_addr};
-    if (HAS_SIGN && i_use_neg) begin
-      seed ^= 32'hb3f1_11c7;
-    end
-    for (int word_idx = 0; word_idx < 2; word_idx++) begin
-      seed = spex_lut_dummy_xorshift32(seed);
-      result[word_idx*32 +: 32] = seed;
-    end
-    return result;
-  `else
-    if (HAS_SIGN && i_use_neg) begin
-      return mem64_neg[i_addr];
-    end
-    return mem64_pos[i_addr];
-  `endif
+  logic [31:0] seed;
+  logic [63:0] result;
+  seed = 32'h4a2c_7d91 ^ {28'h0, MODULE_IDENTIFIER} ^ {{(32-ADDR_BITS_64){1'b0}}, i_addr};
+  if (HAS_SIGN && i_use_neg) begin
+    seed ^= 32'hb3f1_11c7;
+  end
+  for (int word_idx = 0; word_idx < 2; word_idx++) begin
+    seed = spex_lut_dummy_xorshift32(seed);
+    result[word_idx*32 +: 32] = seed;
+  end
+  return result;
 endfunction
 
+// Part of the stub
 function automatic logic [31:0] spex_lut32_read(
   input logic                  i_use_neg,
   input logic [ADDR_BITS_32-1:0] i_addr
 );
-`ifdef SPEX_LUT_DUMMY
   logic [31:0] seed;
   seed = 32'h2f94_ae35 ^ {28'h0, MODULE_IDENTIFIER} ^ {{(32-ADDR_BITS_32){1'b0}}, i_addr};
   if (HAS_SIGN && i_use_neg) begin
     seed ^= 32'h1b56_c4e9;
   end
   return spex_lut_dummy_xorshift32(seed + 32'hbb67_ae85);
-`else
-  if (HAS_SIGN && i_use_neg) begin
-    return mem32_neg[i_addr];
-  end
-  return mem32_pos[i_addr];
-`endif
 endfunction
+`endif // `ifdef SPEX_LUT_DUMMY
+
+`ifdef SPEX_LUT_DUMMY
+  `define SPEX_LUT128_READ_MACRO(i_use_neg, i_addr) \
+            spex_lut128_read_stub(i_use_neg, i_addr);
+`else
+  `define SPEX_LUT128_READ_MACRO(i_use_neg, i_addr) \
+            (HAS_SIGN && i_use_neg) ? mem128_neg[i_addr] : mem128_pos[i_addr];
+`endif
+
+`ifdef SPEX_LUT_DUMMY
+  `define SPEX_LUT64_READ_MACRO(i_use_neg, i_addr) \
+            spex_lut64_read_stub(i_use_neg, i_addr);
+`else
+  `define SPEX_LUT64_READ_MACRO(i_use_neg, i_addr) \
+            (HAS_SIGN && i_use_neg) ? mem64_neg[i_addr] : mem64_pos[i_addr];
+`endif
+
+`ifdef SPEX_LUT_DUMMY
+  `define SPEX_LUT32_READ_MACRO(i_use_neg, i_addr) \
+            spex_lut64_read_stub(i_use_neg, i_addr);
+`else
+  `define SPEX_LUT32_READ_MACRO(i_use_neg, i_addr) \
+            (HAS_SIGN && i_use_neg) ? mem32_neg[i_addr] : mem32_pos[i_addr];
+`endif
 
 
 //=====================================================================================
@@ -456,10 +474,10 @@ always_ff @( posedge i_clk ) begin : mem128_tdp_rom
   end
   else begin
     if (s_mem_ena) begin
-      s_mem_douta <= spex_lut128_read(s_mem_use_neg_a, s_mem_addra);
+      s_mem_douta <= `SPEX_LUT128_READ_MACRO(s_mem_use_neg_a, s_mem_addra);
     end
     if (s_mem_enb) begin
-      s_mem_doutb <= spex_lut128_read(s_mem_use_neg_b, s_mem_addrb);
+      s_mem_doutb <= `SPEX_LUT128_READ_MACRO(s_mem_use_neg_b, s_mem_addrb);
     end
   end
 end
@@ -473,8 +491,8 @@ always_ff @( posedge i_clk ) begin : stage1a_direct_lut_read_ab
   end
   else begin
     if (s_S1_en && ENABLE_64 && !USE_128_FOR_64 && i_metadata.sp_mode == TWO_SP_MODE) begin
-      s_S1a_exp_a64a_64_bits <= spex_lut64_read(HAS_SIGN ? i_lane_64a[LANE_BITS_64-1] : 1'b0, i_lane_64a[ADDR_BITS_64-1:0]);
-      s_S1a_exp_a64b_64_bits <= spex_lut64_read(HAS_SIGN ? i_lane_64b[LANE_BITS_64-1] : 1'b0, i_lane_64b[ADDR_BITS_64-1:0]);
+      s_S1a_exp_a64a_64_bits <= `SPEX_LUT64_READ_MACRO(i_lane_64a[LANE_BITS_64-1], i_lane_64a[ADDR_BITS_64-1:0]);
+      s_S1a_exp_a64b_64_bits <= `SPEX_LUT64_READ_MACRO(i_lane_64b[LANE_BITS_64-1], i_lane_64b[ADDR_BITS_64-1:0]);
     end
     else begin
       s_S1a_exp_a64a_64_bits <= '0;
@@ -482,8 +500,8 @@ always_ff @( posedge i_clk ) begin : stage1a_direct_lut_read_ab
     end
 
     if (s_S1_en && ENABLE_32 && !USE_128_FOR_32 && i_metadata.sp_mode == FOUR_SP_MODE) begin
-      s_S1a_exp_a32a_32_bits <= spex_lut32_read(HAS_SIGN ? i_lane_32a[LANE_BITS_32-1] : 1'b0, i_lane_32a[ADDR_BITS_32-1:0]);
-      s_S1a_exp_a32b_32_bits <= spex_lut32_read(HAS_SIGN ? i_lane_32b[LANE_BITS_32-1] : 1'b0, i_lane_32b[ADDR_BITS_32-1:0]);
+      s_S1a_exp_a32a_32_bits <= `SPEX_LUT32_READ_MACRO(i_lane_32a[LANE_BITS_32-1], i_lane_32a[ADDR_BITS_32-1:0]);
+      s_S1a_exp_a32b_32_bits <= `SPEX_LUT32_READ_MACRO(i_lane_32b[LANE_BITS_32-1], i_lane_32b[ADDR_BITS_32-1:0]);
     end
     else begin
       s_S1a_exp_a32a_32_bits <= '0;
@@ -538,8 +556,8 @@ always_ff @( posedge i_clk ) begin : stage2a_direct_lut_read_cd
   end
   else begin
     if (s_S2_en && ENABLE_32 && !USE_128_FOR_32 && s_S1b_metadata.sp_mode == FOUR_SP_MODE) begin
-      s_S2a_exp_a32c_32_bits <= spex_lut32_read(HAS_SIGN ? s_S1b_lane_32c[LANE_BITS_32-1] : 1'b0, s_S1b_lane_32c[ADDR_BITS_32-1:0]);
-      s_S2a_exp_a32d_32_bits <= spex_lut32_read(HAS_SIGN ? s_S1b_lane_32d[LANE_BITS_32-1] : 1'b0, s_S1b_lane_32d[ADDR_BITS_32-1:0]);
+      s_S2a_exp_a32c_32_bits <= `SPEX_LUT32_READ_MACRO(s_S1b_lane_32c[LANE_BITS_32-1], s_S1b_lane_32c[ADDR_BITS_32-1:0]);
+      s_S2a_exp_a32d_32_bits <= `SPEX_LUT32_READ_MACRO(s_S1b_lane_32d[LANE_BITS_32-1], s_S1b_lane_32d[ADDR_BITS_32-1:0]);
     end
     else begin
       s_S2a_exp_a32c_32_bits <= '0;
