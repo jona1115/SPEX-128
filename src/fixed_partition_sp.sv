@@ -58,6 +58,7 @@ module fixed_partition_sp #(
   parameter int LANE_BITS_32          = ADDR_BITS_32  + (HAS_SIGN ? 1 : 0),
 
   // LUT files (use *_POS/_NEG when HAS_SIGN=1, otherwise *_FILE)
+`ifndef RUNNING_GENUS_SYNTHESIS
   parameter string INIT_128_POS_FILE  = "",
   parameter string INIT_128_NEG_FILE  = "",
   parameter string INIT_128_FILE      = "",
@@ -67,6 +68,17 @@ module fixed_partition_sp #(
   parameter string INIT_32_POS_FILE   = "",
   parameter string INIT_32_NEG_FILE   = "",
   parameter string INIT_32_FILE       = "",
+`else
+  parameter INIT_128_POS_FILE  = "",
+  parameter INIT_128_NEG_FILE  = "",
+  parameter INIT_128_FILE      = "",
+  parameter INIT_64_POS_FILE   = "",
+  parameter INIT_64_NEG_FILE   = "",
+  parameter INIT_64_FILE       = "",
+  parameter INIT_32_POS_FILE   = "",
+  parameter INIT_32_NEG_FILE   = "",
+  parameter INIT_32_FILE       = "",
+`endif
 
   // Error and debug parameters
   parameter int ERROR_SIGNAL_NUM_BITS = 32,
@@ -147,6 +159,7 @@ endfunction
 //=====================================================================================
 // Force BRAM inference even for smaller partitions (e.g., partition A), otherwise
 // Vivado may choose to implement the ROM as distributed (LUT) ROM and consume LUTs.
+`ifndef SPEX_LUT_DUMMY
 (* ram_style = "block", rom_style = "block" *) logic [127:0] mem128_pos  [0:DEPTH_128-1];
 (* ram_style = "block", rom_style = "block" *) logic [127:0] mem128_neg  [0:DEPTH_128-1];
 (* ram_style = "block", rom_style = "block" *) logic [63:0]  mem64_pos   [0:DEPTH_64-1];
@@ -185,6 +198,85 @@ initial begin
     end
   end
 end
+`endif
+
+function automatic logic [31:0] spex_lut_dummy_xorshift32(
+  input logic [31:0] i_state
+);
+  logic [31:0] state;
+  state = i_state;
+  state ^= (state << 13);
+  state ^= (state >> 17);
+  state ^= (state << 5);
+  return state;
+endfunction
+
+function automatic logic [127:0] spex_lut128_read(
+  input logic                   i_use_neg,
+  input logic [ADDR_BITS_128-1:0] i_addr
+);
+  `ifdef SPEX_LUT_DUMMY
+    logic [31:0] seed;
+    logic [127:0] result;
+    seed = 32'hc1f6_a09d ^ {28'h0, MODULE_IDENTIFIER} ^ {{(32-ADDR_BITS_128){1'b0}}, i_addr};
+    if (HAS_SIGN && i_use_neg) begin
+      seed ^= 32'h7f4a_7c15;
+    end
+    for (int word_idx = 0; word_idx < 4; word_idx++) begin
+      seed = spex_lut_dummy_xorshift32(seed);
+      result[word_idx*32 +: 32] = seed;
+    end
+    return result;
+  `else
+    if (HAS_SIGN && i_use_neg) begin
+      return mem128_neg[i_addr];
+    end
+    return mem128_pos[i_addr];
+  `endif
+endfunction
+
+function automatic logic [63:0] spex_lut64_read(
+  input logic                  i_use_neg,
+  input logic [ADDR_BITS_64-1:0] i_addr
+);
+  `ifdef SPEX_LUT_DUMMY
+    logic [31:0] seed;
+    logic [63:0] result;
+    seed = 32'h4a2c_7d91 ^ {28'h0, MODULE_IDENTIFIER} ^ {{(32-ADDR_BITS_64){1'b0}}, i_addr};
+    if (HAS_SIGN && i_use_neg) begin
+      seed ^= 32'hb3f1_11c7;
+    end
+    for (int word_idx = 0; word_idx < 2; word_idx++) begin
+      seed = spex_lut_dummy_xorshift32(seed);
+      result[word_idx*32 +: 32] = seed;
+    end
+    return result;
+  `else
+    if (HAS_SIGN && i_use_neg) begin
+      return mem64_neg[i_addr];
+    end
+    return mem64_pos[i_addr];
+  `endif
+endfunction
+
+function automatic logic [31:0] spex_lut32_read(
+  input logic                  i_use_neg,
+  input logic [ADDR_BITS_32-1:0] i_addr
+);
+`ifdef SPEX_LUT_DUMMY
+  logic [31:0] seed;
+  seed = 32'h2f94_ae35 ^ {28'h0, MODULE_IDENTIFIER} ^ {{(32-ADDR_BITS_32){1'b0}}, i_addr};
+  if (HAS_SIGN && i_use_neg) begin
+    seed ^= 32'h1b56_c4e9;
+  end
+  return spex_lut_dummy_xorshift32(seed + 32'hbb67_ae85);
+`else
+  if (HAS_SIGN && i_use_neg) begin
+    return mem32_neg[i_addr];
+  end
+  return mem32_pos[i_addr];
+`endif
+endfunction
 
 
 //=====================================================================================
@@ -364,10 +456,10 @@ always_ff @( posedge i_clk ) begin : mem128_tdp_rom
   end
   else begin
     if (s_mem_ena) begin
-      s_mem_douta <= (HAS_SIGN && s_mem_use_neg_a) ? mem128_neg[s_mem_addra] : mem128_pos[s_mem_addra];
+      s_mem_douta <= spex_lut128_read(s_mem_use_neg_a, s_mem_addra);
     end
     if (s_mem_enb) begin
-      s_mem_doutb <= (HAS_SIGN && s_mem_use_neg_b) ? mem128_neg[s_mem_addrb] : mem128_pos[s_mem_addrb];
+      s_mem_doutb <= spex_lut128_read(s_mem_use_neg_b, s_mem_addrb);
     end
   end
 end
@@ -381,14 +473,8 @@ always_ff @( posedge i_clk ) begin : stage1a_direct_lut_read_ab
   end
   else begin
     if (s_S1_en && ENABLE_64 && !USE_128_FOR_64 && i_metadata.sp_mode == TWO_SP_MODE) begin
-      if (HAS_SIGN) begin
-        s_S1a_exp_a64a_64_bits <= i_lane_64a[LANE_BITS_64-1] ? mem64_neg[i_lane_64a[ADDR_BITS_64-1:0]] : mem64_pos[i_lane_64a[ADDR_BITS_64-1:0]];
-        s_S1a_exp_a64b_64_bits <= i_lane_64b[LANE_BITS_64-1] ? mem64_neg[i_lane_64b[ADDR_BITS_64-1:0]] : mem64_pos[i_lane_64b[ADDR_BITS_64-1:0]];
-      end
-      else begin
-        s_S1a_exp_a64a_64_bits <= mem64_pos[i_lane_64a[ADDR_BITS_64-1:0]];
-        s_S1a_exp_a64b_64_bits <= mem64_pos[i_lane_64b[ADDR_BITS_64-1:0]];
-      end
+      s_S1a_exp_a64a_64_bits <= spex_lut64_read(HAS_SIGN ? i_lane_64a[LANE_BITS_64-1] : 1'b0, i_lane_64a[ADDR_BITS_64-1:0]);
+      s_S1a_exp_a64b_64_bits <= spex_lut64_read(HAS_SIGN ? i_lane_64b[LANE_BITS_64-1] : 1'b0, i_lane_64b[ADDR_BITS_64-1:0]);
     end
     else begin
       s_S1a_exp_a64a_64_bits <= '0;
@@ -396,14 +482,8 @@ always_ff @( posedge i_clk ) begin : stage1a_direct_lut_read_ab
     end
 
     if (s_S1_en && ENABLE_32 && !USE_128_FOR_32 && i_metadata.sp_mode == FOUR_SP_MODE) begin
-      if (HAS_SIGN) begin
-        s_S1a_exp_a32a_32_bits <= i_lane_32a[LANE_BITS_32-1] ? mem32_neg[i_lane_32a[ADDR_BITS_32-1:0]] : mem32_pos[i_lane_32a[ADDR_BITS_32-1:0]];
-        s_S1a_exp_a32b_32_bits <= i_lane_32b[LANE_BITS_32-1] ? mem32_neg[i_lane_32b[ADDR_BITS_32-1:0]] : mem32_pos[i_lane_32b[ADDR_BITS_32-1:0]];
-      end
-      else begin
-        s_S1a_exp_a32a_32_bits <= mem32_pos[i_lane_32a[ADDR_BITS_32-1:0]];
-        s_S1a_exp_a32b_32_bits <= mem32_pos[i_lane_32b[ADDR_BITS_32-1:0]];
-      end
+      s_S1a_exp_a32a_32_bits <= spex_lut32_read(HAS_SIGN ? i_lane_32a[LANE_BITS_32-1] : 1'b0, i_lane_32a[ADDR_BITS_32-1:0]);
+      s_S1a_exp_a32b_32_bits <= spex_lut32_read(HAS_SIGN ? i_lane_32b[LANE_BITS_32-1] : 1'b0, i_lane_32b[ADDR_BITS_32-1:0]);
     end
     else begin
       s_S1a_exp_a32a_32_bits <= '0;
@@ -456,14 +536,8 @@ always_ff @( posedge i_clk ) begin : stage2a_direct_lut_read_cd
   end
   else begin
     if (s_S2_en && ENABLE_32 && !USE_128_FOR_32 && s_S1b_metadata.sp_mode == FOUR_SP_MODE) begin
-      if (HAS_SIGN) begin
-        s_S2a_exp_a32c_32_bits <= s_S1b_lane_32c[LANE_BITS_32-1] ? mem32_neg[s_S1b_lane_32c[ADDR_BITS_32-1:0]] : mem32_pos[s_S1b_lane_32c[ADDR_BITS_32-1:0]];
-        s_S2a_exp_a32d_32_bits <= s_S1b_lane_32d[LANE_BITS_32-1] ? mem32_neg[s_S1b_lane_32d[ADDR_BITS_32-1:0]] : mem32_pos[s_S1b_lane_32d[ADDR_BITS_32-1:0]];
-      end
-      else begin
-        s_S2a_exp_a32c_32_bits <= mem32_pos[s_S1b_lane_32c[ADDR_BITS_32-1:0]];
-        s_S2a_exp_a32d_32_bits <= mem32_pos[s_S1b_lane_32d[ADDR_BITS_32-1:0]];
-      end
+      s_S2a_exp_a32c_32_bits <= spex_lut32_read(HAS_SIGN ? s_S1b_lane_32c[LANE_BITS_32-1] : 1'b0, s_S1b_lane_32c[ADDR_BITS_32-1:0]);
+      s_S2a_exp_a32d_32_bits <= spex_lut32_read(HAS_SIGN ? s_S1b_lane_32d[LANE_BITS_32-1] : 1'b0, s_S1b_lane_32d[ADDR_BITS_32-1:0]);
     end
     else begin
       s_S2a_exp_a32c_32_bits <= '0;
