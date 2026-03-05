@@ -526,8 +526,10 @@ end
 
 
 //=====================================================================================
-// Stage 2: Convert lane a and b of 64b and 32b (part 1), read lane c and d of 32b;
-//          128b "early exit" here
+// Stage 2:
+// - 128b, 64b "early exit"
+// - one-stage 128->64/32 conversion for lanes a/b
+// - direct 64/32 LUT pass-through for non-conversion paths
 //=====================================================================================
 always_ff @( posedge i_clk ) begin : stage2a_direct_lut_read_cd
   if (!i_rst_n) begin
@@ -547,18 +549,14 @@ always_ff @( posedge i_clk ) begin : stage2a_direct_lut_read_cd
 end
 
 /**
- * Stage 2b: Convert lane a/b (part 1) for 64b and 32b.
- *           128b "early exit" is still here.
+ * Stage 2b: Produce lane a/b outputs.
+ *           128->64/32 conversion paths run fully in this stage.
  */
 binary128_t  s_S2b_exp_a128;
 binary64_t   s_S2b_exp_a64a;
 binary64_t   s_S2b_exp_a64b;
 binary32_t   s_S2b_exp_a32a;
 binary32_t   s_S2b_exp_a32b;
-binary128_to_binary64_rne_p1_t s_S2b_exp_a64a_p1;
-binary128_to_binary64_rne_p1_t s_S2b_exp_a64b_p1;
-binary128_to_binary32_rne_p1_t s_S2b_exp_a32a_p1;
-binary128_to_binary32_rne_p1_t s_S2b_exp_a32b_p1;
 always_ff @( posedge i_clk ) begin : stage2b
   if (!i_rst_n) begin
     s_S2b_exp_a128    <= '0;
@@ -566,10 +564,6 @@ always_ff @( posedge i_clk ) begin : stage2b
     s_S2b_exp_a64b    <= '0;
     s_S2b_exp_a32a    <= '0;
     s_S2b_exp_a32b    <= '0;
-    s_S2b_exp_a64a_p1 <= '0;
-    s_S2b_exp_a64b_p1 <= '0;
-    s_S2b_exp_a32a_p1 <= '0;
-    s_S2b_exp_a32b_p1 <= '0;
   end
   else begin
 	    if (s_S2_en) begin
@@ -581,46 +575,34 @@ always_ff @( posedge i_clk ) begin : stage2b
 	        TWO_SP_MODE: begin
 	          if (ENABLE_64) begin
 	            if (USE_128_FOR_64) begin
-	              s_S2b_exp_a64a_p1 <= binary128_to_binary64_rne_part1(binary128_t'(s_mem_douta));
-	              s_S2b_exp_a64b_p1 <= binary128_to_binary64_rne_part1(binary128_t'(s_mem_doutb));
-	              s_S2b_exp_a64a <= '0;
-	              s_S2b_exp_a64b <= '0;
+	              s_S2b_exp_a64a <= binary128_to_binary64_rne(s_mem_douta);
+	              s_S2b_exp_a64b <= binary128_to_binary64_rne(s_mem_doutb);
 	            end
 	            else begin
               s_S2b_exp_a64a <= binary64_t'(s_S1a_exp_a64a_64_bits);
               s_S2b_exp_a64b <= binary64_t'(s_S1a_exp_a64b_64_bits);
-              s_S2b_exp_a64a_p1 <= '0;
-              s_S2b_exp_a64b_p1 <= '0;
               end
             end
           else begin
             s_S2b_exp_a64a <= '0;
             s_S2b_exp_a64b <= '0;
-            s_S2b_exp_a64a_p1 <= '0;
-            s_S2b_exp_a64b_p1 <= '0;
           end
         end
 
 	        FOUR_SP_MODE: begin
 	          if (ENABLE_32) begin
 	            if (USE_128_FOR_32) begin
-	              s_S2b_exp_a32a_p1 <= binary128_to_binary32_rne_part1(binary128_t'(s_mem_douta));
-	              s_S2b_exp_a32b_p1 <= binary128_to_binary32_rne_part1(binary128_t'(s_mem_doutb));
-	              s_S2b_exp_a32a <= '0;
-	              s_S2b_exp_a32b <= '0;
+	              s_S2b_exp_a32a <= binary128_to_binary32_rne(s_mem_douta);
+	              s_S2b_exp_a32b <= binary128_to_binary32_rne(s_mem_doutb);
 	            end
 	            else begin
-              s_S2b_exp_a32a <= binary32_t'(s_S1a_exp_a32a_32_bits);
-              s_S2b_exp_a32b <= binary32_t'(s_S1a_exp_a32b_32_bits);
-              s_S2b_exp_a32a_p1 <= '0;
-              s_S2b_exp_a32b_p1 <= '0;
+                s_S2b_exp_a32a <= binary32_t'(s_S1a_exp_a32a_32_bits);
+                s_S2b_exp_a32b <= binary32_t'(s_S1a_exp_a32b_32_bits);
             end
           end
           else begin
             s_S2b_exp_a32a <= '0;
             s_S2b_exp_a32b <= '0;
-            s_S2b_exp_a32a_p1 <= '0;
-            s_S2b_exp_a32b_p1 <= '0;
           end
         end
 
@@ -683,30 +665,24 @@ end // stage2c_signal_passthrough
 
 //=====================================================================================
 // Stage 3:
-// - 64: part2(a,b)
-// - 32: part2(a,b), part1(c,d)
+// - 64: pass-through of one-stage-converted a/b lanes
+// - 32: one-stage conversion for c/d when USE_128_FOR_32 is enabled
 //=====================================================================================
-logic                         s_S3_valid64a;
-logic                         s_S3_valid64b;
-logic                         s_S3_valid32a;
-logic                         s_S3_valid32b;
-logic                         s_S3_valid32c;
-logic                         s_S3_valid32d;
-logic                         s_S3_valid32_quad;
-float_metadata_t              s_S3_metadata;
-binary64_t                    s_S3_exp_a64a;
-binary64_t                    s_S3_exp_a64b;
-binary32_t                    s_S3_exp_a32a;
-binary32_t                    s_S3_exp_a32b;
-binary32_t                    s_S3_exp_a32c;
-binary32_t                    s_S3_exp_a32d;
-binary128_to_binary64_rne_p2_t s_S3_exp_a64a_p2;
-binary128_to_binary64_rne_p2_t s_S3_exp_a64b_p2;
-binary128_to_binary32_rne_p2_t s_S3_exp_a32a_p2;
-binary128_to_binary32_rne_p2_t s_S3_exp_a32b_p2;
-binary128_to_binary32_rne_p1_t s_S3_exp_a32c_p1;
-binary128_to_binary32_rne_p1_t s_S3_exp_a32d_p1;
-always_ff @( posedge i_clk ) begin : stage3_conversion_part2_and_cd_part1
+logic             s_S3_valid64a;
+logic             s_S3_valid64b;
+logic             s_S3_valid32a;
+logic             s_S3_valid32b;
+logic             s_S3_valid32c;
+logic             s_S3_valid32d;
+logic             s_S3_valid32_quad;
+float_metadata_t  s_S3_metadata;
+binary64_t        s_S3_exp_a64a;
+binary64_t        s_S3_exp_a64b;
+binary32_t        s_S3_exp_a32a;
+binary32_t        s_S3_exp_a32b;
+binary32_t        s_S3_exp_a32c;
+binary32_t        s_S3_exp_a32d;
+always_ff @( posedge i_clk ) begin : stage3_lane_cd_conversion_and_passthrough
   if (!i_rst_n) begin
     s_S3_valid64a      <= '0;
     s_S3_valid64b      <= '0;
@@ -716,52 +692,30 @@ always_ff @( posedge i_clk ) begin : stage3_conversion_part2_and_cd_part1
     s_S3_valid32d      <= '0;
     s_S3_valid32_quad  <= '0;
     s_S3_metadata      <= '0;
-
     s_S3_exp_a64a      <= '0;
     s_S3_exp_a64b      <= '0;
     s_S3_exp_a32a      <= '0;
     s_S3_exp_a32b      <= '0;
     s_S3_exp_a32c      <= '0;
     s_S3_exp_a32d      <= '0;
-    s_S3_exp_a64a_p2   <= '0;
-    s_S3_exp_a64b_p2   <= '0;
-    s_S3_exp_a32a_p2   <= '0;
-    s_S3_exp_a32b_p2   <= '0;
-    s_S3_exp_a32c_p1   <= '0;
-    s_S3_exp_a32d_p1   <= '0;
   end
   else begin
     if (s_S3_en) begin
       s_S3_valid64a  <= s_S2c_valid64a;
       s_S3_valid64b  <= s_S2c_valid64b;
       s_S3_metadata  <= s_S2c_metadata;
-
-      if (ENABLE_64 && USE_128_FOR_64 && s_S2c_metadata.sp_mode == TWO_SP_MODE) begin
-        s_S3_exp_a64a_p2    <= binary128_to_binary64_rne_part2(s_S2b_exp_a64a_p1);
-        s_S3_exp_a64b_p2    <= binary128_to_binary64_rne_part2(s_S2b_exp_a64b_p1);
-        s_S3_exp_a64a       <= '0;
-        s_S3_exp_a64b       <= '0;
-      end
-      else begin
-        s_S3_exp_a64a       <= s_S2b_exp_a64a;
-        s_S3_exp_a64b       <= s_S2b_exp_a64b;
-        s_S3_exp_a64a_p2    <= '0;
-        s_S3_exp_a64b_p2    <= '0;
-      end
+      s_S3_exp_a64a  <= s_S2b_exp_a64a;
+      s_S3_exp_a64b  <= s_S2b_exp_a64b;
 
       if (ENABLE_32 && USE_128_FOR_32 && s_S2c_metadata.sp_mode == FOUR_SP_MODE) begin
-        s_S3_exp_a32a_p2    <= binary128_to_binary32_rne_part2(s_S2b_exp_a32a_p1);
-        s_S3_exp_a32b_p2    <= binary128_to_binary32_rne_part2(s_S2b_exp_a32b_p1);
-        s_S3_exp_a32c_p1    <= binary128_to_binary32_rne_part1(binary128_t'(s_mem_douta));
-        s_S3_exp_a32d_p1    <= binary128_to_binary32_rne_part1(binary128_t'(s_mem_doutb));
-        s_S3_exp_a32a       <= '0;
-        s_S3_exp_a32b       <= '0;
-        s_S3_exp_a32c       <= '0;
-        s_S3_exp_a32d       <= '0;
-        s_S3_valid32a       <= '0;
-        s_S3_valid32b       <= '0;
-        s_S3_valid32c       <= '0;
-        s_S3_valid32d       <= '0;
+        s_S3_exp_a32a       <= s_S2b_exp_a32a;
+        s_S3_exp_a32b       <= s_S2b_exp_a32b;
+        s_S3_exp_a32c       <= binary128_to_binary32_rne(s_mem_douta);
+        s_S3_exp_a32d       <= binary128_to_binary32_rne(s_mem_doutb);
+        s_S3_valid32a       <= '1;
+        s_S3_valid32b       <= '1;
+        s_S3_valid32c       <= '1;
+        s_S3_valid32d       <= '1;
         s_S3_valid32_quad   <= s_S2c_valid32a & s_S2c_valid32b & s_S2c_valid32c & s_S2c_valid32d;
       end
       else begin
@@ -769,17 +723,13 @@ always_ff @( posedge i_clk ) begin : stage3_conversion_part2_and_cd_part1
         s_S3_exp_a32b       <= s_S2b_exp_a32b;
         s_S3_exp_a32c       <= binary32_t'(s_S2a_exp_a32c_32_bits);
         s_S3_exp_a32d       <= binary32_t'(s_S2a_exp_a32d_32_bits);
-        s_S3_exp_a32a_p2    <= '0;
-        s_S3_exp_a32b_p2    <= '0;
-        s_S3_exp_a32c_p1    <= '0;
-        s_S3_exp_a32d_p1    <= '0;
         s_S3_valid32a       <= s_S2c_valid32a;
         s_S3_valid32b       <= s_S2c_valid32b;
         s_S3_valid32c       <= s_S2c_valid32c;
         s_S3_valid32d       <= s_S2c_valid32d;
         s_S3_valid32_quad   <= '0;
       end
-    end // if (s_S3_en)
+    end
     else begin
       s_S3_valid64a      <= '0;
       s_S3_valid64b      <= '0;
@@ -789,47 +739,38 @@ always_ff @( posedge i_clk ) begin : stage3_conversion_part2_and_cd_part1
       s_S3_valid32d      <= '0;
       s_S3_valid32_quad  <= '0;
       s_S3_metadata      <= '0;
-
       s_S3_exp_a64a      <= '0;
       s_S3_exp_a64b      <= '0;
       s_S3_exp_a32a      <= '0;
       s_S3_exp_a32b      <= '0;
       s_S3_exp_a32c      <= '0;
       s_S3_exp_a32d      <= '0;
-      s_S3_exp_a64a_p2   <= '0;
-      s_S3_exp_a64b_p2   <= '0;
-      s_S3_exp_a32a_p2   <= '0;
-      s_S3_exp_a32b_p2   <= '0;
-      s_S3_exp_a32c_p1   <= '0;
-      s_S3_exp_a32d_p1   <= '0;
-    end // else begin
-  end // else begin
-end // stage3_conversion_part2_and_cd_part1
+    end
+  end
+end
 
 
 //=====================================================================================
 // Stage 4:
-// - 64: part3(a,b)
-// - 32: part3(a,b), part2(c,d)
+// - align 64b outputs
+// - keep FOUR_SP_MODE quad-valid bundling for 32b lanes
 //=====================================================================================
-logic                          s_S4_valid64a;
-logic                          s_S4_valid64b;
-logic                          s_S4_valid32a;
-logic                          s_S4_valid32b;
-logic                          s_S4_valid32c;
-logic                          s_S4_valid32d;
-logic                          s_S4_valid32_quad;
-float_metadata_t               s_S4_metadata;
-binary64_t                     s_S4_exp_a64a;
-binary64_t                     s_S4_exp_a64b;
-binary32_t                     s_S4_exp_a32a;
-binary32_t                     s_S4_exp_a32b;
-binary32_t                     s_S4_exp_a32c;
-binary32_t                     s_S4_exp_a32d;
-binary128_to_binary32_rne_p2_t s_S4_exp_a32c_p2;
-binary128_to_binary32_rne_p2_t s_S4_exp_a32d_p2;
+logic             s_S4_valid64a;
+logic             s_S4_valid64b;
+logic             s_S4_valid32a;
+logic             s_S4_valid32b;
+logic             s_S4_valid32c;
+logic             s_S4_valid32d;
+logic             s_S4_valid32_quad;
+float_metadata_t  s_S4_metadata;
+binary64_t        s_S4_exp_a64a;
+binary64_t        s_S4_exp_a64b;
+binary32_t        s_S4_exp_a32a;
+binary32_t        s_S4_exp_a32b;
+binary32_t        s_S4_exp_a32c;
+binary32_t        s_S4_exp_a32d;
 
-always_ff @( posedge i_clk ) begin : stage4_conversion_part3_and_cd_part2
+always_ff @( posedge i_clk ) begin : stage4_output_alignment
   if (!i_rst_n) begin
     s_S4_valid64a <= '0;
     s_S4_valid64b <= '0;
@@ -845,31 +786,20 @@ always_ff @( posedge i_clk ) begin : stage4_conversion_part3_and_cd_part2
     s_S4_exp_a32b <= '0;
     s_S4_exp_a32c <= '0;
     s_S4_exp_a32d <= '0;
-    s_S4_exp_a32c_p2 <= '0;
-    s_S4_exp_a32d_p2 <= '0;
   end
   else begin
     if (s_S4_en) begin
       s_S4_metadata <= s_S3_metadata;
       s_S4_valid64a <= s_S3_valid64a;
       s_S4_valid64b <= s_S3_valid64b;
-
-      if (ENABLE_64 && USE_128_FOR_64 && s_S3_metadata.sp_mode == TWO_SP_MODE) begin
-        s_S4_exp_a64a <= binary128_to_binary64_rne_part3(s_S3_exp_a64a_p2);
-        s_S4_exp_a64b <= binary128_to_binary64_rne_part3(s_S3_exp_a64b_p2);
-      end
-      else begin
-        s_S4_exp_a64a <= s_S3_exp_a64a;
-        s_S4_exp_a64b <= s_S3_exp_a64b;
-      end
+      s_S4_exp_a64a <= s_S3_exp_a64a;
+      s_S4_exp_a64b <= s_S3_exp_a64b;
 
       if (ENABLE_32 && USE_128_FOR_32 && s_S3_metadata.sp_mode == FOUR_SP_MODE) begin
-        s_S4_exp_a32a <= binary128_to_binary32_rne_part3(s_S3_exp_a32a_p2);
-        s_S4_exp_a32b <= binary128_to_binary32_rne_part3(s_S3_exp_a32b_p2);
-        s_S4_exp_a32c <= '0;
-        s_S4_exp_a32d <= '0;
-        s_S4_exp_a32c_p2 <= binary128_to_binary32_rne_part2(s_S3_exp_a32c_p1);
-        s_S4_exp_a32d_p2 <= binary128_to_binary32_rne_part2(s_S3_exp_a32d_p1);
+        s_S4_exp_a32a <= s_S3_exp_a32a;
+        s_S4_exp_a32b <= s_S3_exp_a32b;
+        s_S4_exp_a32c <= s_S3_exp_a32c;
+        s_S4_exp_a32d <= s_S3_exp_a32d;
         s_S4_valid32a <= '0;
         s_S4_valid32b <= '0;
         s_S4_valid32c <= '0;
@@ -881,8 +811,6 @@ always_ff @( posedge i_clk ) begin : stage4_conversion_part3_and_cd_part2
         s_S4_exp_a32b <= s_S3_exp_a32b;
         s_S4_exp_a32c <= s_S3_exp_a32c;
         s_S4_exp_a32d <= s_S3_exp_a32d;
-        s_S4_exp_a32c_p2 <= '0;
-        s_S4_exp_a32d_p2 <= '0;
         s_S4_valid32a <= s_S3_valid32a;
         s_S4_valid32b <= s_S3_valid32b;
         s_S4_valid32c <= s_S3_valid32c;
@@ -905,8 +833,6 @@ always_ff @( posedge i_clk ) begin : stage4_conversion_part3_and_cd_part2
       s_S4_exp_a32b <= '0;
       s_S4_exp_a32c <= '0;
       s_S4_exp_a32d <= '0;
-      s_S4_exp_a32c_p2 <= '0;
-      s_S4_exp_a32d_p2 <= '0;
     end
   end
 end
@@ -914,7 +840,7 @@ end
 
 //=====================================================================================
 // Stage 5:
-// - 32: part3(c,d) and align all four lane outputs
+// - 32: final alignment of all four lane outputs
 //=====================================================================================
 logic             s_S5_valid32a;
 logic             s_S5_valid32b;
@@ -926,7 +852,7 @@ binary32_t        s_S5_exp_a32b;
 binary32_t        s_S5_exp_a32c;
 binary32_t        s_S5_exp_a32d;
 
-always_ff @( posedge i_clk ) begin : stage5_lane_cd_part3_and_ab_alignment
+always_ff @( posedge i_clk ) begin : stage5_lane_alignment
   if (!i_rst_n) begin
     s_S5_valid32a <= '0;
     s_S5_valid32b <= '0;
@@ -944,8 +870,8 @@ always_ff @( posedge i_clk ) begin : stage5_lane_cd_part3_and_ab_alignment
       if (ENABLE_32 && USE_128_FOR_32 && s_S4_metadata.sp_mode == FOUR_SP_MODE) begin
         s_S5_exp_a32a <= s_S4_exp_a32a;
         s_S5_exp_a32b <= s_S4_exp_a32b;
-        s_S5_exp_a32c <= binary128_to_binary32_rne_part3(s_S4_exp_a32c_p2);
-        s_S5_exp_a32d <= binary128_to_binary32_rne_part3(s_S4_exp_a32d_p2);
+        s_S5_exp_a32c <= s_S4_exp_a32c;
+        s_S5_exp_a32d <= s_S4_exp_a32d;
         s_S5_valid32a <= s_S4_valid32_quad;
         s_S5_valid32b <= s_S4_valid32_quad;
         s_S5_valid32c <= s_S4_valid32_quad;
@@ -981,23 +907,23 @@ end
 // Final assignment
 //=====================================================================================
 assign o_metadata = (s_S2c_metadata.sp_mode === SINGLE_MODE) ? s_S2c_metadata : 
-                    (s_S4_metadata.sp_mode === TWO_SP_MODE) ? s_S4_metadata :
+                    (s_S2c_metadata.sp_mode === TWO_SP_MODE) ? s_S2c_metadata :
                     s_S5_metadata;
 assign o_exp_a128 = s_S2b_exp_a128;
-assign o_exp_a64a = ENABLE_64 ? s_S4_exp_a64a : '0;
-assign o_exp_a64b = ENABLE_64 ? s_S4_exp_a64b : '0;
-assign o_exp_a32a = ENABLE_32 ? s_S5_exp_a32a : '0;
-assign o_exp_a32b = ENABLE_32 ? s_S5_exp_a32b : '0;
-assign o_exp_a32c = ENABLE_32 ? s_S5_exp_a32c : '0;
-assign o_exp_a32d = ENABLE_32 ? s_S5_exp_a32d : '0;
+assign o_exp_a64a = ENABLE_64 ? s_S2b_exp_a64a  : '0;
+assign o_exp_a64b = ENABLE_64 ? s_S2b_exp_a64b  : '0;
+assign o_exp_a32a = ENABLE_32 ? s_S3_exp_a32a   : '0;
+assign o_exp_a32b = ENABLE_32 ? s_S3_exp_a32b   : '0;
+assign o_exp_a32c = ENABLE_32 ? s_S3_exp_a32c   : '0;
+assign o_exp_a32d = ENABLE_32 ? s_S3_exp_a32d   : '0;
 
 assign o_valid128 = s_S2c_valid128;
-assign o_valid64a = ENABLE_64 ? s_S4_valid64a : 1'b0;
-assign o_valid64b = ENABLE_64 ? s_S4_valid64b : 1'b0;
-assign o_valid32a = ENABLE_32 ? s_S5_valid32a : 1'b0;
-assign o_valid32b = ENABLE_32 ? s_S5_valid32b : 1'b0;
-assign o_valid32c = ENABLE_32 ? s_S5_valid32c : 1'b0;
-assign o_valid32d = ENABLE_32 ? s_S5_valid32d : 1'b0;
+assign o_valid64a = ENABLE_64 ? s_S2c_valid64a  : 1'b0;
+assign o_valid64b = ENABLE_64 ? s_S2c_valid64b  : 1'b0;
+assign o_valid32a = ENABLE_32 ? s_S3_valid32a   : 1'b0;
+assign o_valid32b = ENABLE_32 ? s_S3_valid32b   : 1'b0;
+assign o_valid32c = ENABLE_32 ? s_S3_valid32c   : 1'b0;
+assign o_valid32d = ENABLE_32 ? s_S3_valid32d   : 1'b0;
 
 assign o_sanity_identifier = MODULE_IDENTIFIER;
 assign o_error = s_o_error;
