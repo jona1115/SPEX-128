@@ -219,19 +219,28 @@ logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed_partition_sp_par_a_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed_partition_sp_par_a_debug;
 fixed_partition_sp #(
   .HAS_SIGN(1'b1),
+  .ADDR_BITS_128(10),
+  .ADDR_BITS_64(10),
+  .ADDR_BITS_32(10),
+`ifdef NAIVE_L2
   .USE_128_FOR_64(1'b0),
   .USE_128_FOR_32(1'b0),
   .ENABLE_64(1'b1),
   .ENABLE_32(1'b1),
-  .ADDR_BITS_128(10),
-  .ADDR_BITS_64(10),
-  .ADDR_BITS_32(10),
   .INIT_128_POS_FILE({"fixed128_0a_partition.", `SPEX_RAM_EXT}),
   .INIT_128_NEG_FILE({"fixed128_1a_partition.", `SPEX_RAM_EXT}),
   .INIT_64_POS_FILE({"fixed64_0a_partition.", `SPEX_RAM_EXT}),
   .INIT_64_NEG_FILE({"fixed64_1a_partition.", `SPEX_RAM_EXT}),
   .INIT_32_POS_FILE({"fixed32_0a_partition.", `SPEX_RAM_EXT}),
   .INIT_32_NEG_FILE({"fixed32_1a_partition.", `SPEX_RAM_EXT})
+`else
+  .USE_128_FOR_64(1'b1),
+  .USE_128_FOR_32(1'b1),
+  .ENABLE_64(1'b1),
+  .ENABLE_32(1'b1),
+  .INIT_128_POS_FILE({"fixed128_0a_partition.", `SPEX_RAM_EXT}),
+  .INIT_128_NEG_FILE({"fixed128_1a_partition.", `SPEX_RAM_EXT})
+`endif
 ) my_fixed_partition_sp_par_a (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
@@ -291,16 +300,24 @@ logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed_partition_sp_par_b_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed_partition_sp_par_b_debug;
 fixed_partition_sp #(
   .HAS_SIGN(1'b0),
+  .ADDR_BITS_128(13),
+  .ADDR_BITS_64(13),
+  .ADDR_BITS_32(13),
+`ifdef NAIVE_L2
   .USE_128_FOR_64(1'b0),
   .USE_128_FOR_32(1'b0),
   .ENABLE_64(1'b1),
   .ENABLE_32(1'b1),
-  .ADDR_BITS_128(13),
-  .ADDR_BITS_64(13),
-  .ADDR_BITS_32(13),
   .INIT_128_FILE({"fixed128_b_partition.", `SPEX_RAM_EXT}),
   .INIT_64_FILE({"fixed64_b_partition.", `SPEX_RAM_EXT}),
   .INIT_32_FILE({"fixed32_b_partition.", `SPEX_RAM_EXT})
+`else
+  .USE_128_FOR_64(1'b1),
+  .USE_128_FOR_32(1'b1),
+  .ENABLE_64(1'b1),
+  .ENABLE_32(1'b1),
+  .INIT_128_FILE({"fixed128_b_partition.", `SPEX_RAM_EXT})
+`endif
 ) my_fixed_partition_sp_par_b (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
@@ -360,16 +377,24 @@ logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed_partition_sp_par_c_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed_partition_sp_par_c_debug;
 fixed_partition_sp #(
   .HAS_SIGN(1'b0),
+  .ADDR_BITS_128(13),
+  .ADDR_BITS_64(13),
+  .ADDR_BITS_32(11),
+`ifdef NAIVE_L2
   .USE_128_FOR_64(1'b0),
   .USE_128_FOR_32(1'b0),
   .ENABLE_64(1'b1),
   .ENABLE_32(1'b1),
-  .ADDR_BITS_128(13),
-  .ADDR_BITS_64(13),
-  .ADDR_BITS_32(11),
   .INIT_128_FILE({"fixed128_c_partition.", `SPEX_RAM_EXT}),
   .INIT_64_FILE({"fixed64_c_partition.", `SPEX_RAM_EXT}),
   .INIT_32_FILE({"fixed32_c_partition.", `SPEX_RAM_EXT})
+`else
+  .USE_128_FOR_64(1'b1),
+  .USE_128_FOR_32(1'b1),
+  .ENABLE_64(1'b1),
+  .ENABLE_32(1'b1),
+  .INIT_128_FILE({"fixed128_c_partition.", `SPEX_RAM_EXT})
+`endif
 ) my_fixed_partition_sp_par_c (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),

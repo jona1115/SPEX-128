@@ -104,6 +104,14 @@
 `define USE_RADIX4_RECODING // knob
 
 /**
+ * Used in SPEX128_top.sv
+ * 
+ * As mentioned in the paper, a naive L2 is where each mode have its own lookup tables, and no conversion
+ * logic is needed. If you want that, uncomment NAIVE_L2.
+ */
+// `define NAIVE_L2 // knob
+
+/**
  * Sometimes, if code changed when Vivado is closed, it won't know something changed. In that case,
  * feel free to use this flag to trigger a "file changed" detection.
  * 
