@@ -37,6 +37,13 @@
  */
 // `define RUNNING_GENUS_SYNTHESIS // knob
 
+// Mutex assert
+`ifdef RUNNING_VIVADO_SYNTHESIS
+  `ifdef RUNNING_GENUS_SYNTHESIS
+    $fatal("Both RUNNING_VIVADO_SYNTHESIS and RUNNING_GENUS_SYNTHESIS flags are on! They are mutually exclusive. Fix it in config.svh!");
+  `endif
+`endif
+
 /**
   * Turn this define ON (uncomment) when synthesizing using Vivado, as it only recognize .data binary files
   * Turn thie design OFF (comment) when simulating using non-Vivado, as the testing infrastructure is set up
