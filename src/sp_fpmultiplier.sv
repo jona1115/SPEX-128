@@ -41,7 +41,11 @@ module sp_fpmultiplier #(
   parameter int NUM_BITS_32   = 32,
 
   // Multiplier pipeline latency (cycles from mul start to valid product)
-  parameter int INTMUL_LATENCY = 3, // this has to match sp_intmultiplier's MODULE_LATENCY
+`ifdef USE_DSP
+  parameter int INTMUL_LATENCY = 9, // DSP intmult path latency (3 mult stages + 6 tree stages)
+`else
+  parameter int INTMUL_LATENCY = 3, // non-DSP intmult path latency
+`endif
   parameter int MODULE_LATENCY = INTMUL_LATENCY + 3,
 
   // Error and debug parameters

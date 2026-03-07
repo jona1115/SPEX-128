@@ -299,10 +299,229 @@ assign o_debug = '0;
 
 `else
 // ifdef USE_DSP:
-logic signed [EX_MAN_BITS_128-1 : 0]    s_S0_i_anikin;
-logic signed [EX_MAN_BITS_128-1 : 0]    s_S0_i_force;
+localparam int W            = 113;
+localparam int OUT_W        = 226;
+localparam int A_PAYLOAD_W  = 26;
+localparam int B_PAYLOAD_W  = 17;
+localparam int A_DSP_W      = 27;
+localparam int B_DSP_W      = 18;
+localparam int PROD_W       = 45;
+localparam int NA           = (W + A_PAYLOAD_W - 1) / A_PAYLOAD_W;    // 5
+localparam int NB           = (W + B_PAYLOAD_W - 1) / B_PAYLOAD_W;    // 7
+localparam int NPP          = NA * NB;                                // 35
+localparam int A_PAD_W      = NA * A_PAYLOAD_W;                       // 130
+localparam int B_PAD_W      = NB * B_PAYLOAD_W;                       // 119
 
+localparam int DSP_MULT_STAGES = 3;
+localparam int DSP_TREE_STAGES = 6;
+// DSP branch latency is fixed to 9 cycles from i_valid_* to o_valid_jedi.
+// In USE_DSP mode, upstream logic should treat intmult latency as DSP_TOTAL_LAT.
+localparam int DSP_TOTAL_LAT   = DSP_MULT_STAGES + DSP_TREE_STAGES;
 
+localparam int L0_N = NPP;
+localparam int L1_N = (L0_N + 1) / 2;
+localparam int L2_N = (L1_N + 1) / 2;
+localparam int L3_N = (L2_N + 1) / 2;
+localparam int L4_N = (L3_N + 1) / 2;
+localparam int L5_N = (L4_N + 1) / 2;
+localparam int L6_N = (L5_N + 1) / 2;
+
+logic s_fire;
+logic [DSP_TOTAL_LAT-1 : 0] s_pipe_valid;
+logic [DSP_TOTAL_LAT-1 : 0] s_pipe_valid_next;
+
+logic [A_PAD_W-1 : 0] s_a_pad;
+logic [B_PAD_W-1 : 0] s_b_pad;
+
+logic signed [A_DSP_W-1 : 0] s_a_tile_s1 [0 : NA-1];
+logic signed [B_DSP_W-1 : 0] s_b_tile_s1 [0 : NB-1];
+(* use_dsp = "yes" *) logic signed [PROD_W-1 : 0] s_pp_s2 [0 : NA-1][0 : NB-1];
+logic signed [PROD_W-1 : 0] s_pp_s3 [0 : NA-1][0 : NB-1];
+
+logic [OUT_W-1 : 0] s_term_l0 [0 : L0_N-1];
+logic [OUT_W-1 : 0] s_term_l1 [0 : L1_N-1];
+logic [OUT_W-1 : 0] s_term_l2 [0 : L2_N-1];
+logic [OUT_W-1 : 0] s_term_l3 [0 : L3_N-1];
+logic [OUT_W-1 : 0] s_term_l4 [0 : L4_N-1];
+logic [OUT_W-1 : 0] s_term_l5 [0 : L5_N-1];
+logic [OUT_W-1 : 0] s_term_l6 [0 : L6_N-1];
+
+assign s_fire = i_valid_anikin & i_valid_force;
+assign s_pipe_valid_next = {s_pipe_valid[DSP_TOTAL_LAT-2 : 0], s_fire};
+assign s_a_pad = {{(A_PAD_W-W){1'b0}}, i_anikin};
+assign s_b_pad = {{(B_PAD_W-W){1'b0}}, i_force};
+
+always_ff @( posedge i_clk ) begin : sp_intmultiplier_dsp_valid_pipe
+  if (!i_rst_n) begin
+    s_pipe_valid <= '0;
+  end
+  else begin
+    s_pipe_valid <= s_pipe_valid_next;
+  end
+end
+
+// Stage 1: register tile inputs as non-negative signed 27x18 operands.
+always_ff @( posedge i_clk ) begin : dsp_stage1_tiles
+  if (!i_rst_n) begin
+    s_a_tile_s1 <= '{default:'0};
+    s_b_tile_s1 <= '{default:'0};
+  end
+  else begin
+    for (int i = 0; i < NA; i++) begin
+      s_a_tile_s1[i] <= $signed({1'b0, s_a_pad[i*A_PAYLOAD_W +: A_PAYLOAD_W]});
+    end
+    for (int j = 0; j < NB; j++) begin
+      s_b_tile_s1[j] <= $signed({1'b0, s_b_pad[j*B_PAYLOAD_W +: B_PAYLOAD_W]});
+    end
+  end
+end
+
+// Stage 2: isolated signed partial-product multiplies to encourage DSP inference.
+always_ff @( posedge i_clk ) begin : dsp_stage2_mult
+  if (!i_rst_n) begin
+    for (int i = 0; i < NA; i++) begin
+      for (int j = 0; j < NB; j++) begin
+        s_pp_s2[i][j] <= '0;
+      end
+    end
+  end
+  else begin
+    for (int i = 0; i < NA; i++) begin
+      for (int j = 0; j < NB; j++) begin
+        s_pp_s2[i][j] <= s_a_tile_s1[i] * s_b_tile_s1[j];
+      end
+    end
+  end
+end
+
+// Stage 3: register multiplier outputs again before wide accumulation.
+always_ff @( posedge i_clk ) begin : dsp_stage3_mult_pipe
+  if (!i_rst_n) begin
+    for (int i = 0; i < NA; i++) begin
+      for (int j = 0; j < NB; j++) begin
+        s_pp_s3[i][j] <= '0;
+      end
+    end
+  end
+  else begin
+    for (int i = 0; i < NA; i++) begin
+      for (int j = 0; j < NB; j++) begin
+        s_pp_s3[i][j] <= s_pp_s2[i][j];
+      end
+    end
+  end
+end
+
+for (genvar i = 0; i < NA; i++) begin : dsp_term_i
+  for (genvar j = 0; j < NB; j++) begin : dsp_term_j
+    localparam int TERM_INDEX = (i * NB) + j;
+    localparam int SHIFT      = (i * A_PAYLOAD_W) + (j * B_PAYLOAD_W);
+    assign s_term_l0[TERM_INDEX] = ({{(OUT_W-PROD_W){1'b0}}, $unsigned(s_pp_s3[i][j])} << SHIFT);
+  end
+end
+
+// Registered binary adder tree for 35 aligned OUT_W terms.
+always_ff @( posedge i_clk ) begin : dsp_tree_l1
+  if (!i_rst_n) begin
+    s_term_l1 <= '{default:'0};
+  end
+  else begin
+    for (int idx = 0; idx < L1_N; idx++) begin
+      if ((2*idx + 1) < L0_N) begin
+        s_term_l1[idx] <= s_term_l0[2*idx] + s_term_l0[2*idx + 1];
+      end
+      else begin
+        s_term_l1[idx] <= s_term_l0[2*idx];
+      end
+    end
+  end
+end
+
+always_ff @( posedge i_clk ) begin : dsp_tree_l2
+  if (!i_rst_n) begin
+    s_term_l2 <= '{default:'0};
+  end
+  else begin
+    for (int idx = 0; idx < L2_N; idx++) begin
+      if ((2*idx + 1) < L1_N) begin
+        s_term_l2[idx] <= s_term_l1[2*idx] + s_term_l1[2*idx + 1];
+      end
+      else begin
+        s_term_l2[idx] <= s_term_l1[2*idx];
+      end
+    end
+  end
+end
+
+always_ff @( posedge i_clk ) begin : dsp_tree_l3
+  if (!i_rst_n) begin
+    s_term_l3 <= '{default:'0};
+  end
+  else begin
+    for (int idx = 0; idx < L3_N; idx++) begin
+      if ((2*idx + 1) < L2_N) begin
+        s_term_l3[idx] <= s_term_l2[2*idx] + s_term_l2[2*idx + 1];
+      end
+      else begin
+        s_term_l3[idx] <= s_term_l2[2*idx];
+      end
+    end
+  end
+end
+
+always_ff @( posedge i_clk ) begin : dsp_tree_l4
+  if (!i_rst_n) begin
+    s_term_l4 <= '{default:'0};
+  end
+  else begin
+    for (int idx = 0; idx < L4_N; idx++) begin
+      if ((2*idx + 1) < L3_N) begin
+        s_term_l4[idx] <= s_term_l3[2*idx] + s_term_l3[2*idx + 1];
+      end
+      else begin
+        s_term_l4[idx] <= s_term_l3[2*idx];
+      end
+    end
+  end
+end
+
+always_ff @( posedge i_clk ) begin : dsp_tree_l5
+  if (!i_rst_n) begin
+    s_term_l5 <= '{default:'0};
+  end
+  else begin
+    for (int idx = 0; idx < L5_N; idx++) begin
+      if ((2*idx + 1) < L4_N) begin
+        s_term_l5[idx] <= s_term_l4[2*idx] + s_term_l4[2*idx + 1];
+      end
+      else begin
+        s_term_l5[idx] <= s_term_l4[2*idx];
+      end
+    end
+  end
+end
+
+always_ff @( posedge i_clk ) begin : dsp_tree_l6
+  if (!i_rst_n) begin
+    s_term_l6 <= '{default:'0};
+  end
+  else begin
+    for (int idx = 0; idx < L6_N; idx++) begin
+      if ((2*idx + 1) < L5_N) begin
+        s_term_l6[idx] <= s_term_l5[2*idx] + s_term_l5[2*idx + 1];
+      end
+      else begin
+        s_term_l6[idx] <= s_term_l5[2*idx];
+      end
+    end
+  end
+end
+
+assign o_jedi = s_term_l6[0];
+assign o_valid_jedi = s_pipe_valid[DSP_TOTAL_LAT-1];
+assign o_sanity_identifier = MODULE_IDENTIFIER;
+assign o_error = s_o_error;
+assign o_debug = '0;
 
 `endif // end of `ifndef USE_DSP
 
