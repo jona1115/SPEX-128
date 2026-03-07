@@ -114,6 +114,7 @@ logic [ERROR_SIGNAL_NUM_BITS-1:0]       s_o_error;
 // Module body
 //=====================================================================================
 
+`ifndef USE_DSP
 /**
  * 
  * State transition control
@@ -166,10 +167,6 @@ end
   `include "helper/radix4_pp_generator.svh"
   logic [RADIX4_PP_NBITS-1 : 0]     s_S1_pp [0 : RADIX4_ROWS-1];
 `endif
-`ifdef USE_DSP
-  logic [EX_MAN_BITS_128-1 : 0]     s_S1_i_anikin;
-  logic [EX_MAN_BITS_128-1 : 0]     s_S1_i_force;
-`endif
 
 logic s_S1_valid;
 int debug_col, debug_row, debug_num_rows, debug_num_cols;
@@ -177,21 +174,11 @@ always_ff @( posedge i_clk ) begin : stage1a
   if (!i_rst_n) begin
     s_S1_valid  <= '0;
     s_S1_pp     <= '{default:'0};
-
-`ifdef USE_DSP
-    s_S1_i_anikin <= '0; 
-    s_S1_i_force  <= '0; 
-`endif
   end
   else begin
     if (s_S1_en) begin
       s_S1_valid <= '1;
       s_S1_pp <= s_pp;
-
-`ifdef USE_DSP
-      s_S1_i_anikin <= i_anikin; 
-      s_S1_i_force  <= i_force; 
-`endif
 
 `ifdef EN_DEBUG_PRINT
   `ifndef USE_RADIX4_RECODING
@@ -233,26 +220,16 @@ end // always_ff @( posedge i_clk )
   logic [RADIX4_DADDA_SC_NBITS-1 : 0] s_S2_S;
   logic [RADIX4_DADDA_SC_NBITS-1 : 0] s_S2_C;
 `endif
-`ifdef USE_DSP
-  logic [EX_MAN_BITS_128*2-1 : 0]     s_S2_jedi;
-`endif
 always_ff @( posedge i_clk ) begin : stage2a
   if (!i_rst_n) begin
     s_S2_S <= '0;
     s_S2_C <= '0;
 
-  `ifdef USE_DSP
-      s_S2_jedi <= '0;
-  `endif
   end
   else begin
     if (s_S2_en) begin
       s_S2_S <= S;
       s_S2_C <= C;
-
-  `ifdef USE_DSP
-      s_S2_jedi <= s_S1_i_anikin * s_S1_i_force; // Infer DSP use, as mentioned in config.svh, this should NOT be used in production code, will cause wrong result
-  `endif
     end // if (s_S2_en)
   end // !i_rst_n else begin
 end // always_ff @( posedge i_clk )
@@ -301,11 +278,7 @@ always_ff @( posedge i_clk ) begin : stage3a
   end
   else begin
     if (s_S3_en) begin
-  `ifndef USE_DSP
       s_S3_jedi   <= s_S3_jedi_full[EX_MAN_BITS_128*2-1:0];
-  `else
-      s_S3_jedi   <= s_S2_jedi;
-  `endif
       s_S3_valid  <= 1'b1;
     end // if (s_S3_en)
     else begin
@@ -323,5 +296,14 @@ assign o_valid_jedi = s_S3_valid;
 assign o_sanity_identifier = MODULE_IDENTIFIER;
 assign o_error = s_o_error;
 assign o_debug = '0;
+
+`else
+// ifdef USE_DSP:
+logic signed [EX_MAN_BITS_128-1 : 0]    s_S0_i_anikin;
+logic signed [EX_MAN_BITS_128-1 : 0]    s_S0_i_force;
+
+
+
+`endif // end of `ifndef USE_DSP
 
 endmodule // module sp_intmultiplier #()

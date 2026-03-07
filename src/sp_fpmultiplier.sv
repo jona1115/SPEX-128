@@ -509,7 +509,11 @@ logic [229 : 0]                   unused_ds_S3_z0;
 logic [229 : 0]                   unused_ds_S3_z1;
 logic [113*2-1:0]                 unused_ds_S3_jedi;
 logic                             unused_ds_S3_valid;
+`ifdef USE_DSP
+(* use_dsp = "yes" *) sp_intmultiplier #(
+`else
 sp_intmultiplier #(
+`endif
   .MODULE_LATENCY(INTMUL_LATENCY)
 ) my_sp_intmultiplier (
   .i_clk(i_clk),
