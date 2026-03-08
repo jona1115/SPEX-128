@@ -22,6 +22,10 @@ module fixed_partition_sp_pipeline_unit_test;
   localparam int LANE_BITS_64  = ADDR_BITS_64;
   localparam int LANE_BITS_32  = ADDR_BITS_32;
   localparam int LUT_DEPTH     = (1 << ADDR_BITS_128);
+  localparam int CONVERT_LATENCY      = 4;
+  localparam int SINGLE_MODE_LATENCY  = 2;
+  localparam int TWO_SP_MODE_LATENCY  = 1 + CONVERT_LATENCY; // USE_128_FOR_64=1
+  localparam int FOUR_SP_MODE_LATENCY = 2 + CONVERT_LATENCY; // USE_128_FOR_32=1
 
   string name = "fixed_partition_sp_pipeline_ut";
   svunit_testcase svunit_ut;
@@ -69,9 +73,9 @@ module fixed_partition_sp_pipeline_unit_test;
   end
 
   fixed_partition_sp #(
-    .MODULE_LATENCY_128(2),
-    .MODULE_LATENCY_64(4),
-    .MODULE_LATENCY_32(5),
+    .MODULE_LATENCY_128(SINGLE_MODE_LATENCY),
+    .MODULE_LATENCY_64(TWO_SP_MODE_LATENCY),
+    .MODULE_LATENCY_32(FOUR_SP_MODE_LATENCY),
     .HAS_SIGN(1'b0),
     .USE_128_FOR_64(1'b1),
     .USE_128_FOR_32(1'b1),
