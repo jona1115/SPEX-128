@@ -69,8 +69,11 @@ module sp_intmultiplier #(
   parameter int RADIX4_DADDA_Z_NBITS  = 230,
   parameter int RADIX2_DADDA_Z_NBITS  = 226,
 
-  // Multiplier pipeline latency (cycles from valid in to valid out)
+`ifdef USE_DSP
+  parameter int MODULE_LATENCY        = 9, // This has to match sp_fpmultiplier's INTMUL_LATENCY
+`else
   parameter int MODULE_LATENCY        = 3, // This has to match sp_fpmultiplier's INTMUL_LATENCY
+`endif
 
   // Error and debug parameters
   parameter int ERROR_SIGNAL_NUM_BITS = 32,
