@@ -24,6 +24,8 @@ package binary128_convert_pkg;
   import binary64_pkg::*;
   import binary32_pkg::*;
 
+  const int CONVERSION_LATENCY = 4; // Must be the same as fixed_partition_sp.CONVERSION_LATENCY
+
   localparam logic signed [17:0] BIAS_128 = 18'sd16383;
   localparam logic signed [17:0] BIAS_64  = 18'sd1023;
   localparam logic signed [17:0] BIAS_32  = 18'sd127;

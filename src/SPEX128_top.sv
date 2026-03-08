@@ -65,26 +65,26 @@ module SPEX128_top #(
   // These are temporary... probably "ds" = debug signals
   logic [127:0]     ds_my_float_to_fixed_fixed,
   binary128_t       ds_my_fixed_partition_sp_par_a_exp_a128,
-  binary64_t        ds_my_fixed_partition_sp_par_a_exp_a64a,
-  binary64_t        ds_my_fixed_partition_sp_par_a_exp_a64b,
-  binary32_t        ds_my_fixed_partition_sp_par_a_exp_a32a,
-  binary32_t        ds_my_fixed_partition_sp_par_a_exp_a32b,
-  binary32_t        ds_my_fixed_partition_sp_par_a_exp_a32c,
-  binary32_t        ds_my_fixed_partition_sp_par_a_exp_a32d,
+  binary64_t        ds_my_fixed_partition_sp_par_a_exp_64a,
+  binary64_t        ds_my_fixed_partition_sp_par_a_exp_64b,
+  binary32_t        ds_my_fixed_partition_sp_par_a_exp_32a,
+  binary32_t        ds_my_fixed_partition_sp_par_a_exp_32b,
+  binary32_t        ds_my_fixed_partition_sp_par_a_exp_32c,
+  binary32_t        ds_my_fixed_partition_sp_par_a_exp_32d,
   binary128_t       ds_my_fixed_partition_sp_par_b_exp_a128,
-  binary64_t        ds_my_fixed_partition_sp_par_b_exp_a64a,
-  binary64_t        ds_my_fixed_partition_sp_par_b_exp_a64b,
-  binary32_t        ds_my_fixed_partition_sp_par_b_exp_a32a,
-  binary32_t        ds_my_fixed_partition_sp_par_b_exp_a32b,
-  binary32_t        ds_my_fixed_partition_sp_par_b_exp_a32c,
-  binary32_t        ds_my_fixed_partition_sp_par_b_exp_a32d,
+  binary64_t        ds_my_fixed_partition_sp_par_b_exp_64a,
+  binary64_t        ds_my_fixed_partition_sp_par_b_exp_64b,
+  binary32_t        ds_my_fixed_partition_sp_par_b_exp_32a,
+  binary32_t        ds_my_fixed_partition_sp_par_b_exp_32b,
+  binary32_t        ds_my_fixed_partition_sp_par_b_exp_32c,
+  binary32_t        ds_my_fixed_partition_sp_par_b_exp_32d,
   binary128_t       ds_my_fixed_partition_sp_par_c_exp_a128,
-  binary64_t        ds_my_fixed_partition_sp_par_c_exp_a64a,
-  binary64_t        ds_my_fixed_partition_sp_par_c_exp_a64b,
-  binary32_t        ds_my_fixed_partition_sp_par_c_exp_a32a,
-  binary32_t        ds_my_fixed_partition_sp_par_c_exp_a32b,
-  binary32_t        ds_my_fixed_partition_sp_par_c_exp_a32c,
-  binary32_t        ds_my_fixed_partition_sp_par_c_exp_a32d,
+  binary64_t        ds_my_fixed_partition_sp_par_c_exp_64a,
+  binary64_t        ds_my_fixed_partition_sp_par_c_exp_64b,
+  binary32_t        ds_my_fixed_partition_sp_par_c_exp_32a,
+  binary32_t        ds_my_fixed_partition_sp_par_c_exp_32b,
+  binary32_t        ds_my_fixed_partition_sp_par_c_exp_32c,
+  binary32_t        ds_my_fixed_partition_sp_par_c_exp_32d,
   binary128_t       ds_my_fixed_partition_sp_par_d_exp_a128,
   binary128_t       ds_my_fixed_partition_sp_par_e_exp_a128,
   binary128_t       ds_my_fixed128_partitionf_ts_exp_f128,
@@ -200,12 +200,12 @@ float_to_fixed #() my_float_to_fixed (
  *****************************************************************/
 float_metadata_t  s_my_fixed_partition_sp_par_a_metadata;
 binary128_t       s_my_fixed_partition_sp_par_a_exp_a128;
-binary64_t        s_my_fixed_partition_sp_par_a_exp_a64a;
-binary64_t        s_my_fixed_partition_sp_par_a_exp_a64b;
-binary32_t        s_my_fixed_partition_sp_par_a_exp_a32a;
-binary32_t        s_my_fixed_partition_sp_par_a_exp_a32b;
-binary32_t        s_my_fixed_partition_sp_par_a_exp_a32c;
-binary32_t        s_my_fixed_partition_sp_par_a_exp_a32d;
+binary64_t        s_my_fixed_partition_sp_par_a_exp_64a;
+binary64_t        s_my_fixed_partition_sp_par_a_exp_64b;
+binary32_t        s_my_fixed_partition_sp_par_a_exp_32a;
+binary32_t        s_my_fixed_partition_sp_par_a_exp_32b;
+binary32_t        s_my_fixed_partition_sp_par_a_exp_32c;
+binary32_t        s_my_fixed_partition_sp_par_a_exp_32d;
 logic             s_my_fixed_partition_sp_par_a_o_valid128;
 logic             s_my_fixed_partition_sp_par_a_o_valid64a;
 logic             s_my_fixed_partition_sp_par_a_o_valid64b;
@@ -254,12 +254,12 @@ fixed_partition_sp #(
   .i_lane_32c(s_my_float_to_fixed_fixed[63:53]), // not really tested since the TWO/FOUR sp mode test are never passed
   .i_lane_32d(s_my_float_to_fixed_fixed[31:21]), // not really tested since the TWO/FOUR sp mode test are never passed
   .o_exp_a128(s_my_fixed_partition_sp_par_a_exp_a128),
-  .o_exp_a64a(s_my_fixed_partition_sp_par_a_exp_a64a),
-  .o_exp_a64b(s_my_fixed_partition_sp_par_a_exp_a64b),
-  .o_exp_a32a(s_my_fixed_partition_sp_par_a_exp_a32a),
-  .o_exp_a32b(s_my_fixed_partition_sp_par_a_exp_a32b),
-  .o_exp_a32c(s_my_fixed_partition_sp_par_a_exp_a32c),
-  .o_exp_a32d(s_my_fixed_partition_sp_par_a_exp_a32d),
+  .o_exp_64a(s_my_fixed_partition_sp_par_a_exp_64a),
+  .o_exp_64b(s_my_fixed_partition_sp_par_a_exp_64b),
+  .o_exp_32a(s_my_fixed_partition_sp_par_a_exp_32a),
+  .o_exp_32b(s_my_fixed_partition_sp_par_a_exp_32b),
+  .o_exp_32c(s_my_fixed_partition_sp_par_a_exp_32c),
+  .o_exp_32d(s_my_fixed_partition_sp_par_a_exp_32d),
   .i_valid128(s_my_float_to_fixed_o_valid),
   .i_valid64a(s_my_float_to_fixed_o_valid),
   .i_valid64b(s_my_float_to_fixed_o_valid),
@@ -281,12 +281,12 @@ fixed_partition_sp #(
 
 float_metadata_t  s_my_fixed_partition_sp_par_b_metadata;
 binary128_t       s_my_fixed_partition_sp_par_b_exp_a128;
-binary64_t        s_my_fixed_partition_sp_par_b_exp_a64a;
-binary64_t        s_my_fixed_partition_sp_par_b_exp_a64b;
-binary32_t        s_my_fixed_partition_sp_par_b_exp_a32a;
-binary32_t        s_my_fixed_partition_sp_par_b_exp_a32b;
-binary32_t        s_my_fixed_partition_sp_par_b_exp_a32c;
-binary32_t        s_my_fixed_partition_sp_par_b_exp_a32d;
+binary64_t        s_my_fixed_partition_sp_par_b_exp_64a;
+binary64_t        s_my_fixed_partition_sp_par_b_exp_64b;
+binary32_t        s_my_fixed_partition_sp_par_b_exp_32a;
+binary32_t        s_my_fixed_partition_sp_par_b_exp_32b;
+binary32_t        s_my_fixed_partition_sp_par_b_exp_32c;
+binary32_t        s_my_fixed_partition_sp_par_b_exp_32d;
 logic             s_my_fixed_partition_sp_par_b_o_valid128;
 logic             s_my_fixed_partition_sp_par_b_o_valid64a;
 logic             s_my_fixed_partition_sp_par_b_o_valid64b;
@@ -331,12 +331,12 @@ fixed_partition_sp #(
   .i_lane_32c(s_my_float_to_fixed_fixed[52:40]), // not really tested since the TWO/FOUR sp mode test are never passed
   .i_lane_32d(s_my_float_to_fixed_fixed[20:8]), // not really tested since the TWO/FOUR sp mode test are never passed
   .o_exp_a128(s_my_fixed_partition_sp_par_b_exp_a128),
-  .o_exp_a64a(s_my_fixed_partition_sp_par_b_exp_a64a),
-  .o_exp_a64b(s_my_fixed_partition_sp_par_b_exp_a64b),
-  .o_exp_a32a(s_my_fixed_partition_sp_par_b_exp_a32a),
-  .o_exp_a32b(s_my_fixed_partition_sp_par_b_exp_a32b),
-  .o_exp_a32c(s_my_fixed_partition_sp_par_b_exp_a32c),
-  .o_exp_a32d(s_my_fixed_partition_sp_par_b_exp_a32d),
+  .o_exp_64a(s_my_fixed_partition_sp_par_b_exp_64a),
+  .o_exp_64b(s_my_fixed_partition_sp_par_b_exp_64b),
+  .o_exp_32a(s_my_fixed_partition_sp_par_b_exp_32a),
+  .o_exp_32b(s_my_fixed_partition_sp_par_b_exp_32b),
+  .o_exp_32c(s_my_fixed_partition_sp_par_b_exp_32c),
+  .o_exp_32d(s_my_fixed_partition_sp_par_b_exp_32d),
   .i_valid128(s_my_float_to_fixed_o_valid),
   .i_valid64a(s_my_float_to_fixed_o_valid),
   .i_valid64b(s_my_float_to_fixed_o_valid),
@@ -358,12 +358,12 @@ fixed_partition_sp #(
 
 float_metadata_t  s_my_fixed_partition_sp_par_c_metadata;
 binary128_t       s_my_fixed_partition_sp_par_c_exp_a128;
-binary64_t        s_my_fixed_partition_sp_par_c_exp_a64a;
-binary64_t        s_my_fixed_partition_sp_par_c_exp_a64b;
-binary32_t        s_my_fixed_partition_sp_par_c_exp_a32a;
-binary32_t        s_my_fixed_partition_sp_par_c_exp_a32b;
-binary32_t        s_my_fixed_partition_sp_par_c_exp_a32c;
-binary32_t        s_my_fixed_partition_sp_par_c_exp_a32d;
+binary64_t        s_my_fixed_partition_sp_par_c_exp_64a;
+binary64_t        s_my_fixed_partition_sp_par_c_exp_64b;
+binary32_t        s_my_fixed_partition_sp_par_c_exp_32a;
+binary32_t        s_my_fixed_partition_sp_par_c_exp_32b;
+binary32_t        s_my_fixed_partition_sp_par_c_exp_32c;
+binary32_t        s_my_fixed_partition_sp_par_c_exp_32d;
 logic             s_my_fixed_partition_sp_par_c_o_valid128;
 logic             s_my_fixed_partition_sp_par_c_o_valid64a;
 logic             s_my_fixed_partition_sp_par_c_o_valid64b;
@@ -408,12 +408,12 @@ fixed_partition_sp #(
   .i_lane_32c(s_my_float_to_fixed_fixed[42:32]), // not really tested since the TWO/FOUR sp mode test are never passed
   .i_lane_32d(s_my_float_to_fixed_fixed[10:0]), // not really tested since the TWO/FOUR sp mode test are never passed
   .o_exp_a128(s_my_fixed_partition_sp_par_c_exp_a128),
-  .o_exp_a64a(s_my_fixed_partition_sp_par_c_exp_a64a),
-  .o_exp_a64b(s_my_fixed_partition_sp_par_c_exp_a64b),
-  .o_exp_a32a(s_my_fixed_partition_sp_par_c_exp_a32a),
-  .o_exp_a32b(s_my_fixed_partition_sp_par_c_exp_a32b),
-  .o_exp_a32c(s_my_fixed_partition_sp_par_c_exp_a32c),
-  .o_exp_a32d(s_my_fixed_partition_sp_par_c_exp_a32d),
+  .o_exp_64a(s_my_fixed_partition_sp_par_c_exp_64a),
+  .o_exp_64b(s_my_fixed_partition_sp_par_c_exp_64b),
+  .o_exp_32a(s_my_fixed_partition_sp_par_c_exp_32a),
+  .o_exp_32b(s_my_fixed_partition_sp_par_c_exp_32b),
+  .o_exp_32c(s_my_fixed_partition_sp_par_c_exp_32c),
+  .o_exp_32d(s_my_fixed_partition_sp_par_c_exp_32d),
   .i_valid128(s_my_float_to_fixed_o_valid),
   .i_valid64a(s_my_float_to_fixed_o_valid),
   .i_valid64b(s_my_float_to_fixed_o_valid),
@@ -473,12 +473,12 @@ fixed_partition_sp #(
   .i_lane_32c('0),
   .i_lane_32d('0),
   .o_exp_a128(s_my_fixed_partition_sp_par_d_exp_a128),
-  .o_exp_a64a(unused_my_fixed_partition_sp_par_d_64_0),
-  .o_exp_a64b(unused_my_fixed_partition_sp_par_d_64_1),
-  .o_exp_a32a(unused_my_fixed_partition_sp_par_d_32_0),
-  .o_exp_a32b(unused_my_fixed_partition_sp_par_d_32_1),
-  .o_exp_a32c(unused_my_fixed_partition_sp_par_d_32_2),
-  .o_exp_a32d(unused_my_fixed_partition_sp_par_d_32_3),
+  .o_exp_64a(unused_my_fixed_partition_sp_par_d_64_0),
+  .o_exp_64b(unused_my_fixed_partition_sp_par_d_64_1),
+  .o_exp_32a(unused_my_fixed_partition_sp_par_d_32_0),
+  .o_exp_32b(unused_my_fixed_partition_sp_par_d_32_1),
+  .o_exp_32c(unused_my_fixed_partition_sp_par_d_32_2),
+  .o_exp_32d(unused_my_fixed_partition_sp_par_d_32_3),
   .i_valid128(s_my_float_to_fixed_o_valid),
   .i_valid64a('0),
   .i_valid64b('0),
@@ -538,12 +538,12 @@ fixed_partition_sp #(
   .i_lane_32c('0),
   .i_lane_32d('0),
   .o_exp_a128(s_my_fixed_partition_sp_par_e_exp_a128),
-  .o_exp_a64a(unused_my_fixed_partition_sp_par_e_64_0),
-  .o_exp_a64b(unused_my_fixed_partition_sp_par_e_64_1),
-  .o_exp_a32a(unused_my_fixed_partition_sp_par_e_32_0),
-  .o_exp_a32b(unused_my_fixed_partition_sp_par_e_32_1),
-  .o_exp_a32c(unused_my_fixed_partition_sp_par_e_32_2),
-  .o_exp_a32d(unused_my_fixed_partition_sp_par_e_32_3),
+  .o_exp_64a(unused_my_fixed_partition_sp_par_e_64_0),
+  .o_exp_64b(unused_my_fixed_partition_sp_par_e_64_1),
+  .o_exp_32a(unused_my_fixed_partition_sp_par_e_32_0),
+  .o_exp_32b(unused_my_fixed_partition_sp_par_e_32_1),
+  .o_exp_32c(unused_my_fixed_partition_sp_par_e_32_2),
+  .o_exp_32d(unused_my_fixed_partition_sp_par_e_32_3),
   .i_valid128(s_my_float_to_fixed_o_valid),
   .i_valid64a('0),
   .i_valid64b('0),
@@ -651,17 +651,17 @@ always_comb begin : mux_0
     end // SINGLE_MODE
 
     TWO_SP_MODE: begin
-      s_mux_0       = {s_my_fixed_partition_sp_par_a_exp_a64a, 
-                       s_my_fixed_partition_sp_par_a_exp_a64b};
+      s_mux_0       = {s_my_fixed_partition_sp_par_a_exp_64a, 
+                       s_my_fixed_partition_sp_par_a_exp_64b};
       s_mux_0_valid = s_my_fixed_partition_sp_par_a_o_valid64a &
                       s_my_fixed_partition_sp_par_a_o_valid64b;
     end // TWO_SP_MODE
 
     FOUR_SP_MODE: begin
-      s_mux_0       = {s_my_fixed_partition_sp_par_a_exp_a32a,
-                       s_my_fixed_partition_sp_par_a_exp_a32b,
-                       s_my_fixed_partition_sp_par_a_exp_a32c,
-                       s_my_fixed_partition_sp_par_a_exp_a32d};
+      s_mux_0       = {s_my_fixed_partition_sp_par_a_exp_32a,
+                       s_my_fixed_partition_sp_par_a_exp_32b,
+                       s_my_fixed_partition_sp_par_a_exp_32c,
+                       s_my_fixed_partition_sp_par_a_exp_32d};
       s_mux_0_valid = s_my_fixed_partition_sp_par_a_o_valid32a &
                       s_my_fixed_partition_sp_par_a_o_valid32b &
                       s_my_fixed_partition_sp_par_a_o_valid32c & 
@@ -685,17 +685,17 @@ always_comb begin : mux_1
     end // SINGLE_MODE
 
     TWO_SP_MODE: begin
-      s_mux_1       = {s_my_fixed_partition_sp_par_b_exp_a64a, 
-                       s_my_fixed_partition_sp_par_b_exp_a64b};
+      s_mux_1       = {s_my_fixed_partition_sp_par_b_exp_64a, 
+                       s_my_fixed_partition_sp_par_b_exp_64b};
       s_mux_1_valid = s_my_fixed_partition_sp_par_b_o_valid64a &
                       s_my_fixed_partition_sp_par_b_o_valid64b;
     end // TWO_SP_MODE
 
     FOUR_SP_MODE: begin
-      s_mux_1       = {s_my_fixed_partition_sp_par_b_exp_a32a,
-                       s_my_fixed_partition_sp_par_b_exp_a32b,
-                       s_my_fixed_partition_sp_par_b_exp_a32c,
-                       s_my_fixed_partition_sp_par_b_exp_a32d};
+      s_mux_1       = {s_my_fixed_partition_sp_par_b_exp_32a,
+                       s_my_fixed_partition_sp_par_b_exp_32b,
+                       s_my_fixed_partition_sp_par_b_exp_32c,
+                       s_my_fixed_partition_sp_par_b_exp_32d};
       s_mux_1_valid = s_my_fixed_partition_sp_par_b_o_valid32a &
                       s_my_fixed_partition_sp_par_b_o_valid32b &
                       s_my_fixed_partition_sp_par_b_o_valid32c &
@@ -719,8 +719,8 @@ always_comb begin : mux_2
     end // SINGLE_MODE
 
     TWO_SP_MODE: begin
-      s_mux_2       = {s_my_fixed_partition_sp_par_c_exp_a64a, 
-                       s_my_fixed_partition_sp_par_c_exp_a64b};
+      s_mux_2       = {s_my_fixed_partition_sp_par_c_exp_64a, 
+                       s_my_fixed_partition_sp_par_c_exp_64b};
       s_mux_2_valid = s_my_fixed_partition_sp_par_c_o_valid64a &
                       s_my_fixed_partition_sp_par_c_o_valid64b;
     end // TWO_SP_MODE
@@ -914,10 +914,10 @@ always_comb begin : mux_4
     end // TWO_SP_MODE
 
     FOUR_SP_MODE: begin
-      s_mux_4       = {s_my_fixed_partition_sp_par_c_exp_a32a,
-                       s_my_fixed_partition_sp_par_c_exp_a32b,
-                       s_my_fixed_partition_sp_par_c_exp_a32c,
-                       s_my_fixed_partition_sp_par_c_exp_a32d};
+      s_mux_4       = {s_my_fixed_partition_sp_par_c_exp_32a,
+                       s_my_fixed_partition_sp_par_c_exp_32b,
+                       s_my_fixed_partition_sp_par_c_exp_32c,
+                       s_my_fixed_partition_sp_par_c_exp_32d};
       s_mux_4_valid = s_my_fixed_partition_sp_par_c_o_valid32a &
                       s_my_fixed_partition_sp_par_c_o_valid32b &
                       s_my_fixed_partition_sp_par_c_o_valid32c &
@@ -1164,26 +1164,26 @@ assign o_debug              = '0;
 // Temp, maybe
 assign ds_my_float_to_fixed_fixed = s_my_float_to_fixed_fixed;
 assign ds_my_fixed_partition_sp_par_a_exp_a128 = s_my_fixed_partition_sp_par_a_exp_a128;
-assign ds_my_fixed_partition_sp_par_a_exp_a64a = s_my_fixed_partition_sp_par_a_exp_a64a;
-assign ds_my_fixed_partition_sp_par_a_exp_a64b = s_my_fixed_partition_sp_par_a_exp_a64b;
-assign ds_my_fixed_partition_sp_par_a_exp_a32a = s_my_fixed_partition_sp_par_a_exp_a32a;
-assign ds_my_fixed_partition_sp_par_a_exp_a32b = s_my_fixed_partition_sp_par_a_exp_a32b;
-assign ds_my_fixed_partition_sp_par_a_exp_a32c = s_my_fixed_partition_sp_par_a_exp_a32c;
-assign ds_my_fixed_partition_sp_par_a_exp_a32d = s_my_fixed_partition_sp_par_a_exp_a32d;
+assign ds_my_fixed_partition_sp_par_a_exp_64a = s_my_fixed_partition_sp_par_a_exp_64a;
+assign ds_my_fixed_partition_sp_par_a_exp_64b = s_my_fixed_partition_sp_par_a_exp_64b;
+assign ds_my_fixed_partition_sp_par_a_exp_32a = s_my_fixed_partition_sp_par_a_exp_32a;
+assign ds_my_fixed_partition_sp_par_a_exp_32b = s_my_fixed_partition_sp_par_a_exp_32b;
+assign ds_my_fixed_partition_sp_par_a_exp_32c = s_my_fixed_partition_sp_par_a_exp_32c;
+assign ds_my_fixed_partition_sp_par_a_exp_32d = s_my_fixed_partition_sp_par_a_exp_32d;
 assign ds_my_fixed_partition_sp_par_b_exp_a128 = s_my_fixed_partition_sp_par_b_exp_a128;
-assign ds_my_fixed_partition_sp_par_b_exp_a64a = s_my_fixed_partition_sp_par_b_exp_a64a;
-assign ds_my_fixed_partition_sp_par_b_exp_a64b = s_my_fixed_partition_sp_par_b_exp_a64b;
-assign ds_my_fixed_partition_sp_par_b_exp_a32a = s_my_fixed_partition_sp_par_b_exp_a32a;
-assign ds_my_fixed_partition_sp_par_b_exp_a32b = s_my_fixed_partition_sp_par_b_exp_a32b;
-assign ds_my_fixed_partition_sp_par_b_exp_a32c = s_my_fixed_partition_sp_par_b_exp_a32c;
-assign ds_my_fixed_partition_sp_par_b_exp_a32d = s_my_fixed_partition_sp_par_b_exp_a32d;
+assign ds_my_fixed_partition_sp_par_b_exp_64a = s_my_fixed_partition_sp_par_b_exp_64a;
+assign ds_my_fixed_partition_sp_par_b_exp_64b = s_my_fixed_partition_sp_par_b_exp_64b;
+assign ds_my_fixed_partition_sp_par_b_exp_32a = s_my_fixed_partition_sp_par_b_exp_32a;
+assign ds_my_fixed_partition_sp_par_b_exp_32b = s_my_fixed_partition_sp_par_b_exp_32b;
+assign ds_my_fixed_partition_sp_par_b_exp_32c = s_my_fixed_partition_sp_par_b_exp_32c;
+assign ds_my_fixed_partition_sp_par_b_exp_32d = s_my_fixed_partition_sp_par_b_exp_32d;
 assign ds_my_fixed_partition_sp_par_c_exp_a128 = s_my_fixed_partition_sp_par_c_exp_a128;
-assign ds_my_fixed_partition_sp_par_c_exp_a64a = s_my_fixed_partition_sp_par_c_exp_a64a;
-assign ds_my_fixed_partition_sp_par_c_exp_a64b = s_my_fixed_partition_sp_par_c_exp_a64b;
-assign ds_my_fixed_partition_sp_par_c_exp_a32a = s_my_fixed_partition_sp_par_c_exp_a32a;
-assign ds_my_fixed_partition_sp_par_c_exp_a32b = s_my_fixed_partition_sp_par_c_exp_a32b;
-assign ds_my_fixed_partition_sp_par_c_exp_a32c = s_my_fixed_partition_sp_par_c_exp_a32c;
-assign ds_my_fixed_partition_sp_par_c_exp_a32d = s_my_fixed_partition_sp_par_c_exp_a32d;
+assign ds_my_fixed_partition_sp_par_c_exp_64a = s_my_fixed_partition_sp_par_c_exp_64a;
+assign ds_my_fixed_partition_sp_par_c_exp_64b = s_my_fixed_partition_sp_par_c_exp_64b;
+assign ds_my_fixed_partition_sp_par_c_exp_32a = s_my_fixed_partition_sp_par_c_exp_32a;
+assign ds_my_fixed_partition_sp_par_c_exp_32b = s_my_fixed_partition_sp_par_c_exp_32b;
+assign ds_my_fixed_partition_sp_par_c_exp_32c = s_my_fixed_partition_sp_par_c_exp_32c;
+assign ds_my_fixed_partition_sp_par_c_exp_32d = s_my_fixed_partition_sp_par_c_exp_32d;
 assign ds_my_fixed_partition_sp_par_d_exp_a128 = s_my_fixed_partition_sp_par_d_exp_a128;
 assign ds_my_fixed_partition_sp_par_e_exp_a128 = s_my_fixed_partition_sp_par_e_exp_a128;
 assign ds_my_fixed128_partitionf_ts_exp_f128 = s_my_fixed128_partitionf_ts_exp_f128;

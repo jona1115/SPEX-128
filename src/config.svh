@@ -100,7 +100,7 @@
  * Used in sp_intmultiplier
  */
 // `define EN_DEBUG_PRINT
-`define USE_DSP  // knob // DO NOT turn on in final product! Will cause output to be very wrong
+// `define USE_DSP  // knob // DO NOT turn on in final product! Will cause output to be very wrong
 `define USE_RADIX4_RECODING // knob
 
 /**

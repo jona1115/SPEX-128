@@ -38,9 +38,11 @@ import fixed64_pkg::*;
 import fixed32_pkg::*;
 
 module fixed_partition_sp #(
+  parameter int CONVERSION_LATENCY    = 4,    // Must be the same as binary128_convert_pkg::CONVERSION_LATENCY
+
   parameter int MODULE_LATENCY_128    = 2,
-  parameter int MODULE_LATENCY_64     = 4,
-  parameter int MODULE_LATENCY_32     = 5,
+  parameter int MODULE_LATENCY_64     = 2 + CONVERSION_LATENCY,
+  parameter int MODULE_LATENCY_32     = 3 + CONVERSION_LATENCY,
   
   // Behavior controls
   parameter bit HAS_SIGN              = 1'b0, // MSB is sign bit when set
@@ -105,12 +107,12 @@ module fixed_partition_sp #(
 
   // Data outputs
   output  binary128_t                             o_exp_a128,
-  output  binary64_t                              o_exp_a64a,
-  output  binary64_t                              o_exp_a64b,
-  output  binary32_t                              o_exp_a32a,
-  output  binary32_t                              o_exp_a32b,
-  output  binary32_t                              o_exp_a32c,
-  output  binary32_t                              o_exp_a32d,
+  output  binary64_t                              o_exp_64a,
+  output  binary64_t                              o_exp_64b,
+  output  binary32_t                              o_exp_32a,
+  output  binary32_t                              o_exp_32b,
+  output  binary32_t                              o_exp_32c,
+  output  binary32_t                              o_exp_32d,
 
   // Upstream Handshake
   input   logic                                   i_valid128,
@@ -390,12 +392,12 @@ end
 //=====================================================================================
 // Stage 1/2: Read LUTs (single true dual-port BRAM inference)
 //=====================================================================================
-logic [63:0]  s_S1a_exp_a64a_64_bits;
-logic [63:0]  s_S1a_exp_a64b_64_bits;
-logic [31:0]  s_S1a_exp_a32a_32_bits;
-logic [31:0]  s_S1a_exp_a32b_32_bits;
-logic [31:0]  s_S2a_exp_a32c_32_bits;
-logic [31:0]  s_S2a_exp_a32d_32_bits;
+logic [63:0]  s_S1a_exp_64a_64_bits;
+logic [63:0]  s_S1a_exp_64b_64_bits;
+logic [31:0]  s_S1a_exp_32a_32_bits;
+logic [31:0]  s_S1a_exp_32b_32_bits;
+logic [31:0]  s_S2a_exp_32c_32_bits;
+logic [31:0]  s_S2a_exp_32d_32_bits;
 
 logic [ADDR_BITS_128-1:0] s_mem_addra;
 logic [ADDR_BITS_128-1:0] s_mem_addrb;
@@ -486,28 +488,28 @@ end
 
 always_ff @( posedge i_clk ) begin : stage1a_direct_lut_read_ab
   if (!i_rst_n) begin
-    s_S1a_exp_a64a_64_bits <= '0;
-    s_S1a_exp_a64b_64_bits <= '0;
-    s_S1a_exp_a32a_32_bits <= '0;
-    s_S1a_exp_a32b_32_bits <= '0;
+    s_S1a_exp_64a_64_bits <= '0;
+    s_S1a_exp_64b_64_bits <= '0;
+    s_S1a_exp_32a_32_bits <= '0;
+    s_S1a_exp_32b_32_bits <= '0;
   end
   else begin
     if (s_S1_en && ENABLE_64 && !USE_128_FOR_64 && i_metadata.sp_mode == TWO_SP_MODE) begin
-      s_S1a_exp_a64a_64_bits <= `SPEX_LUT64_READ_MACRO(i_lane_64a[LANE_BITS_64-1], i_lane_64a[ADDR_BITS_64-1:0]);
-      s_S1a_exp_a64b_64_bits <= `SPEX_LUT64_READ_MACRO(i_lane_64b[LANE_BITS_64-1], i_lane_64b[ADDR_BITS_64-1:0]);
+      s_S1a_exp_64a_64_bits <= `SPEX_LUT64_READ_MACRO(i_lane_64a[LANE_BITS_64-1], i_lane_64a[ADDR_BITS_64-1:0]);
+      s_S1a_exp_64b_64_bits <= `SPEX_LUT64_READ_MACRO(i_lane_64b[LANE_BITS_64-1], i_lane_64b[ADDR_BITS_64-1:0]);
     end
     else begin
-      s_S1a_exp_a64a_64_bits <= '0;
-      s_S1a_exp_a64b_64_bits <= '0;
+      s_S1a_exp_64a_64_bits <= '0;
+      s_S1a_exp_64b_64_bits <= '0;
     end
 
     if (s_S1_en && ENABLE_32 && !USE_128_FOR_32 && i_metadata.sp_mode == FOUR_SP_MODE) begin
-      s_S1a_exp_a32a_32_bits <= `SPEX_LUT32_READ_MACRO(i_lane_32a[LANE_BITS_32-1], i_lane_32a[ADDR_BITS_32-1:0]);
-      s_S1a_exp_a32b_32_bits <= `SPEX_LUT32_READ_MACRO(i_lane_32b[LANE_BITS_32-1], i_lane_32b[ADDR_BITS_32-1:0]);
+      s_S1a_exp_32a_32_bits <= `SPEX_LUT32_READ_MACRO(i_lane_32a[LANE_BITS_32-1], i_lane_32a[ADDR_BITS_32-1:0]);
+      s_S1a_exp_32b_32_bits <= `SPEX_LUT32_READ_MACRO(i_lane_32b[LANE_BITS_32-1], i_lane_32b[ADDR_BITS_32-1:0]);
     end
     else begin
-      s_S1a_exp_a32a_32_bits <= '0;
-      s_S1a_exp_a32b_32_bits <= '0;
+      s_S1a_exp_32a_32_bits <= '0;
+      s_S1a_exp_32b_32_bits <= '0;
     end
   end
 end
@@ -553,17 +555,17 @@ end
 //=====================================================================================
 always_ff @( posedge i_clk ) begin : stage2a_direct_lut_read_cd
   if (!i_rst_n) begin
-    s_S2a_exp_a32c_32_bits <= '0;
-    s_S2a_exp_a32d_32_bits <= '0;
+    s_S2a_exp_32c_32_bits <= '0;
+    s_S2a_exp_32d_32_bits <= '0;
   end
   else begin
     if (s_S2_en && ENABLE_32 && !USE_128_FOR_32 && s_S1b_metadata.sp_mode == FOUR_SP_MODE) begin
-      s_S2a_exp_a32c_32_bits <= `SPEX_LUT32_READ_MACRO(s_S1b_lane_32c[LANE_BITS_32-1], s_S1b_lane_32c[ADDR_BITS_32-1:0]);
-      s_S2a_exp_a32d_32_bits <= `SPEX_LUT32_READ_MACRO(s_S1b_lane_32d[LANE_BITS_32-1], s_S1b_lane_32d[ADDR_BITS_32-1:0]);
+      s_S2a_exp_32c_32_bits <= `SPEX_LUT32_READ_MACRO(s_S1b_lane_32c[LANE_BITS_32-1], s_S1b_lane_32c[ADDR_BITS_32-1:0]);
+      s_S2a_exp_32d_32_bits <= `SPEX_LUT32_READ_MACRO(s_S1b_lane_32d[LANE_BITS_32-1], s_S1b_lane_32d[ADDR_BITS_32-1:0]);
     end
     else begin
-      s_S2a_exp_a32c_32_bits <= '0;
-      s_S2a_exp_a32d_32_bits <= '0;
+      s_S2a_exp_32c_32_bits <= '0;
+      s_S2a_exp_32d_32_bits <= '0;
     end
   end
 end
@@ -573,17 +575,17 @@ end
  *           128->64/32 conversion paths run fully in this stage.
  */
 binary128_t  s_S2b_exp_a128;
-binary64_t   s_S2b_exp_a64a;
-binary64_t   s_S2b_exp_a64b;
-binary32_t   s_S2b_exp_a32a;
-binary32_t   s_S2b_exp_a32b;
+binary64_t   s_S2b_exp_64a;
+binary64_t   s_S2b_exp_64b;
+binary32_t   s_S2b_exp_32a;
+binary32_t   s_S2b_exp_32b;
 always_ff @( posedge i_clk ) begin : stage2b
   if (!i_rst_n) begin
     s_S2b_exp_a128    <= '0;
-    s_S2b_exp_a64a    <= '0;
-    s_S2b_exp_a64b    <= '0;
-    s_S2b_exp_a32a    <= '0;
-    s_S2b_exp_a32b    <= '0;
+    s_S2b_exp_64a    <= '0;
+    s_S2b_exp_64b    <= '0;
+    s_S2b_exp_32a    <= '0;
+    s_S2b_exp_32b    <= '0;
   end
   else begin
 	    if (s_S2_en) begin
@@ -596,17 +598,17 @@ always_ff @( posedge i_clk ) begin : stage2b
 	          if (ENABLE_64) begin
 	            if (USE_128_FOR_64) begin
 	              // 128->64 conversion is handled by the staged conversion pipeline.
-	              s_S2b_exp_a64a <= '0;
-	              s_S2b_exp_a64b <= '0;
+	              s_S2b_exp_64a <= '0;
+	              s_S2b_exp_64b <= '0;
 	            end
 	            else begin
-              s_S2b_exp_a64a <= binary64_t'(s_S1a_exp_a64a_64_bits);
-              s_S2b_exp_a64b <= binary64_t'(s_S1a_exp_a64b_64_bits);
+              s_S2b_exp_64a <= binary64_t'(s_S1a_exp_64a_64_bits);
+              s_S2b_exp_64b <= binary64_t'(s_S1a_exp_64b_64_bits);
               end
             end
           else begin
-            s_S2b_exp_a64a <= '0;
-            s_S2b_exp_a64b <= '0;
+            s_S2b_exp_64a <= '0;
+            s_S2b_exp_64b <= '0;
           end
         end
 
@@ -614,17 +616,17 @@ always_ff @( posedge i_clk ) begin : stage2b
 	          if (ENABLE_32) begin
 	            if (USE_128_FOR_32) begin
 	              // 128->32 conversion is handled by the staged conversion pipeline.
-	              s_S2b_exp_a32a <= '0;
-	              s_S2b_exp_a32b <= '0;
+	              s_S2b_exp_32a <= '0;
+	              s_S2b_exp_32b <= '0;
 	            end
 	            else begin
-                s_S2b_exp_a32a <= binary32_t'(s_S1a_exp_a32a_32_bits);
-                s_S2b_exp_a32b <= binary32_t'(s_S1a_exp_a32b_32_bits);
+                s_S2b_exp_32a <= binary32_t'(s_S1a_exp_32a_32_bits);
+                s_S2b_exp_32b <= binary32_t'(s_S1a_exp_32b_32_bits);
             end
           end
           else begin
-            s_S2b_exp_a32a <= '0;
-            s_S2b_exp_a32b <= '0;
+            s_S2b_exp_32a <= '0;
+            s_S2b_exp_32b <= '0;
           end
         end
 
@@ -844,12 +846,10 @@ logic             s_S3_valid32c;
 logic             s_S3_valid32d;
 logic             s_S3_valid32_quad;
 float_metadata_t  s_S3_metadata;
-binary64_t        s_S3_exp_a64a;
-binary64_t        s_S3_exp_a64b;
-binary32_t        s_S3_exp_a32a;
-binary32_t        s_S3_exp_a32b;
-binary32_t        s_S3_exp_a32c;
-binary32_t        s_S3_exp_a32d;
+binary32_t        s_S3_exp_32a;
+binary32_t        s_S3_exp_32b;
+binary32_t        s_S3_exp_32c;
+binary32_t        s_S3_exp_32d;
 always_ff @( posedge i_clk ) begin : stage3_lane_cd_conversion_and_passthrough
   if (!i_rst_n) begin
     s_S3_valid64a      <= '0;
@@ -860,27 +860,23 @@ always_ff @( posedge i_clk ) begin : stage3_lane_cd_conversion_and_passthrough
     s_S3_valid32d      <= '0;
     s_S3_valid32_quad  <= '0;
     s_S3_metadata      <= '0;
-    s_S3_exp_a64a      <= '0;
-    s_S3_exp_a64b      <= '0;
-    s_S3_exp_a32a      <= '0;
-    s_S3_exp_a32b      <= '0;
-    s_S3_exp_a32c      <= '0;
-    s_S3_exp_a32d      <= '0;
+    s_S3_exp_32a      <= '0;
+    s_S3_exp_32b      <= '0;
+    s_S3_exp_32c      <= '0;
+    s_S3_exp_32d      <= '0;
   end
   else begin
     if (s_S3_en) begin
       s_S3_valid64a  <= s_S2c_valid64a;
       s_S3_valid64b  <= s_S2c_valid64b;
       s_S3_metadata  <= s_S2c_metadata;
-      s_S3_exp_a64a  <= s_S2b_exp_a64a;
-      s_S3_exp_a64b  <= s_S2b_exp_a64b;
 
       if (ENABLE_32 && USE_128_FOR_32 && s_S2c_metadata.sp_mode == FOUR_SP_MODE) begin
         // 128->32 conversion is handled by the staged conversion pipeline.
-        s_S3_exp_a32a       <= '0;
-        s_S3_exp_a32b       <= '0;
-        s_S3_exp_a32c       <= '0;
-        s_S3_exp_a32d       <= '0;
+        s_S3_exp_32a       <= '0;
+        s_S3_exp_32b       <= '0;
+        s_S3_exp_32c       <= '0;
+        s_S3_exp_32d       <= '0;
         s_S3_valid32a       <= '0;
         s_S3_valid32b       <= '0;
         s_S3_valid32c       <= '0;
@@ -888,10 +884,10 @@ always_ff @( posedge i_clk ) begin : stage3_lane_cd_conversion_and_passthrough
         s_S3_valid32_quad   <= '0;
       end
       else begin
-        s_S3_exp_a32a       <= s_S2b_exp_a32a;
-        s_S3_exp_a32b       <= s_S2b_exp_a32b;
-        s_S3_exp_a32c       <= binary32_t'(s_S2a_exp_a32c_32_bits);
-        s_S3_exp_a32d       <= binary32_t'(s_S2a_exp_a32d_32_bits);
+        s_S3_exp_32a       <= s_S2b_exp_32a;
+        s_S3_exp_32b       <= s_S2b_exp_32b;
+        s_S3_exp_32c       <= binary32_t'(s_S2a_exp_32c_32_bits);
+        s_S3_exp_32d       <= binary32_t'(s_S2a_exp_32d_32_bits);
         s_S3_valid32a       <= s_S2c_valid32a;
         s_S3_valid32b       <= s_S2c_valid32b;
         s_S3_valid32c       <= s_S2c_valid32c;
@@ -908,12 +904,10 @@ always_ff @( posedge i_clk ) begin : stage3_lane_cd_conversion_and_passthrough
       s_S3_valid32d      <= '0;
       s_S3_valid32_quad  <= '0;
       s_S3_metadata      <= '0;
-      s_S3_exp_a64a      <= '0;
-      s_S3_exp_a64b      <= '0;
-      s_S3_exp_a32a      <= '0;
-      s_S3_exp_a32b      <= '0;
-      s_S3_exp_a32c      <= '0;
-      s_S3_exp_a32d      <= '0;
+      s_S3_exp_32a      <= '0;
+      s_S3_exp_32b      <= '0;
+      s_S3_exp_32c      <= '0;
+      s_S3_exp_32d      <= '0;
     end
   end
 end
@@ -932,12 +926,6 @@ logic             s_S4_valid32c;
 logic             s_S4_valid32d;
 logic             s_S4_valid32_quad;
 float_metadata_t  s_S4_metadata;
-binary64_t        s_S4_exp_a64a;
-binary64_t        s_S4_exp_a64b;
-binary32_t        s_S4_exp_a32a;
-binary32_t        s_S4_exp_a32b;
-binary32_t        s_S4_exp_a32c;
-binary32_t        s_S4_exp_a32d;
 
 always_ff @( posedge i_clk ) begin : stage4_output_alignment
   if (!i_rst_n) begin
@@ -949,26 +937,14 @@ always_ff @( posedge i_clk ) begin : stage4_output_alignment
     s_S4_valid32d <= '0;
     s_S4_valid32_quad <= '0;
     s_S4_metadata <= '0;
-    s_S4_exp_a64a <= '0;
-    s_S4_exp_a64b <= '0;
-    s_S4_exp_a32a <= '0;
-    s_S4_exp_a32b <= '0;
-    s_S4_exp_a32c <= '0;
-    s_S4_exp_a32d <= '0;
   end
   else begin
     if (s_S4_en) begin
       s_S4_metadata <= s_S3_metadata;
       s_S4_valid64a <= s_S3_valid64a;
       s_S4_valid64b <= s_S3_valid64b;
-      s_S4_exp_a64a <= s_S3_exp_a64a;
-      s_S4_exp_a64b <= s_S3_exp_a64b;
 
       if (ENABLE_32 && USE_128_FOR_32 && s_S3_metadata.sp_mode == FOUR_SP_MODE) begin
-        s_S4_exp_a32a <= s_S3_exp_a32a;
-        s_S4_exp_a32b <= s_S3_exp_a32b;
-        s_S4_exp_a32c <= s_S3_exp_a32c;
-        s_S4_exp_a32d <= s_S3_exp_a32d;
         s_S4_valid32a <= '0;
         s_S4_valid32b <= '0;
         s_S4_valid32c <= '0;
@@ -976,10 +952,6 @@ always_ff @( posedge i_clk ) begin : stage4_output_alignment
         s_S4_valid32_quad <= s_S3_valid32_quad;
       end
       else begin
-        s_S4_exp_a32a <= s_S3_exp_a32a;
-        s_S4_exp_a32b <= s_S3_exp_a32b;
-        s_S4_exp_a32c <= s_S3_exp_a32c;
-        s_S4_exp_a32d <= s_S3_exp_a32d;
         s_S4_valid32a <= s_S3_valid32a;
         s_S4_valid32b <= s_S3_valid32b;
         s_S4_valid32c <= s_S3_valid32c;
@@ -996,12 +968,6 @@ always_ff @( posedge i_clk ) begin : stage4_output_alignment
       s_S4_valid32d <= '0;
       s_S4_valid32_quad <= '0;
       s_S4_metadata <= '0;
-      s_S4_exp_a64a <= '0;
-      s_S4_exp_a64b <= '0;
-      s_S4_exp_a32a <= '0;
-      s_S4_exp_a32b <= '0;
-      s_S4_exp_a32c <= '0;
-      s_S4_exp_a32d <= '0;
     end
   end
 end
@@ -1016,10 +982,6 @@ logic             s_S5_valid32b;
 logic             s_S5_valid32c;
 logic             s_S5_valid32d;
 float_metadata_t  s_S5_metadata;
-binary32_t        s_S5_exp_a32a;
-binary32_t        s_S5_exp_a32b;
-binary32_t        s_S5_exp_a32c;
-binary32_t        s_S5_exp_a32d;
 
 always_ff @( posedge i_clk ) begin : stage5_lane_alignment
   if (!i_rst_n) begin
@@ -1028,29 +990,17 @@ always_ff @( posedge i_clk ) begin : stage5_lane_alignment
     s_S5_valid32c <= '0;
     s_S5_valid32d <= '0;
     s_S5_metadata <= '0;
-    s_S5_exp_a32a <= '0;
-    s_S5_exp_a32b <= '0;
-    s_S5_exp_a32c <= '0;
-    s_S5_exp_a32d <= '0;
   end
   else begin
     if (s_S5_en) begin
       s_S5_metadata <= s_S4_metadata;
       if (ENABLE_32 && USE_128_FOR_32 && s_S4_metadata.sp_mode == FOUR_SP_MODE) begin
-        s_S5_exp_a32a <= s_S4_exp_a32a;
-        s_S5_exp_a32b <= s_S4_exp_a32b;
-        s_S5_exp_a32c <= s_S4_exp_a32c;
-        s_S5_exp_a32d <= s_S4_exp_a32d;
         s_S5_valid32a <= s_S4_valid32_quad;
         s_S5_valid32b <= s_S4_valid32_quad;
         s_S5_valid32c <= s_S4_valid32_quad;
         s_S5_valid32d <= s_S4_valid32_quad;
       end
       else begin
-        s_S5_exp_a32a <= s_S4_exp_a32a;
-        s_S5_exp_a32b <= s_S4_exp_a32b;
-        s_S5_exp_a32c <= s_S4_exp_a32c;
-        s_S5_exp_a32d <= s_S4_exp_a32d;
         s_S5_valid32a <= s_S4_valid32a;
         s_S5_valid32b <= s_S4_valid32b;
         s_S5_valid32c <= s_S4_valid32c;
@@ -1063,10 +1013,6 @@ always_ff @( posedge i_clk ) begin : stage5_lane_alignment
       s_S5_valid32c <= '0;
       s_S5_valid32d <= '0;
       s_S5_metadata <= '0;
-      s_S5_exp_a32a <= '0;
-      s_S5_exp_a32b <= '0;
-      s_S5_exp_a32c <= '0;
-      s_S5_exp_a32d <= '0;
     end
   end
 end
@@ -1124,12 +1070,12 @@ always_comb begin : output_metadata_select
 end
 
 assign o_exp_a128 = s_S2b_exp_a128;
-assign o_exp_a64a = ENABLE_64 ? (USE_128_FOR_64 ? s_conv64_out_q[0]      : s_S2b_exp_a64a) : '0;
-assign o_exp_a64b = ENABLE_64 ? (USE_128_FOR_64 ? s_conv64_out_q[1]      : s_S2b_exp_a64b) : '0;
-assign o_exp_a32a = ENABLE_32 ? (USE_128_FOR_32 ? s_conv32_ab_align_q[0] : s_S3_exp_a32a)  : '0;
-assign o_exp_a32b = ENABLE_32 ? (USE_128_FOR_32 ? s_conv32_ab_align_q[1] : s_S3_exp_a32b)  : '0;
-assign o_exp_a32c = ENABLE_32 ? (USE_128_FOR_32 ? s_conv32_out_q[2]      : s_S3_exp_a32c)  : '0;
-assign o_exp_a32d = ENABLE_32 ? (USE_128_FOR_32 ? s_conv32_out_q[3]      : s_S3_exp_a32d)  : '0;
+assign o_exp_64a = ENABLE_64 ? (USE_128_FOR_64 ? s_conv64_out_q[0]      : s_S2b_exp_64a) : '0;
+assign o_exp_64b = ENABLE_64 ? (USE_128_FOR_64 ? s_conv64_out_q[1]      : s_S2b_exp_64b) : '0;
+assign o_exp_32a = ENABLE_32 ? (USE_128_FOR_32 ? s_conv32_ab_align_q[0] : s_S3_exp_32a)  : '0;
+assign o_exp_32b = ENABLE_32 ? (USE_128_FOR_32 ? s_conv32_ab_align_q[1] : s_S3_exp_32b)  : '0;
+assign o_exp_32c = ENABLE_32 ? (USE_128_FOR_32 ? s_conv32_out_q[2]      : s_S3_exp_32c)  : '0;
+assign o_exp_32d = ENABLE_32 ? (USE_128_FOR_32 ? s_conv32_out_q[3]      : s_S3_exp_32d)  : '0;
 
 assign o_valid128 = s_S2c_valid128;
 assign o_valid64a = ENABLE_64 ? (USE_128_FOR_64 ? s_conv64_v3_q[0]              : s_S2c_valid64a) : 1'b0;
