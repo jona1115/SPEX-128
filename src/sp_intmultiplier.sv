@@ -296,9 +296,6 @@ end // always_ff @( posedge i_clk )
 //=====================================================================================
 assign o_jedi = s_S3_jedi;
 assign o_valid_jedi = s_S3_valid;
-assign o_sanity_identifier = MODULE_IDENTIFIER;
-assign o_error = s_o_error;
-assign o_debug = '0;
 
 `else
 // ifdef USE_DSP:
@@ -522,10 +519,11 @@ end
 
 assign o_jedi = s_term_l6[0];
 assign o_valid_jedi = s_pipe_valid[DSP_TOTAL_LAT-1];
+
+`endif // end of `ifndef USE_DSP
+
 assign o_sanity_identifier = MODULE_IDENTIFIER;
 assign o_error = s_o_error;
 assign o_debug = '0;
-
-`endif // end of `ifndef USE_DSP
 
 endmodule // module sp_intmultiplier #()
