@@ -604,15 +604,15 @@ always_ff @( posedge i_clk ) begin : stage2b
 	              s_S2b_exp_64b <= '0;
 	            end
 	            else begin
-              s_S2b_exp_64a <= binary64_t'(s_dlr_mem64_douta);
-              s_S2b_exp_64b <= binary64_t'(s_dlr_mem64_doutb);
+                s_S2b_exp_64a <= binary64_t'(s_dlr_mem64_douta);
+                s_S2b_exp_64b <= binary64_t'(s_dlr_mem64_doutb);
               end
             end
-          else begin
-            s_S2b_exp_64a <= '0;
-            s_S2b_exp_64b <= '0;
+            else begin
+              s_S2b_exp_64a <= '0;
+              s_S2b_exp_64b <= '0;
+            end
           end
-        end
 
 	        FOUR_SP_MODE: begin
 	          if (ENABLE_32) begin
@@ -624,13 +624,13 @@ always_ff @( posedge i_clk ) begin : stage2b
 	            else begin
                 s_S2b_exp_32a <= binary32_t'(s_dlr_mem32_douta);
                 s_S2b_exp_32b <= binary32_t'(s_dlr_mem32_doutb);
+              end
+            end
+            else begin
+              s_S2b_exp_32a <= '0;
+              s_S2b_exp_32b <= '0;
             end
           end
-          else begin
-            s_S2b_exp_32a <= '0;
-            s_S2b_exp_32b <= '0;
-          end
-        end
 
         default: begin
           assert (0) else begin
