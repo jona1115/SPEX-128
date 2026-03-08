@@ -168,7 +168,7 @@ endfunction
 // tables and produce valid results. This version is enabled if the RUNNING_GENUS_SYNTHESIS
 // flag is cleared (commented out).
 //=====================================================================================
-`ifndef SPEX_LUT_DUMMY
+`ifndef USE_STUB_FOR_MEM_RD
 (* ram_style = "block", rom_style = "block" *) logic [127:0] mem128_pos  [0:DEPTH_128-1];
 (* ram_style = "block", rom_style = "block" *) logic [127:0] mem128_neg  [0:DEPTH_128-1];
 (* ram_style = "block", rom_style = "block" *) logic [63:0]  mem64_pos   [0:DEPTH_64-1];
@@ -209,9 +209,9 @@ initial begin
 end
 `endif
 
-`ifdef SPEX_LUT_DUMMY
+`ifdef USE_STUB_FOR_MEM_RD
 // Part of the stub
-function automatic logic [31:0] spex_lut_dummy_xorshift32(
+function automatic logic [31:0] USE_STUB_FOR_MEM_RD_xorshift32(
   input logic [31:0] i_state
 );
   logic [31:0] state;
@@ -234,7 +234,7 @@ function automatic logic [127:0] spex_lut128_read_stub(
     seed ^= 32'h7f4a_7c15;
   end
   for (int word_idx = 0; word_idx < 4; word_idx++) begin
-    seed = spex_lut_dummy_xorshift32(seed);
+    seed = USE_STUB_FOR_MEM_RD_xorshift32(seed);
     result[word_idx*32 +: 32] = seed;
   end
   return result;
@@ -252,7 +252,7 @@ function automatic logic [63:0] spex_lut64_read_stub(
     seed ^= 32'hb3f1_11c7;
   end
   for (int word_idx = 0; word_idx < 2; word_idx++) begin
-    seed = spex_lut_dummy_xorshift32(seed);
+    seed = USE_STUB_FOR_MEM_RD_xorshift32(seed);
     result[word_idx*32 +: 32] = seed;
   end
   return result;
@@ -268,11 +268,11 @@ function automatic logic [31:0] spex_lut32_read(
   if (HAS_SIGN && i_use_neg) begin
     seed ^= 32'h1b56_c4e9;
   end
-  return spex_lut_dummy_xorshift32(seed + 32'hbb67_ae85);
+  return USE_STUB_FOR_MEM_RD_xorshift32(seed + 32'hbb67_ae85);
 endfunction
-`endif // `ifdef SPEX_LUT_DUMMY
+`endif // `ifdef USE_STUB_FOR_MEM_RD
 
-`ifdef SPEX_LUT_DUMMY
+`ifdef USE_STUB_FOR_MEM_RD
   `define SPEX_LUT128_READ_MACRO(i_use_neg, i_addr) \
             spex_lut128_read_stub(i_use_neg, i_addr);
 `else
@@ -280,7 +280,7 @@ endfunction
             (HAS_SIGN && i_use_neg) ? mem128_neg[i_addr] : mem128_pos[i_addr];
 `endif
 
-`ifdef SPEX_LUT_DUMMY
+`ifdef USE_STUB_FOR_MEM_RD
   `define SPEX_LUT64_READ_MACRO(i_use_neg, i_addr) \
             spex_lut64_read_stub(i_use_neg, i_addr);
 `else
@@ -288,7 +288,7 @@ endfunction
             (HAS_SIGN && i_use_neg) ? mem64_neg[i_addr] : mem64_pos[i_addr];
 `endif
 
-`ifdef SPEX_LUT_DUMMY
+`ifdef USE_STUB_FOR_MEM_RD
   `define SPEX_LUT32_READ_MACRO(i_use_neg, i_addr) \
             spex_lut64_read_stub(i_use_neg, i_addr);
 `else

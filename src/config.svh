@@ -74,12 +74,12 @@
  * synthesis tools (e.g. Genus) ignore initial blocks, which can cause the LUT
  * datapaths to be optimized away (since the ROM contents become "don't care").
  *
- * When SPEX_LUT_DUMMY is defined, fixed_partition_sp replaces LUT reads with a
+ * When USE_STUB_FOR_MEM_RD is defined, fixed_partition_sp replaces LUT reads with a
  * deterministic, address-dependent dummy function (no memory inference). This
  * preserves the surrounding datapath for PPA studies when the ROM is off-chip.
  */
 `ifdef RUNNING_GENUS_SYNTHESIS
-  `define SPEX_LUT_DUMMY
+  `define USE_STUB_FOR_MEM_RD
 `endif
 
 /**
