@@ -390,7 +390,9 @@ always_ff @( posedge i_clk ) begin : sp_intmultiplier_FSM
 end
 
 //=====================================================================================
-// Stage 1/2: Read LUTs (single true dual-port BRAM inference)
+// Stage 1/2: Read LUTs
+// - Shared 128-bit LUT read path for USE_128_FOR_* modes
+// - Dedicated 64/32-bit LUT read path for native-width modes
 //=====================================================================================
 logic [63:0]  s_S1a_exp_64a_64_bits;
 logic [63:0]  s_S1a_exp_64b_64_bits;
@@ -408,7 +410,7 @@ logic                     s_mem_use_neg_b;
 logic [127:0]             s_mem_douta;
 logic [127:0]             s_mem_doutb;
 
-always_comb begin : mem128_port_select
+always_comb begin : shared_lut128_port_select
   s_mem_ena       = 1'b0;
   s_mem_enb       = 1'b0;
   s_mem_addra     = '0;
@@ -471,7 +473,7 @@ always_comb begin : mem128_port_select
   end
 end
 
-always_ff @( posedge i_clk ) begin : mem128_tdp_rom
+always_ff @( posedge i_clk ) begin : shared_lut128_read
   if (!i_rst_n) begin
     s_mem_douta <= '0;
     s_mem_doutb <= '0;
@@ -486,7 +488,7 @@ always_ff @( posedge i_clk ) begin : mem128_tdp_rom
   end
 end
 
-always_ff @( posedge i_clk ) begin : stage1a_direct_lut_read_ab
+always_ff @( posedge i_clk ) begin : dedicated_lut_read_ab
   if (!i_rst_n) begin
     s_S1a_exp_64a_64_bits <= '0;
     s_S1a_exp_64b_64_bits <= '0;
@@ -553,7 +555,7 @@ end
 // - feeds staged 128->64/32 conversion pipelines for conversion paths
 // - direct 64/32 LUT pass-through for non-conversion paths
 //=====================================================================================
-always_ff @( posedge i_clk ) begin : stage2a_direct_lut_read_cd
+always_ff @( posedge i_clk ) begin : dedicated_lut_read_cd
   if (!i_rst_n) begin
     s_S2a_exp_32c_32_bits <= '0;
     s_S2a_exp_32d_32_bits <= '0;
