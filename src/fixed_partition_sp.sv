@@ -394,10 +394,10 @@ end
 // - Shared 128-bit LUT read path for USE_128_FOR_* modes
 // - Dedicated 64/32-bit LUT read path for native-width modes
 //=====================================================================================
-logic [63:0]  s_S1a_exp_64a_64_bits;
-logic [63:0]  s_S1a_exp_64b_64_bits;
-logic [31:0]  s_S1a_exp_32a_32_bits;
-logic [31:0]  s_S1a_exp_32b_32_bits;
+logic [63:0]  s_dlr_mem64_douta;
+logic [63:0]  s_dlr_mem64_doutb;
+logic [31:0]  s_dlr_mem32_douta;
+logic [31:0]  s_dlr_mem32_doutb;
 logic [31:0]  s_S2a_exp_32c_32_bits;
 logic [31:0]  s_S2a_exp_32d_32_bits;
 
@@ -407,8 +407,8 @@ logic                     s_mem_ena;
 logic                     s_mem_enb;
 logic                     s_mem_use_neg_a;
 logic                     s_mem_use_neg_b;
-logic [127:0]             s_mem_douta;
-logic [127:0]             s_mem_doutb;
+logic [127:0]             s_slr_mem_douta;
+logic [127:0]             s_slr_mem_doutb;
 
 always_comb begin : shared_lut128_port_select
   s_mem_ena       = 1'b0;
@@ -473,45 +473,45 @@ always_comb begin : shared_lut128_port_select
   end
 end
 
-always_ff @( posedge i_clk ) begin : shared_lut128_read
+always_ff @( posedge i_clk ) begin : shared_lut128_read // aka "slr"
   if (!i_rst_n) begin
-    s_mem_douta <= '0;
-    s_mem_doutb <= '0;
+    s_slr_mem_douta <= '0;
+    s_slr_mem_doutb <= '0;
   end
   else begin
     if (s_mem_ena) begin
-      s_mem_douta <= `SPEX_LUT128_READ_MACRO(s_mem_use_neg_a, s_mem_addra);
+      s_slr_mem_douta <= `SPEX_LUT128_READ_MACRO(s_mem_use_neg_a, s_mem_addra);
     end
     if (s_mem_enb) begin
-      s_mem_doutb <= `SPEX_LUT128_READ_MACRO(s_mem_use_neg_b, s_mem_addrb);
+      s_slr_mem_doutb <= `SPEX_LUT128_READ_MACRO(s_mem_use_neg_b, s_mem_addrb);
     end
   end
 end
 
-always_ff @( posedge i_clk ) begin : dedicated_lut_read_ab
+always_ff @( posedge i_clk ) begin : dedicated_lut_read_ab // aka "dlr"
   if (!i_rst_n) begin
-    s_S1a_exp_64a_64_bits <= '0;
-    s_S1a_exp_64b_64_bits <= '0;
-    s_S1a_exp_32a_32_bits <= '0;
-    s_S1a_exp_32b_32_bits <= '0;
+    s_dlr_mem64_douta <= '0;
+    s_dlr_mem64_doutb <= '0;
+    s_dlr_mem32_douta <= '0;
+    s_dlr_mem32_doutb <= '0;
   end
   else begin
     if (s_S1_en && ENABLE_64 && !USE_128_FOR_64 && i_metadata.sp_mode == TWO_SP_MODE) begin
-      s_S1a_exp_64a_64_bits <= `SPEX_LUT64_READ_MACRO(i_lane_64a[LANE_BITS_64-1], i_lane_64a[ADDR_BITS_64-1:0]);
-      s_S1a_exp_64b_64_bits <= `SPEX_LUT64_READ_MACRO(i_lane_64b[LANE_BITS_64-1], i_lane_64b[ADDR_BITS_64-1:0]);
+      s_dlr_mem64_douta <= `SPEX_LUT64_READ_MACRO(i_lane_64a[LANE_BITS_64-1], i_lane_64a[ADDR_BITS_64-1:0]);
+      s_dlr_mem64_doutb <= `SPEX_LUT64_READ_MACRO(i_lane_64b[LANE_BITS_64-1], i_lane_64b[ADDR_BITS_64-1:0]);
     end
     else begin
-      s_S1a_exp_64a_64_bits <= '0;
-      s_S1a_exp_64b_64_bits <= '0;
+      s_dlr_mem64_douta <= '0;
+      s_dlr_mem64_doutb <= '0;
     end
 
     if (s_S1_en && ENABLE_32 && !USE_128_FOR_32 && i_metadata.sp_mode == FOUR_SP_MODE) begin
-      s_S1a_exp_32a_32_bits <= `SPEX_LUT32_READ_MACRO(i_lane_32a[LANE_BITS_32-1], i_lane_32a[ADDR_BITS_32-1:0]);
-      s_S1a_exp_32b_32_bits <= `SPEX_LUT32_READ_MACRO(i_lane_32b[LANE_BITS_32-1], i_lane_32b[ADDR_BITS_32-1:0]);
+      s_dlr_mem32_douta <= `SPEX_LUT32_READ_MACRO(i_lane_32a[LANE_BITS_32-1], i_lane_32a[ADDR_BITS_32-1:0]);
+      s_dlr_mem32_doutb <= `SPEX_LUT32_READ_MACRO(i_lane_32b[LANE_BITS_32-1], i_lane_32b[ADDR_BITS_32-1:0]);
     end
     else begin
-      s_S1a_exp_32a_32_bits <= '0;
-      s_S1a_exp_32b_32_bits <= '0;
+      s_dlr_mem32_douta <= '0;
+      s_dlr_mem32_doutb <= '0;
     end
   end
 end
@@ -593,7 +593,7 @@ always_ff @( posedge i_clk ) begin : stage2b
 	    if (s_S2_en) begin
 	      case (s_S1b_metadata.sp_mode)
 	        SINGLE_MODE: begin
-	          s_S2b_exp_a128 <= binary128_t'(s_mem_douta);
+	          s_S2b_exp_a128 <= binary128_t'(s_slr_mem_douta);
 	        end
 	
 	        TWO_SP_MODE: begin
@@ -604,8 +604,8 @@ always_ff @( posedge i_clk ) begin : stage2b
 	              s_S2b_exp_64b <= '0;
 	            end
 	            else begin
-              s_S2b_exp_64a <= binary64_t'(s_S1a_exp_64a_64_bits);
-              s_S2b_exp_64b <= binary64_t'(s_S1a_exp_64b_64_bits);
+              s_S2b_exp_64a <= binary64_t'(s_dlr_mem64_douta);
+              s_S2b_exp_64b <= binary64_t'(s_dlr_mem64_doutb);
               end
             end
           else begin
@@ -622,8 +622,8 @@ always_ff @( posedge i_clk ) begin : stage2b
 	              s_S2b_exp_32b <= '0;
 	            end
 	            else begin
-                s_S2b_exp_32a <= binary32_t'(s_S1a_exp_32a_32_bits);
-                s_S2b_exp_32b <= binary32_t'(s_S1a_exp_32b_32_bits);
+                s_S2b_exp_32a <= binary32_t'(s_dlr_mem32_douta);
+                s_S2b_exp_32b <= binary32_t'(s_dlr_mem32_doutb);
             end
           end
           else begin
@@ -739,22 +739,22 @@ always_comb begin : conversion_input_select
   s_conv32_in_valid = '0;
 
   if (s_S2_en && ENABLE_64 && USE_128_FOR_64 && s_S1b_metadata.sp_mode == TWO_SP_MODE) begin
-    s_conv64_in_bits[0] = s_mem_douta;
-    s_conv64_in_bits[1] = s_mem_doutb;
+    s_conv64_in_bits[0] = s_slr_mem_douta;
+    s_conv64_in_bits[1] = s_slr_mem_doutb;
     s_conv64_in_valid[0] = s_S1b_valid64a;
     s_conv64_in_valid[1] = s_S1b_valid64b;
   end
 
   if (s_S2_en && ENABLE_32 && USE_128_FOR_32 && s_S1b_metadata.sp_mode == FOUR_SP_MODE) begin
-    s_conv32_in_bits[0] = s_mem_douta;
-    s_conv32_in_bits[1] = s_mem_doutb;
+    s_conv32_in_bits[0] = s_slr_mem_douta;
+    s_conv32_in_bits[1] = s_slr_mem_doutb;
     s_conv32_in_valid[0] = s_S1b_valid32a;
     s_conv32_in_valid[1] = s_S1b_valid32b;
   end
 
   if (s_S3_en && ENABLE_32 && USE_128_FOR_32 && s_S2c_metadata.sp_mode == FOUR_SP_MODE) begin
-    s_conv32_in_bits[2] = s_mem_douta;
-    s_conv32_in_bits[3] = s_mem_doutb;
+    s_conv32_in_bits[2] = s_slr_mem_douta;
+    s_conv32_in_bits[3] = s_slr_mem_doutb;
     s_conv32_in_valid[2] = s_S2c_valid32c;
     s_conv32_in_valid[3] = s_S2c_valid32d;
   end
