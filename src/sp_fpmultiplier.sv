@@ -46,7 +46,7 @@ module sp_fpmultiplier #(
 `else
   parameter int INTMUL_LATENCY = 3, // non-DSP intmult path latency
 `endif
-  parameter int MODULE_LATENCY = INTMUL_LATENCY + 3,
+  parameter int MODULE_LATENCY = INTMUL_LATENCY + 4,
 
   // Error and debug parameters
   parameter int ERROR_SIGNAL_NUM_BITS = 32,
@@ -284,12 +284,13 @@ float_classifier #() my_float_classifier_force (
  * Fixed-latency pipeline control.
  * Each stage enable is a delayed version of the initial "fire" signal.
  */
-logic s_S1_en, s_S2_en, s_S5_en, s_S6_en, s_S7_en; // S3 and S4 are merged into S2 into S234 as part of optimization effort in issue #53
+logic s_S1_en, s_S2_en, s_S3_en, s_S5_en, s_S6_en, s_S7_en;
 logic s_fire;
 localparam int MUL_START_OFFSET = 0;
 localparam int S2_OFFSET = MUL_START_OFFSET + INTMUL_LATENCY; // s_pipe_valid[4]
-localparam int S5_OFFSET = S2_OFFSET + 1;                     // s_pipe_valid[5]
-localparam int PIPE_DEPTH = S5_OFFSET + 1; // 6
+localparam int S3_OFFSET = S2_OFFSET + 1;                     // s_pipe_valid[5]
+localparam int S5_OFFSET = S3_OFFSET + 1;                     // s_pipe_valid[6]
+localparam int PIPE_DEPTH = S5_OFFSET + 1; // 7
 logic [PIPE_DEPTH-1:0] s_pipe_valid;
 logic [PIPE_DEPTH-1:0] s_pipe_valid_next;
 logic s_mul_start;
@@ -333,6 +334,7 @@ assign s_pipe_valid_next = {s_pipe_valid[PIPE_DEPTH-2:0], s_fire};
 assign s_mul_start = s_pipe_valid[MUL_START_OFFSET];
 assign s_S1_en = s_fire;
 assign s_S2_en = s_pipe_valid[S2_OFFSET];
+assign s_S3_en = s_pipe_valid[S3_OFFSET];
 assign s_S5_en = s_pipe_valid[S5_OFFSET];
 assign s_S6_en = 1'b0;
 assign s_S7_en = 1'b0;
@@ -772,6 +774,21 @@ function automatic logic [24:0] fn_stage234_round_32(input logic [47:0] i_full);
   end
 endfunction
 
+logic [113:0] s_S3_128_potential_result;
+logic [53:0]  s_S3_64a_potential_result;
+logic [53:0]  s_S3_64b_potential_result;
+logic [24:0]  s_S3_32a_potential_result;
+logic [24:0]  s_S3_32b_potential_result;
+logic [24:0]  s_S3_32c_potential_result;
+logic [24:0]  s_S3_32d_potential_result;
+binary128_t   s_S3_128_jedi;
+binary64_t    s_S3_64a_jedi, s_S3_64b_jedi;
+binary32_t    s_S3_32a_jedi, s_S3_32b_jedi, s_S3_32c_jedi, s_S3_32d_jedi;
+logic         s_S3_valid128_jedi;
+logic         s_S3_valid64a_jedi, s_S3_valid64b_jedi;
+logic         s_S3_valid32a_jedi, s_S3_valid32b_jedi, s_S3_valid32c_jedi, s_S3_valid32d_jedi;
+float_metadata_t s_S3_metadata_anikin, s_S3_metadata_force;
+
 logic [113:0] s_S4_128_potential_result;
 logic [53:0]  s_S4_64a_potential_result;
 logic [53:0]  s_S4_64b_potential_result;
@@ -787,7 +804,8 @@ logic         s_S4_valid64a_jedi, s_S4_valid64b_jedi;
 logic         s_S4_valid32a_jedi, s_S4_valid32b_jedi, s_S4_valid32c_jedi, s_S4_valid32d_jedi;
 float_metadata_t s_S4_metadata_anikin, s_S4_metadata_force;
 
-always_ff @( posedge i_clk ) begin : stage234_round_and_renormalize
+// Stage 3: rounding and carry-based exponent adjustment.
+always_ff @( posedge i_clk ) begin : stage3_round
   logic [113:0] hs_S234_128_potential_result;
   logic [53:0]  hs_S234_64a_potential_result;
   logic [53:0]  hs_S234_64b_potential_result;
@@ -800,29 +818,29 @@ always_ff @( posedge i_clk ) begin : stage234_round_and_renormalize
   binary32_t    hs_S234_32a_jedi, hs_S234_32b_jedi, hs_S234_32c_jedi, hs_S234_32d_jedi;
 
   if (!i_rst_n) begin
-    s_S4_128_jedi             <= '0;
-    s_S4_64a_jedi             <= '0;
-    s_S4_64b_jedi             <= '0;
-    s_S4_32a_jedi             <= '0;
-    s_S4_32b_jedi             <= '0;
-    s_S4_32c_jedi             <= '0;
-    s_S4_32d_jedi             <= '0;
-    s_S4_128_potential_result <= '0;
-    s_S4_64a_potential_result <= '0;
-    s_S4_64b_potential_result <= '0;
-    s_S4_32a_potential_result <= '0;
-    s_S4_32b_potential_result <= '0;
-    s_S4_32c_potential_result <= '0;
-    s_S4_32d_potential_result <= '0;
-    s_S4_valid128_jedi        <= '0;
-    s_S4_valid64a_jedi        <= '0;
-    s_S4_valid64b_jedi        <= '0;
-    s_S4_valid32a_jedi        <= '0;
-    s_S4_valid32b_jedi        <= '0;
-    s_S4_valid32c_jedi        <= '0;
-    s_S4_valid32d_jedi        <= '0;
-    s_S4_metadata_anikin      <= '0;
-    s_S4_metadata_force       <= '0;
+    s_S3_128_jedi             <= '0;
+    s_S3_64a_jedi             <= '0;
+    s_S3_64b_jedi             <= '0;
+    s_S3_32a_jedi             <= '0;
+    s_S3_32b_jedi             <= '0;
+    s_S3_32c_jedi             <= '0;
+    s_S3_32d_jedi             <= '0;
+    s_S3_128_potential_result <= '0;
+    s_S3_64a_potential_result <= '0;
+    s_S3_64b_potential_result <= '0;
+    s_S3_32a_potential_result <= '0;
+    s_S3_32b_potential_result <= '0;
+    s_S3_32c_potential_result <= '0;
+    s_S3_32d_potential_result <= '0;
+    s_S3_valid128_jedi        <= '0;
+    s_S3_valid64a_jedi        <= '0;
+    s_S3_valid64b_jedi        <= '0;
+    s_S3_valid32a_jedi        <= '0;
+    s_S3_valid32b_jedi        <= '0;
+    s_S3_valid32c_jedi        <= '0;
+    s_S3_valid32d_jedi        <= '0;
+    s_S3_metadata_anikin      <= '0;
+    s_S3_metadata_force       <= '0;
 
     s_o_error[3]              <= 1'b0;
     s_o_error[4]              <= 1'b0;
@@ -864,86 +882,26 @@ always_ff @( posedge i_clk ) begin : stage234_round_and_renormalize
 
       case (s_S2_metadata_anikin.sp_mode)
         SINGLE_MODE: begin
-          if (hs_S234_128_potential_result[113] === 1'b1) begin
-            s_S4_128_jedi.exp         <= hs_S234_128_jedi.exp + 1'b1;
-            s_S4_128_jedi.sign        <= hs_S234_128_jedi.sign;
-            s_S4_128_jedi.mantissa    <= hs_S234_128_jedi.mantissa;
-            s_S4_128_potential_result <= {1'b0, hs_S234_128_potential_result[113:1]};
-          end
-          else begin
-            s_S4_128_jedi             <= hs_S234_128_jedi;
-            s_S4_128_potential_result <= hs_S234_128_potential_result;
-          end
+          s_S3_128_jedi             <= hs_S234_128_jedi;
+          s_S3_128_potential_result <= hs_S234_128_potential_result;
         end
 
         TWO_SP_MODE: begin
-          if (hs_S234_64a_potential_result[53] === 1'b1) begin
-            s_S4_64a_jedi.exp         <= hs_S234_64a_jedi.exp + 1'b1;
-            s_S4_64a_jedi.sign        <= hs_S234_64a_jedi.sign;
-            s_S4_64a_jedi.mantissa    <= hs_S234_64a_jedi.mantissa;
-            s_S4_64a_potential_result <= {1'b0, hs_S234_64a_potential_result[53:1]};
-          end
-          else begin
-            s_S4_64a_jedi             <= hs_S234_64a_jedi;
-            s_S4_64a_potential_result <= hs_S234_64a_potential_result;
-          end
-
-          if (hs_S234_64b_potential_result[53] === 1'b1) begin
-            s_S4_64b_jedi.exp         <= hs_S234_64b_jedi.exp + 1'b1;
-            s_S4_64b_jedi.sign        <= hs_S234_64b_jedi.sign;
-            s_S4_64b_jedi.mantissa    <= hs_S234_64b_jedi.mantissa;
-            s_S4_64b_potential_result <= {1'b0, hs_S234_64b_potential_result[53:1]};
-          end
-          else begin
-            s_S4_64b_jedi             <= hs_S234_64b_jedi;
-            s_S4_64b_potential_result <= hs_S234_64b_potential_result;
-          end
+          s_S3_64a_jedi             <= hs_S234_64a_jedi;
+          s_S3_64a_potential_result <= hs_S234_64a_potential_result;
+          s_S3_64b_jedi             <= hs_S234_64b_jedi;
+          s_S3_64b_potential_result <= hs_S234_64b_potential_result;
         end
 
         FOUR_SP_MODE: begin
-          if (hs_S234_32a_potential_result[24] === 1'b1) begin
-            s_S4_32a_jedi.exp         <= hs_S234_32a_jedi.exp + 1'b1;
-            s_S4_32a_jedi.sign        <= hs_S234_32a_jedi.sign;
-            s_S4_32a_jedi.mantissa    <= hs_S234_32a_jedi.mantissa;
-            s_S4_32a_potential_result <= {1'b0, hs_S234_32a_potential_result[24:1]};
-          end
-          else begin
-            s_S4_32a_jedi             <= hs_S234_32a_jedi;
-            s_S4_32a_potential_result <= hs_S234_32a_potential_result;
-          end
-
-          if (hs_S234_32b_potential_result[24] === 1'b1) begin
-            s_S4_32b_jedi.exp         <= hs_S234_32b_jedi.exp + 1'b1;
-            s_S4_32b_jedi.sign        <= hs_S234_32b_jedi.sign;
-            s_S4_32b_jedi.mantissa    <= hs_S234_32b_jedi.mantissa;
-            s_S4_32b_potential_result <= {1'b0, hs_S234_32b_potential_result[24:1]};
-          end
-          else begin
-            s_S4_32b_jedi             <= hs_S234_32b_jedi;
-            s_S4_32b_potential_result <= hs_S234_32b_potential_result;
-          end
-
-          if (hs_S234_32c_potential_result[24] === 1'b1) begin
-            s_S4_32c_jedi.exp         <= hs_S234_32c_jedi.exp + 1'b1;
-            s_S4_32c_jedi.sign        <= hs_S234_32c_jedi.sign;
-            s_S4_32c_jedi.mantissa    <= hs_S234_32c_jedi.mantissa;
-            s_S4_32c_potential_result <= {1'b0, hs_S234_32c_potential_result[24:1]};
-          end
-          else begin
-            s_S4_32c_jedi             <= hs_S234_32c_jedi;
-            s_S4_32c_potential_result <= hs_S234_32c_potential_result;
-          end
-
-          if (hs_S234_32d_potential_result[24] === 1'b1) begin
-            s_S4_32d_jedi.exp         <= hs_S234_32d_jedi.exp + 1'b1;
-            s_S4_32d_jedi.sign        <= hs_S234_32d_jedi.sign;
-            s_S4_32d_jedi.mantissa    <= hs_S234_32d_jedi.mantissa;
-            s_S4_32d_potential_result <= {1'b0, hs_S234_32d_potential_result[24:1]};
-          end
-          else begin
-            s_S4_32d_jedi             <= hs_S234_32d_jedi;
-            s_S4_32d_potential_result <= hs_S234_32d_potential_result;
-          end
+          s_S3_32a_jedi             <= hs_S234_32a_jedi;
+          s_S3_32a_potential_result <= hs_S234_32a_potential_result;
+          s_S3_32b_jedi             <= hs_S234_32b_jedi;
+          s_S3_32b_potential_result <= hs_S234_32b_potential_result;
+          s_S3_32c_jedi             <= hs_S234_32c_jedi;
+          s_S3_32c_potential_result <= hs_S234_32c_potential_result;
+          s_S3_32d_jedi             <= hs_S234_32d_jedi;
+          s_S3_32d_potential_result <= hs_S234_32d_potential_result;
         end
 
         default: begin
@@ -955,15 +913,146 @@ always_ff @( posedge i_clk ) begin : stage234_round_and_renormalize
         end
       endcase
 
-      s_S4_valid128_jedi   <= s_S2_valid128_jedi;
-      s_S4_valid64a_jedi   <= s_S2_valid64a_jedi;
-      s_S4_valid64b_jedi   <= s_S2_valid64b_jedi;
-      s_S4_valid32a_jedi   <= s_S2_valid32a_jedi;
-      s_S4_valid32b_jedi   <= s_S2_valid32b_jedi;
-      s_S4_valid32c_jedi   <= s_S2_valid32c_jedi;
-      s_S4_valid32d_jedi   <= s_S2_valid32d_jedi;
-      s_S4_metadata_anikin <= s_S2_metadata_anikin;
-      s_S4_metadata_force  <= s_S2_metadata_force;
+      s_S3_valid128_jedi   <= s_S2_valid128_jedi;
+      s_S3_valid64a_jedi   <= s_S2_valid64a_jedi;
+      s_S3_valid64b_jedi   <= s_S2_valid64b_jedi;
+      s_S3_valid32a_jedi   <= s_S2_valid32a_jedi;
+      s_S3_valid32b_jedi   <= s_S2_valid32b_jedi;
+      s_S3_valid32c_jedi   <= s_S2_valid32c_jedi;
+      s_S3_valid32d_jedi   <= s_S2_valid32d_jedi;
+      s_S3_metadata_anikin <= s_S2_metadata_anikin;
+      s_S3_metadata_force  <= s_S2_metadata_force;
+    end
+  end
+end
+
+// Stage 4: renormalize rounded result (if the rounding stage overflowed).
+always_ff @( posedge i_clk ) begin : stage4_renormalize
+  if (!i_rst_n) begin
+    s_S4_128_jedi             <= '0;
+    s_S4_64a_jedi             <= '0;
+    s_S4_64b_jedi             <= '0;
+    s_S4_32a_jedi             <= '0;
+    s_S4_32b_jedi             <= '0;
+    s_S4_32c_jedi             <= '0;
+    s_S4_32d_jedi             <= '0;
+    s_S4_128_potential_result <= '0;
+    s_S4_64a_potential_result <= '0;
+    s_S4_64b_potential_result <= '0;
+    s_S4_32a_potential_result <= '0;
+    s_S4_32b_potential_result <= '0;
+    s_S4_32c_potential_result <= '0;
+    s_S4_32d_potential_result <= '0;
+    s_S4_valid128_jedi        <= '0;
+    s_S4_valid64a_jedi        <= '0;
+    s_S4_valid64b_jedi        <= '0;
+    s_S4_valid32a_jedi        <= '0;
+    s_S4_valid32b_jedi        <= '0;
+    s_S4_valid32c_jedi        <= '0;
+    s_S4_valid32d_jedi        <= '0;
+    s_S4_metadata_anikin      <= '0;
+    s_S4_metadata_force       <= '0;
+  end
+  else begin
+    if (s_S3_en) begin
+      case (s_S3_metadata_anikin.sp_mode)
+        SINGLE_MODE: begin
+          if (s_S3_128_potential_result[113] === 1'b1) begin
+            s_S4_128_jedi.exp         <= s_S3_128_jedi.exp + 1'b1;
+            s_S4_128_jedi.sign        <= s_S3_128_jedi.sign;
+            s_S4_128_jedi.mantissa    <= s_S3_128_jedi.mantissa;
+            s_S4_128_potential_result <= {1'b0, s_S3_128_potential_result[113:1]};
+          end
+          else begin
+            s_S4_128_jedi             <= s_S3_128_jedi;
+            s_S4_128_potential_result <= s_S3_128_potential_result;
+          end
+        end
+
+        TWO_SP_MODE: begin
+          if (s_S3_64a_potential_result[53] === 1'b1) begin
+            s_S4_64a_jedi.exp         <= s_S3_64a_jedi.exp + 1'b1;
+            s_S4_64a_jedi.sign        <= s_S3_64a_jedi.sign;
+            s_S4_64a_jedi.mantissa    <= s_S3_64a_jedi.mantissa;
+            s_S4_64a_potential_result <= {1'b0, s_S3_64a_potential_result[53:1]};
+          end
+          else begin
+            s_S4_64a_jedi             <= s_S3_64a_jedi;
+            s_S4_64a_potential_result <= s_S3_64a_potential_result;
+          end
+
+          if (s_S3_64b_potential_result[53] === 1'b1) begin
+            s_S4_64b_jedi.exp         <= s_S3_64b_jedi.exp + 1'b1;
+            s_S4_64b_jedi.sign        <= s_S3_64b_jedi.sign;
+            s_S4_64b_jedi.mantissa    <= s_S3_64b_jedi.mantissa;
+            s_S4_64b_potential_result <= {1'b0, s_S3_64b_potential_result[53:1]};
+          end
+          else begin
+            s_S4_64b_jedi             <= s_S3_64b_jedi;
+            s_S4_64b_potential_result <= s_S3_64b_potential_result;
+          end
+        end
+
+        FOUR_SP_MODE: begin
+          if (s_S3_32a_potential_result[24] === 1'b1) begin
+            s_S4_32a_jedi.exp         <= s_S3_32a_jedi.exp + 1'b1;
+            s_S4_32a_jedi.sign        <= s_S3_32a_jedi.sign;
+            s_S4_32a_jedi.mantissa    <= s_S3_32a_jedi.mantissa;
+            s_S4_32a_potential_result <= {1'b0, s_S3_32a_potential_result[24:1]};
+          end
+          else begin
+            s_S4_32a_jedi             <= s_S3_32a_jedi;
+            s_S4_32a_potential_result <= s_S3_32a_potential_result;
+          end
+
+          if (s_S3_32b_potential_result[24] === 1'b1) begin
+            s_S4_32b_jedi.exp         <= s_S3_32b_jedi.exp + 1'b1;
+            s_S4_32b_jedi.sign        <= s_S3_32b_jedi.sign;
+            s_S4_32b_jedi.mantissa    <= s_S3_32b_jedi.mantissa;
+            s_S4_32b_potential_result <= {1'b0, s_S3_32b_potential_result[24:1]};
+          end
+          else begin
+            s_S4_32b_jedi             <= s_S3_32b_jedi;
+            s_S4_32b_potential_result <= s_S3_32b_potential_result;
+          end
+
+          if (s_S3_32c_potential_result[24] === 1'b1) begin
+            s_S4_32c_jedi.exp         <= s_S3_32c_jedi.exp + 1'b1;
+            s_S4_32c_jedi.sign        <= s_S3_32c_jedi.sign;
+            s_S4_32c_jedi.mantissa    <= s_S3_32c_jedi.mantissa;
+            s_S4_32c_potential_result <= {1'b0, s_S3_32c_potential_result[24:1]};
+          end
+          else begin
+            s_S4_32c_jedi             <= s_S3_32c_jedi;
+            s_S4_32c_potential_result <= s_S3_32c_potential_result;
+          end
+
+          if (s_S3_32d_potential_result[24] === 1'b1) begin
+            s_S4_32d_jedi.exp         <= s_S3_32d_jedi.exp + 1'b1;
+            s_S4_32d_jedi.sign        <= s_S3_32d_jedi.sign;
+            s_S4_32d_jedi.mantissa    <= s_S3_32d_jedi.mantissa;
+            s_S4_32d_potential_result <= {1'b0, s_S3_32d_potential_result[24:1]};
+          end
+          else begin
+            s_S4_32d_jedi             <= s_S3_32d_jedi;
+            s_S4_32d_potential_result <= s_S3_32d_potential_result;
+          end
+        end
+
+        default: begin
+          // Keep previous contents on invalid mode.
+        end
+      endcase
+
+      s_S4_valid128_jedi   <= s_S3_valid128_jedi;
+      s_S4_valid64a_jedi   <= s_S3_valid64a_jedi;
+      s_S4_valid64b_jedi   <= s_S3_valid64b_jedi;
+      s_S4_valid32a_jedi   <= s_S3_valid32a_jedi;
+      s_S4_valid32b_jedi   <= s_S3_valid32b_jedi;
+      s_S4_valid32c_jedi   <= s_S3_valid32c_jedi;
+      s_S4_valid32d_jedi   <= s_S3_valid32d_jedi;
+      s_S4_metadata_anikin <= s_S3_metadata_anikin;
+      s_S4_metadata_force  <= s_S3_metadata_force;
     end
   end
 end
