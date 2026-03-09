@@ -22,7 +22,7 @@ module fixed_partition_sp_pipeline_unit_test;
   localparam int LANE_BITS_64  = ADDR_BITS_64;
   localparam int LANE_BITS_32  = ADDR_BITS_32;
   localparam int LUT_DEPTH     = (1 << ADDR_BITS_128);
-  localparam int CONVERT_LATENCY      = 4;
+  localparam int CONVERT_LATENCY      = 6;
   localparam int SINGLE_MODE_LATENCY  = 2;
   localparam int TWO_SP_MODE_LATENCY  = 1 + CONVERT_LATENCY; // USE_128_FOR_64=1
   localparam int FOUR_SP_MODE_LATENCY = 2 + CONVERT_LATENCY; // USE_128_FOR_32=1
