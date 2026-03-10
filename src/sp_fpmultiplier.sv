@@ -774,6 +774,7 @@ function automatic logic [24:0] fn_stage234_round_32(input logic [47:0] i_full);
   end
 endfunction
 
+// Stage 3: rounding and carry-based exponent adjustment.
 logic [113:0] s_S3_128_potential_result;
 logic [53:0]  s_S3_64a_potential_result;
 logic [53:0]  s_S3_64b_potential_result;
@@ -788,34 +789,17 @@ logic         s_S3_valid128_jedi;
 logic         s_S3_valid64a_jedi, s_S3_valid64b_jedi;
 logic         s_S3_valid32a_jedi, s_S3_valid32b_jedi, s_S3_valid32c_jedi, s_S3_valid32d_jedi;
 float_metadata_t s_S3_metadata_anikin, s_S3_metadata_force;
-
-logic [113:0] s_S4_128_potential_result;
-logic [53:0]  s_S4_64a_potential_result;
-logic [53:0]  s_S4_64b_potential_result;
-logic [24:0]  s_S4_32a_potential_result;
-logic [24:0]  s_S4_32b_potential_result;
-logic [24:0]  s_S4_32c_potential_result;
-logic [24:0]  s_S4_32d_potential_result;
-binary128_t   s_S4_128_jedi;
-binary64_t    s_S4_64a_jedi, s_S4_64b_jedi;
-binary32_t    s_S4_32a_jedi, s_S4_32b_jedi, s_S4_32c_jedi, s_S4_32d_jedi;
-logic         s_S4_valid128_jedi;
-logic         s_S4_valid64a_jedi, s_S4_valid64b_jedi;
-logic         s_S4_valid32a_jedi, s_S4_valid32b_jedi, s_S4_valid32c_jedi, s_S4_valid32d_jedi;
-float_metadata_t s_S4_metadata_anikin, s_S4_metadata_force;
-
-// Stage 3: rounding and carry-based exponent adjustment.
 always_ff @( posedge i_clk ) begin : stage3_round
-  logic [113:0] hs_S234_128_potential_result;
-  logic [53:0]  hs_S234_64a_potential_result;
-  logic [53:0]  hs_S234_64b_potential_result;
-  logic [24:0]  hs_S234_32a_potential_result;
-  logic [24:0]  hs_S234_32b_potential_result;
-  logic [24:0]  hs_S234_32c_potential_result;
-  logic [24:0]  hs_S234_32d_potential_result;
-  binary128_t   hs_S234_128_jedi;
-  binary64_t    hs_S234_64a_jedi, hs_S234_64b_jedi;
-  binary32_t    hs_S234_32a_jedi, hs_S234_32b_jedi, hs_S234_32c_jedi, hs_S234_32d_jedi;
+  logic [113:0] hs_S3_128_potential_result;
+  logic [53:0]  hs_S3_64a_potential_result;
+  logic [53:0]  hs_S3_64b_potential_result;
+  logic [24:0]  hs_S3_32a_potential_result;
+  logic [24:0]  hs_S3_32b_potential_result;
+  logic [24:0]  hs_S3_32c_potential_result;
+  logic [24:0]  hs_S3_32d_potential_result;
+  binary128_t   hs_S3_128_jedi;
+  binary64_t    hs_S3_64a_jedi, hs_S3_64b_jedi;
+  binary32_t    hs_S3_32a_jedi, hs_S3_32b_jedi, hs_S3_32c_jedi, hs_S3_32d_jedi;
 
   if (!i_rst_n) begin
     s_S3_128_jedi             <= '0;
@@ -851,28 +835,28 @@ always_ff @( posedge i_clk ) begin : stage3_round
   end
   else begin
     if (s_S2_en) begin
-      hs_S234_128_potential_result = fn_stage234_round_128(s_S2_128_mult_out_full);
-      hs_S234_64a_potential_result = fn_stage234_round_64(s_S2_64a_mult_out_full);
-      hs_S234_64b_potential_result = fn_stage234_round_64(s_S2_64b_mult_out_full);
-      hs_S234_32a_potential_result = fn_stage234_round_32(s_S2_32a_mult_out_full);
-      hs_S234_32b_potential_result = fn_stage234_round_32(s_S2_32b_mult_out_full);
-      hs_S234_32c_potential_result = fn_stage234_round_32(s_S2_32c_mult_out_full);
-      hs_S234_32d_potential_result = fn_stage234_round_32(s_S2_32d_mult_out_full);
+      hs_S3_128_potential_result = fn_stage234_round_128(s_S2_128_mult_out_full);
+      hs_S3_64a_potential_result = fn_stage234_round_64(s_S2_64a_mult_out_full);
+      hs_S3_64b_potential_result = fn_stage234_round_64(s_S2_64b_mult_out_full);
+      hs_S3_32a_potential_result = fn_stage234_round_32(s_S2_32a_mult_out_full);
+      hs_S3_32b_potential_result = fn_stage234_round_32(s_S2_32b_mult_out_full);
+      hs_S3_32c_potential_result = fn_stage234_round_32(s_S2_32c_mult_out_full);
+      hs_S3_32d_potential_result = fn_stage234_round_32(s_S2_32d_mult_out_full);
 
-      hs_S234_128_jedi = s_S2_128_jedi;
-      hs_S234_64a_jedi = s_S2_64a_jedi;
-      hs_S234_64b_jedi = s_S2_64b_jedi;
-      hs_S234_32a_jedi = s_S2_32a_jedi;
-      hs_S234_32b_jedi = s_S2_32b_jedi;
-      hs_S234_32c_jedi = s_S2_32c_jedi;
-      hs_S234_32d_jedi = s_S2_32d_jedi;
-      hs_S234_128_jedi.exp = `CARRY_IS_A_ONE(s_S2_128_mult_out_full[225]) ? (s_S2_128_jedi.exp + 1'b1) : s_S2_128_jedi.exp;
-      hs_S234_64a_jedi.exp = `CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105]) ? (s_S2_64a_jedi.exp + 1'b1) : s_S2_64a_jedi.exp;
-      hs_S234_64b_jedi.exp = `CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105]) ? (s_S2_64b_jedi.exp + 1'b1) : s_S2_64b_jedi.exp;
-      hs_S234_32a_jedi.exp = `CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47])  ? (s_S2_32a_jedi.exp + 1'b1) : s_S2_32a_jedi.exp;
-      hs_S234_32b_jedi.exp = `CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47])  ? (s_S2_32b_jedi.exp + 1'b1) : s_S2_32b_jedi.exp;
-      hs_S234_32c_jedi.exp = `CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47])  ? (s_S2_32c_jedi.exp + 1'b1) : s_S2_32c_jedi.exp;
-      hs_S234_32d_jedi.exp = `CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47])  ? (s_S2_32d_jedi.exp + 1'b1) : s_S2_32d_jedi.exp;
+      hs_S3_128_jedi = s_S2_128_jedi;
+      hs_S3_64a_jedi = s_S2_64a_jedi;
+      hs_S3_64b_jedi = s_S2_64b_jedi;
+      hs_S3_32a_jedi = s_S2_32a_jedi;
+      hs_S3_32b_jedi = s_S2_32b_jedi;
+      hs_S3_32c_jedi = s_S2_32c_jedi;
+      hs_S3_32d_jedi = s_S2_32d_jedi;
+      hs_S3_128_jedi.exp = `CARRY_IS_A_ONE(s_S2_128_mult_out_full[225]) ? (s_S2_128_jedi.exp + 1'b1) : s_S2_128_jedi.exp;
+      hs_S3_64a_jedi.exp = `CARRY_IS_A_ONE(s_S2_64a_mult_out_full[105]) ? (s_S2_64a_jedi.exp + 1'b1) : s_S2_64a_jedi.exp;
+      hs_S3_64b_jedi.exp = `CARRY_IS_A_ONE(s_S2_64b_mult_out_full[105]) ? (s_S2_64b_jedi.exp + 1'b1) : s_S2_64b_jedi.exp;
+      hs_S3_32a_jedi.exp = `CARRY_IS_A_ONE(s_S2_32a_mult_out_full[47])  ? (s_S2_32a_jedi.exp + 1'b1) : s_S2_32a_jedi.exp;
+      hs_S3_32b_jedi.exp = `CARRY_IS_A_ONE(s_S2_32b_mult_out_full[47])  ? (s_S2_32b_jedi.exp + 1'b1) : s_S2_32b_jedi.exp;
+      hs_S3_32c_jedi.exp = `CARRY_IS_A_ONE(s_S2_32c_mult_out_full[47])  ? (s_S2_32c_jedi.exp + 1'b1) : s_S2_32c_jedi.exp;
+      hs_S3_32d_jedi.exp = `CARRY_IS_A_ONE(s_S2_32d_mult_out_full[47])  ? (s_S2_32d_jedi.exp + 1'b1) : s_S2_32d_jedi.exp;
 
       assert (s_S2_metadata_anikin.sp_mode === s_S2_metadata_force.sp_mode) else begin
         s_o_error[7] <= 1'b1;
@@ -882,26 +866,26 @@ always_ff @( posedge i_clk ) begin : stage3_round
 
       case (s_S2_metadata_anikin.sp_mode)
         SINGLE_MODE: begin
-          s_S3_128_jedi             <= hs_S234_128_jedi;
-          s_S3_128_potential_result <= hs_S234_128_potential_result;
+          s_S3_128_jedi             <= hs_S3_128_jedi;
+          s_S3_128_potential_result <= hs_S3_128_potential_result;
         end
 
         TWO_SP_MODE: begin
-          s_S3_64a_jedi             <= hs_S234_64a_jedi;
-          s_S3_64a_potential_result <= hs_S234_64a_potential_result;
-          s_S3_64b_jedi             <= hs_S234_64b_jedi;
-          s_S3_64b_potential_result <= hs_S234_64b_potential_result;
+          s_S3_64a_jedi             <= hs_S3_64a_jedi;
+          s_S3_64a_potential_result <= hs_S3_64a_potential_result;
+          s_S3_64b_jedi             <= hs_S3_64b_jedi;
+          s_S3_64b_potential_result <= hs_S3_64b_potential_result;
         end
 
         FOUR_SP_MODE: begin
-          s_S3_32a_jedi             <= hs_S234_32a_jedi;
-          s_S3_32a_potential_result <= hs_S234_32a_potential_result;
-          s_S3_32b_jedi             <= hs_S234_32b_jedi;
-          s_S3_32b_potential_result <= hs_S234_32b_potential_result;
-          s_S3_32c_jedi             <= hs_S234_32c_jedi;
-          s_S3_32c_potential_result <= hs_S234_32c_potential_result;
-          s_S3_32d_jedi             <= hs_S234_32d_jedi;
-          s_S3_32d_potential_result <= hs_S234_32d_potential_result;
+          s_S3_32a_jedi             <= hs_S3_32a_jedi;
+          s_S3_32a_potential_result <= hs_S3_32a_potential_result;
+          s_S3_32b_jedi             <= hs_S3_32b_jedi;
+          s_S3_32b_potential_result <= hs_S3_32b_potential_result;
+          s_S3_32c_jedi             <= hs_S3_32c_jedi;
+          s_S3_32c_potential_result <= hs_S3_32c_potential_result;
+          s_S3_32d_jedi             <= hs_S3_32d_jedi;
+          s_S3_32d_potential_result <= hs_S3_32d_potential_result;
         end
 
         default: begin
@@ -926,7 +910,21 @@ always_ff @( posedge i_clk ) begin : stage3_round
   end
 end
 
-// Stage 4: renormalize rounded result (if the rounding stage overflowed).
+logic [113:0] s_S4_128_potential_result;
+logic [53:0]  s_S4_64a_potential_result;
+logic [53:0]  s_S4_64b_potential_result;
+logic [24:0]  s_S4_32a_potential_result;
+logic [24:0]  s_S4_32b_potential_result;
+logic [24:0]  s_S4_32c_potential_result;
+logic [24:0]  s_S4_32d_potential_result;
+binary128_t   s_S4_128_jedi;
+binary64_t    s_S4_64a_jedi, s_S4_64b_jedi;
+binary32_t    s_S4_32a_jedi, s_S4_32b_jedi, s_S4_32c_jedi, s_S4_32d_jedi;
+logic         s_S4_valid128_jedi;
+logic         s_S4_valid64a_jedi, s_S4_valid64b_jedi;
+logic         s_S4_valid32a_jedi, s_S4_valid32b_jedi, s_S4_valid32c_jedi, s_S4_valid32d_jedi;
+float_metadata_t s_S4_metadata_anikin, s_S4_metadata_force;
+// Stage 4: renormalize rounded result (if the rounding stage overflowed)
 always_ff @( posedge i_clk ) begin : stage4_renormalize
   if (!i_rst_n) begin
     s_S4_128_jedi             <= '0;
