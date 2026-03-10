@@ -6,7 +6,7 @@
 
   s_i_valid = '1;
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(LATENCY_3264);
 
   $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
   $display(">>>>> expected  = 0x%x", expected);
@@ -23,7 +23,7 @@
 
   s_i_valid = '1;
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(LATENCY_3264);
 
   `PRINT_INTERMEDIATE_RESULTS
   `PRINT_INTERMEDIATE_VALID_BITS

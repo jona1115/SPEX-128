@@ -900,6 +900,32 @@ sp_fpmultiplier #() my_sp_fpmultiplier_2 (
 
 logic [127:0] s_mux_4;
 logic         s_mux_4_valid;
+logic [127:0] s_mux_4_foursp_raw;
+logic         s_mux_4_foursp_valid_raw;
+logic [127:0] s_mux_4_foursp_aligned;
+logic         s_mux_4_foursp_valid_aligned;
+
+assign s_mux_4_foursp_raw = {s_my_fixed_partition_sp_par_c_exp_32a,
+                             s_my_fixed_partition_sp_par_c_exp_32b,
+                             s_my_fixed_partition_sp_par_c_exp_32c,
+                             s_my_fixed_partition_sp_par_c_exp_32d};
+assign s_mux_4_foursp_valid_raw = s_my_fixed_partition_sp_par_c_o_valid32a &
+                                  s_my_fixed_partition_sp_par_c_o_valid32b &
+                                  s_my_fixed_partition_sp_par_c_o_valid32c &
+                                  s_my_fixed_partition_sp_par_c_o_valid32d;
+
+// Align FOUR_SP force path with sp_fpmultiplier_0 after its extra internal stage.
+always_ff @(posedge i_clk) begin : mux_4_foursp_align
+  if (!i_rst_n) begin
+    s_mux_4_foursp_aligned <= '0;
+    s_mux_4_foursp_valid_aligned <= 1'b0;
+  end
+  else begin
+    s_mux_4_foursp_aligned <= s_mux_4_foursp_raw;
+    s_mux_4_foursp_valid_aligned <= s_mux_4_foursp_valid_raw;
+  end
+end
+
 always_comb begin : mux_4
   case (`S)
     SINGLE_MODE: begin
@@ -914,14 +940,8 @@ always_comb begin : mux_4
     end // TWO_SP_MODE
 
     FOUR_SP_MODE: begin
-      s_mux_4       = {s_my_fixed_partition_sp_par_c_exp_32a,
-                       s_my_fixed_partition_sp_par_c_exp_32b,
-                       s_my_fixed_partition_sp_par_c_exp_32c,
-                       s_my_fixed_partition_sp_par_c_exp_32d};
-      s_mux_4_valid = s_my_fixed_partition_sp_par_c_o_valid32a &
-                      s_my_fixed_partition_sp_par_c_o_valid32b &
-                      s_my_fixed_partition_sp_par_c_o_valid32c &
-                      s_my_fixed_partition_sp_par_c_o_valid32d;
+      s_mux_4       = s_mux_4_foursp_aligned;
+      s_mux_4_valid = s_mux_4_foursp_valid_aligned;
 
     end
 

@@ -7,7 +7,7 @@
 `SVTEST(noop_when_valid_low)
   logic [127:0] snapshot;
   // snapshot = s_o_exp_x;
-  wait_n_ticks(`LATENCY + 2);
+  wait_n_ticks(LATENCY + 2);
   `FAIL_UNLESS_EQUAL(s_o_exp_x, Q_ONE)
 `SVTEST_END
 
@@ -17,7 +17,7 @@
 // ---------------------------------------------------------
 `SVTEST(no_error_and_identifier)
   // (no declarations needed)
-  wait_n_ticks(`LATENCY + 1);
+  wait_n_ticks(LATENCY + 1);
   `FAIL_UNLESS(s_o_error == '0)
   `FAIL_UNLESS_EQUAL(4'b0000, s_o_sanity_identifier)
 
@@ -256,7 +256,7 @@
   send_txn(xin1, CTRL_TWO_SP);
   send_txn(xin2, CTRL_TWO_SP);
 
-  wait_n_ticks(`LATENCY);
+  wait_n_ticks(LATENCY);
   `FAIL_UNLESS(s_o_error == '0)
   outA = s_o_exp_x[127:64]; outB = s_o_exp_x[63:0];
   `FAIL_UNLESS(lsb_error_64_lane(gd0A, outA, `LSB_WINDOW) <= `ERR_TOL_LSB_64)
