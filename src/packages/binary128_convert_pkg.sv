@@ -16,6 +16,7 @@
  *     ------- + ---------- + ------------ + --------------------------
  *       1.00  |  Jonathan  |  01/11/2026  |  Birth of this file
  *       1.01  |  Jonathan  |  03/07/2026  |  Made it 4 stage pipeline (was 3)
+ *       1.02  |  Jonathan  |  03/09/2026  |  Made it 6 stage pipeline (split s0/s1)
  * 
  *******************************************************************/
 
@@ -25,14 +26,26 @@ package binary128_convert_pkg;
   import binary64_pkg::*;
   import binary32_pkg::*;
 
-  const int CONVERSION_LATENCY = 4; // Must be the same as fixed_partition_sp.CONVERSION_LATENCY
+  const int CONVERSION_LATENCY = 6; // Must be the same as fixed_partition_sp.CONVERSION_LATENCY
 
   localparam logic signed [17:0] BIAS_128 = 18'sd16383;
   localparam logic signed [17:0] BIAS_64  = 18'sd1023;
   localparam logic signed [17:0] BIAS_32  = 18'sd127;
 
+  // Stage-0a payload for binary128 -> binary64 conversion.
+  // This stage unpacks and classifies.
+  typedef struct packed {
+    logic               sign;
+    logic               is_nan;
+    logic               is_inf;
+    logic               is_zero;
+    logic [51:0]        nan_payload;
+    logic [14:0]        exp;
+    logic [111:0]       mantissa;
+  } binary128_to_binary64_rne_s0a_t;
+
   // Stage-0 payload for binary128 -> binary64 conversion.
-  // This stage unpacks and classifies, but does not normalize/shift yet.
+  // This stage computes exp_unbiased/full_sig from stage-0a payload.
   typedef struct packed {
     logic               sign;
     logic               is_nan;
@@ -43,8 +56,24 @@ package binary128_convert_pkg;
     logic signed [17:0] exp_unbiased;
   } binary128_to_binary64_rne_s0_t;
 
+  // Stage-1a payload for binary128 -> binary64 conversion.
+  // This stage does LZC + exponent normalization + overflow classification.
+  typedef struct packed {
+    logic               sign;
+    logic               is_nan;
+    logic               is_inf;
+    logic               is_zero;
+    logic               is_overflow;
+    logic [51:0]        nan_payload;
+
+    logic [112:0]       full_sig;
+    logic signed [17:0] exp_unbiased;
+    logic [6:0]         lz;
+    logic signed [17:0] exp_norm;
+  } binary128_to_binary64_rne_s1a_t;
+
   // Stage-1 payload for binary128 -> binary64 conversion.
-  // This stage does LZC + exponent normalization + subnormal bookkeeping.
+  // This stage does subnormal bookkeeping.
   typedef struct packed {
     logic               sign;
     logic               is_nan;
@@ -77,8 +106,20 @@ package binary128_convert_pkg;
     logic               round_inc;
   } binary128_to_binary64_rne_s2_t;
 
+  // Stage-0a payload for binary128 -> binary32 conversion.
+  // This stage unpacks and classifies.
+  typedef struct packed {
+    logic               sign;
+    logic               is_nan;
+    logic               is_inf;
+    logic               is_zero;
+    logic [22:0]        nan_payload;
+    logic [14:0]        exp;
+    logic [111:0]       mantissa;
+  } binary128_to_binary32_rne_s0a_t;
+
   // Stage-0 payload for binary128 -> binary32 conversion.
-  // This stage unpacks and classifies, but does not normalize/shift yet.
+  // This stage computes exp_unbiased/full_sig from stage-0a payload.
   typedef struct packed {
     logic               sign;
     logic               is_nan;
@@ -89,8 +130,24 @@ package binary128_convert_pkg;
     logic signed [17:0] exp_unbiased;
   } binary128_to_binary32_rne_s0_t;
 
+  // Stage-1a payload for binary128 -> binary32 conversion.
+  // This stage does LZC + exponent normalization + overflow classification.
+  typedef struct packed {
+    logic               sign;
+    logic               is_nan;
+    logic               is_inf;
+    logic               is_zero;
+    logic               is_overflow;
+    logic [22:0]        nan_payload;
+
+    logic [112:0]       full_sig;
+    logic signed [17:0] exp_unbiased;
+    logic [6:0]         lz;
+    logic signed [17:0] exp_norm;
+  } binary128_to_binary32_rne_s1a_t;
+
   // Stage-1 payload for binary128 -> binary32 conversion.
-  // This stage does LZC + exponent normalization + subnormal bookkeeping.
+  // This stage does subnormal bookkeeping.
   typedef struct packed {
     logic               sign;
     logic               is_nan;
@@ -208,16 +265,18 @@ package binary128_convert_pkg;
     return lz_total;
   endfunction
 
-  function automatic binary128_to_binary64_rne_s0_t binary128_to_binary64_rne_s0(
+  function automatic binary128_to_binary64_rne_s0a_t binary128_to_binary64_rne_s0a(
     input logic [127:0] in_bits
   );
-    binary128_to_binary64_rne_s0_t out;
+    binary128_to_binary64_rne_s0a_t out;
     binary128_t in;
 
     out = '0;
     in  = binary128_t'(in_bits);
 
     out.sign = in.sign;
+    out.exp = in.exp;
+    out.mantissa = in.mantissa;
 
     // NaN/Inf
     if (in.exp == 15'h7fff) begin
@@ -237,36 +296,59 @@ package binary128_convert_pkg;
       return out;
     end
 
+    return out;
+  endfunction
+
+  function automatic binary128_to_binary64_rne_s0_t binary128_to_binary64_rne_s0b(
+    input binary128_to_binary64_rne_s0a_t in
+  );
+    binary128_to_binary64_rne_s0_t out;
+
+    out = '0;
+
+    out.sign = in.sign;
+    out.is_nan = in.is_nan;
+    out.is_inf = in.is_inf;
+    out.is_zero = in.is_zero;
+    out.nan_payload = in.nan_payload;
+
+    if (in.is_nan || in.is_inf || in.is_zero) begin
+      return out;
+    end
+
     out.exp_unbiased = (in.exp == 15'd0) ? (18'sd1 - BIAS_128)
                                           : ($signed({3'b0, in.exp}) - BIAS_128);
-
     out.full_sig = {(in.exp == 15'd0) ? 1'b0 : 1'b1, in.mantissa};
 
     return out;
   endfunction
 
-  function automatic binary128_to_binary64_rne_s1_t binary128_to_binary64_rne_s1(
+  // Compatibility wrapper for legacy 4-stage call sites.
+  function automatic binary128_to_binary64_rne_s0_t binary128_to_binary64_rne_s0(
+    input logic [127:0] in_bits
+  );
+    return binary128_to_binary64_rne_s0b(binary128_to_binary64_rne_s0a(in_bits));
+  endfunction
+
+  function automatic binary128_to_binary64_rne_s1a_t binary128_to_binary64_rne_s1a(
     input binary128_to_binary64_rne_s0_t in
   );
-    localparam int signed E_MIN_64 = -1022;
     localparam logic signed [17:0] E_MAX_64_S = 18'sd1023;
-    localparam logic signed [17:0] E_MIN_64_S = -18'sd1022;
 
-    binary128_to_binary64_rne_s1_t out;
+    binary128_to_binary64_rne_s1a_t out;
     int unsigned lz_u;
     logic signed [17:0] exp_norm_s;
-    int signed shift_sub_signed;
-    int signed sub_rshift_signed;
 
     out = '0;
 
     // passthrough flags
-    out.sign        = in.sign;
-    out.is_nan      = in.is_nan;
-    out.is_inf      = in.is_inf;
-    out.is_zero     = in.is_zero;
-    out.nan_payload = in.nan_payload;
-    out.full_sig    = in.full_sig;
+    out.sign         = in.sign;
+    out.is_nan       = in.is_nan;
+    out.is_inf       = in.is_inf;
+    out.is_zero      = in.is_zero;
+    out.nan_payload  = in.nan_payload;
+    out.full_sig     = in.full_sig;
+    out.exp_unbiased = in.exp_unbiased;
 
     // Specials/zero: bypass heavy math
     if (in.is_nan || in.is_inf || in.is_zero) begin
@@ -291,12 +373,41 @@ package binary128_convert_pkg;
       return out;
     end
 
+    return out;
+  endfunction
+
+  function automatic binary128_to_binary64_rne_s1_t binary128_to_binary64_rne_s1b(
+    input binary128_to_binary64_rne_s1a_t in
+  );
+    localparam int signed E_MIN_64 = -1022;
+    localparam logic signed [17:0] E_MIN_64_S = -18'sd1022;
+
+    binary128_to_binary64_rne_s1_t out;
+    int signed shift_sub_signed;
+    int signed sub_rshift_signed;
+
+    out = '0;
+
+    out.sign         = in.sign;
+    out.is_nan       = in.is_nan;
+    out.is_inf       = in.is_inf;
+    out.is_zero      = in.is_zero;
+    out.is_overflow  = in.is_overflow;
+    out.nan_payload  = in.nan_payload;
+    out.full_sig     = in.full_sig;
+    out.lz           = in.lz;
+    out.exp_norm     = in.exp_norm;
+
+    if (in.is_nan || in.is_inf || in.is_zero || in.is_overflow) begin
+      return out;
+    end
+
     // Subnormal classification (binary64)
-    out.is_subnormal = (exp_norm_s < E_MIN_64_S);
+    out.is_subnormal = (in.exp_norm < E_MIN_64_S);
 
     // shift_sub (kept for parity with old flow)
     if (out.is_subnormal) begin
-      shift_sub_signed = E_MIN_64 - int'(exp_norm_s);
+      shift_sub_signed = E_MIN_64 - int'(in.exp_norm);
       if (shift_sub_signed > 113) begin
         out.shift_sub = 7'd113;
       end
@@ -327,6 +438,13 @@ package binary128_convert_pkg;
     end
 
     return out;
+  endfunction
+
+  // Compatibility wrapper for legacy 4-stage call sites.
+  function automatic binary128_to_binary64_rne_s1_t binary128_to_binary64_rne_s1(
+    input binary128_to_binary64_rne_s0_t in
+  );
+    return binary128_to_binary64_rne_s1b(binary128_to_binary64_rne_s1a(in));
   endfunction
 
   function automatic binary128_to_binary64_rne_s2_t binary128_to_binary64_rne_s2(
@@ -434,16 +552,18 @@ package binary128_convert_pkg;
     return out;
   endfunction
 
-  function automatic binary128_to_binary32_rne_s0_t binary128_to_binary32_rne_s0(
+  function automatic binary128_to_binary32_rne_s0a_t binary128_to_binary32_rne_s0a(
     input logic [127:0] in_bits
   );
-    binary128_to_binary32_rne_s0_t out;
+    binary128_to_binary32_rne_s0a_t out;
     binary128_t in;
 
     out = '0;
     in  = binary128_t'(in_bits);
 
     out.sign = in.sign;
+    out.exp = in.exp;
+    out.mantissa = in.mantissa;
 
     // NaN/Inf
     if (in.exp == 15'h7fff) begin
@@ -463,36 +583,59 @@ package binary128_convert_pkg;
       return out;
     end
 
+    return out;
+  endfunction
+
+  function automatic binary128_to_binary32_rne_s0_t binary128_to_binary32_rne_s0b(
+    input binary128_to_binary32_rne_s0a_t in
+  );
+    binary128_to_binary32_rne_s0_t out;
+
+    out = '0;
+
+    out.sign = in.sign;
+    out.is_nan = in.is_nan;
+    out.is_inf = in.is_inf;
+    out.is_zero = in.is_zero;
+    out.nan_payload = in.nan_payload;
+
+    if (in.is_nan || in.is_inf || in.is_zero) begin
+      return out;
+    end
+
     out.exp_unbiased = (in.exp == 15'd0) ? (18'sd1 - BIAS_128)
                                           : ($signed({3'b0, in.exp}) - BIAS_128);
-
     out.full_sig = {(in.exp == 15'd0) ? 1'b0 : 1'b1, in.mantissa};
 
     return out;
   endfunction
 
-  function automatic binary128_to_binary32_rne_s1_t binary128_to_binary32_rne_s1(
+  // Compatibility wrapper for legacy 4-stage call sites.
+  function automatic binary128_to_binary32_rne_s0_t binary128_to_binary32_rne_s0(
+    input logic [127:0] in_bits
+  );
+    return binary128_to_binary32_rne_s0b(binary128_to_binary32_rne_s0a(in_bits));
+  endfunction
+
+  function automatic binary128_to_binary32_rne_s1a_t binary128_to_binary32_rne_s1a(
     input binary128_to_binary32_rne_s0_t in
   );
-    localparam int signed E_MIN_32 = -126;
     localparam logic signed [17:0] E_MAX_32_S = 18'sd127;
-    localparam logic signed [17:0] E_MIN_32_S = -18'sd126;
 
-    binary128_to_binary32_rne_s1_t out;
+    binary128_to_binary32_rne_s1a_t out;
     int unsigned lz_u;
     logic signed [17:0] exp_norm_s;
-    int signed shift_sub_signed;
-    int signed sub_rshift_signed;
 
     out = '0;
 
     // passthrough flags
-    out.sign        = in.sign;
-    out.is_nan      = in.is_nan;
-    out.is_inf      = in.is_inf;
-    out.is_zero     = in.is_zero;
-    out.nan_payload = in.nan_payload;
-    out.full_sig    = in.full_sig;
+    out.sign         = in.sign;
+    out.is_nan       = in.is_nan;
+    out.is_inf       = in.is_inf;
+    out.is_zero      = in.is_zero;
+    out.nan_payload  = in.nan_payload;
+    out.full_sig     = in.full_sig;
+    out.exp_unbiased = in.exp_unbiased;
 
     // Specials/zero: bypass heavy math
     if (in.is_nan || in.is_inf || in.is_zero) begin
@@ -517,12 +660,41 @@ package binary128_convert_pkg;
       return out;
     end
 
+    return out;
+  endfunction
+
+  function automatic binary128_to_binary32_rne_s1_t binary128_to_binary32_rne_s1b(
+    input binary128_to_binary32_rne_s1a_t in
+  );
+    localparam int signed E_MIN_32 = -126;
+    localparam logic signed [17:0] E_MIN_32_S = -18'sd126;
+
+    binary128_to_binary32_rne_s1_t out;
+    int signed shift_sub_signed;
+    int signed sub_rshift_signed;
+
+    out = '0;
+
+    out.sign         = in.sign;
+    out.is_nan       = in.is_nan;
+    out.is_inf       = in.is_inf;
+    out.is_zero      = in.is_zero;
+    out.is_overflow  = in.is_overflow;
+    out.nan_payload  = in.nan_payload;
+    out.full_sig     = in.full_sig;
+    out.lz           = in.lz;
+    out.exp_norm     = in.exp_norm;
+
+    if (in.is_nan || in.is_inf || in.is_zero || in.is_overflow) begin
+      return out;
+    end
+
     // Subnormal classification (binary32)
-    out.is_subnormal = (exp_norm_s < E_MIN_32_S);
+    out.is_subnormal = (in.exp_norm < E_MIN_32_S);
 
     // shift_sub (kept for parity with old flow)
     if (out.is_subnormal) begin
-      shift_sub_signed = E_MIN_32 - int'(exp_norm_s);
+      shift_sub_signed = E_MIN_32 - int'(in.exp_norm);
       if (shift_sub_signed > 113) begin
         out.shift_sub = 7'd113;
       end
@@ -553,6 +725,13 @@ package binary128_convert_pkg;
     end
 
     return out;
+  endfunction
+
+  // Compatibility wrapper for legacy 4-stage call sites.
+  function automatic binary128_to_binary32_rne_s1_t binary128_to_binary32_rne_s1(
+    input binary128_to_binary32_rne_s0_t in
+  );
+    return binary128_to_binary32_rne_s1b(binary128_to_binary32_rne_s1a(in));
   endfunction
 
   function automatic binary128_to_binary32_rne_s2_t binary128_to_binary32_rne_s2(
@@ -663,8 +842,12 @@ package binary128_convert_pkg;
   function automatic binary64_t binary128_to_binary64_rne(input logic [127:0] in_bits);
     return binary128_to_binary64_rne_s3(
              binary128_to_binary64_rne_s2(
-               binary128_to_binary64_rne_s1(
-                 binary128_to_binary64_rne_s0(in_bits)
+               binary128_to_binary64_rne_s1b(
+                 binary128_to_binary64_rne_s1a(
+                   binary128_to_binary64_rne_s0b(
+                     binary128_to_binary64_rne_s0a(in_bits)
+                   )
+                 )
                )
              )
            );
@@ -678,8 +861,12 @@ package binary128_convert_pkg;
   function automatic binary32_t binary128_to_binary32_rne(input logic [127:0] in_bits);
     return binary128_to_binary32_rne_s3(
              binary128_to_binary32_rne_s2(
-               binary128_to_binary32_rne_s1(
-                 binary128_to_binary32_rne_s0(in_bits)
+               binary128_to_binary32_rne_s1b(
+                 binary128_to_binary32_rne_s1a(
+                   binary128_to_binary32_rne_s0b(
+                     binary128_to_binary32_rne_s0a(in_bits)
+                   )
+                 )
                )
              )
            );
