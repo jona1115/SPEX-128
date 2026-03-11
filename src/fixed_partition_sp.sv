@@ -694,7 +694,7 @@ end // stage2c_signal_passthrough
 
 //=====================================================================================
 // binary128 -> binary64/binary32 conversion pipelines
-// (6 stages: s0a/s0b/s1a/s1b/s2/s3)
+// (6 stages: s0a unpack, s0b classify+prep, s1a lzc, s1b normalize+bookkeep, s2 shift+round, s3 pack)
 //=====================================================================================
 localparam int CONV64_LANES = 2;
 localparam int CONV32_LANES = 4;
