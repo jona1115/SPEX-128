@@ -36,26 +36,26 @@ module SPEX128_top_unit_test;
 
   logic [127:0]     ds_my_float_to_fixed_fixed;
   binary128_t       ds_my_fixed_partition_sp_par_a_exp_a128;
-  binary64_t        ds_my_fixed_partition_sp_par_a_exp_a64a;
-  binary64_t        ds_my_fixed_partition_sp_par_a_exp_a64b;
-  binary32_t        ds_my_fixed_partition_sp_par_a_exp_a32a;
-  binary32_t        ds_my_fixed_partition_sp_par_a_exp_a32b;
-  binary32_t        ds_my_fixed_partition_sp_par_a_exp_a32c;
-  binary32_t        ds_my_fixed_partition_sp_par_a_exp_a32d;
+  binary64_t        ds_my_fixed_partition_sp_par_a_exp_64a;
+  binary64_t        ds_my_fixed_partition_sp_par_a_exp_64b;
+  binary32_t        ds_my_fixed_partition_sp_par_a_exp_32a;
+  binary32_t        ds_my_fixed_partition_sp_par_a_exp_32b;
+  binary32_t        ds_my_fixed_partition_sp_par_a_exp_32c;
+  binary32_t        ds_my_fixed_partition_sp_par_a_exp_32d;
   binary128_t       ds_my_fixed_partition_sp_par_b_exp_a128;
-  binary64_t        ds_my_fixed_partition_sp_par_b_exp_a64a;
-  binary64_t        ds_my_fixed_partition_sp_par_b_exp_a64b;
-  binary32_t        ds_my_fixed_partition_sp_par_b_exp_a32a;
-  binary32_t        ds_my_fixed_partition_sp_par_b_exp_a32b;
-  binary32_t        ds_my_fixed_partition_sp_par_b_exp_a32c;
-  binary32_t        ds_my_fixed_partition_sp_par_b_exp_a32d;
+  binary64_t        ds_my_fixed_partition_sp_par_b_exp_64a;
+  binary64_t        ds_my_fixed_partition_sp_par_b_exp_64b;
+  binary32_t        ds_my_fixed_partition_sp_par_b_exp_32a;
+  binary32_t        ds_my_fixed_partition_sp_par_b_exp_32b;
+  binary32_t        ds_my_fixed_partition_sp_par_b_exp_32c;
+  binary32_t        ds_my_fixed_partition_sp_par_b_exp_32d;
   binary128_t       ds_my_fixed_partition_sp_par_c_exp_a128;
-  binary64_t        ds_my_fixed_partition_sp_par_c_exp_a64a;
-  binary64_t        ds_my_fixed_partition_sp_par_c_exp_a64b;
-  binary32_t        ds_my_fixed_partition_sp_par_c_exp_a32a;
-  binary32_t        ds_my_fixed_partition_sp_par_c_exp_a32b;
-  binary32_t        ds_my_fixed_partition_sp_par_c_exp_a32c;
-  binary32_t        ds_my_fixed_partition_sp_par_c_exp_a32d;
+  binary64_t        ds_my_fixed_partition_sp_par_c_exp_64a;
+  binary64_t        ds_my_fixed_partition_sp_par_c_exp_64b;
+  binary32_t        ds_my_fixed_partition_sp_par_c_exp_32a;
+  binary32_t        ds_my_fixed_partition_sp_par_c_exp_32b;
+  binary32_t        ds_my_fixed_partition_sp_par_c_exp_32c;
+  binary32_t        ds_my_fixed_partition_sp_par_c_exp_32d;
   binary128_t       ds_my_fixed_partition_sp_par_d_exp_a128;
   binary128_t       ds_my_fixed_partition_sp_par_e_exp_a128;
   binary128_t       ds_my_fixed128_partitionf_ts_exp_f128;
@@ -147,26 +147,26 @@ module SPEX128_top_unit_test;
 
     .ds_my_float_to_fixed_fixed(ds_my_float_to_fixed_fixed),
     .ds_my_fixed_partition_sp_par_a_exp_a128(ds_my_fixed_partition_sp_par_a_exp_a128),
-    .ds_my_fixed_partition_sp_par_a_exp_a64a(ds_my_fixed_partition_sp_par_a_exp_a64a),
-    .ds_my_fixed_partition_sp_par_a_exp_a64b(ds_my_fixed_partition_sp_par_a_exp_a64b),
-    .ds_my_fixed_partition_sp_par_a_exp_a32a(ds_my_fixed_partition_sp_par_a_exp_a32a),
-    .ds_my_fixed_partition_sp_par_a_exp_a32b(ds_my_fixed_partition_sp_par_a_exp_a32b),
-    .ds_my_fixed_partition_sp_par_a_exp_a32c(ds_my_fixed_partition_sp_par_a_exp_a32c),
-    .ds_my_fixed_partition_sp_par_a_exp_a32d(ds_my_fixed_partition_sp_par_a_exp_a32d),
+    .ds_my_fixed_partition_sp_par_a_exp_64a(ds_my_fixed_partition_sp_par_a_exp_64a),
+    .ds_my_fixed_partition_sp_par_a_exp_64b(ds_my_fixed_partition_sp_par_a_exp_64b),
+    .ds_my_fixed_partition_sp_par_a_exp_32a(ds_my_fixed_partition_sp_par_a_exp_32a),
+    .ds_my_fixed_partition_sp_par_a_exp_32b(ds_my_fixed_partition_sp_par_a_exp_32b),
+    .ds_my_fixed_partition_sp_par_a_exp_32c(ds_my_fixed_partition_sp_par_a_exp_32c),
+    .ds_my_fixed_partition_sp_par_a_exp_32d(ds_my_fixed_partition_sp_par_a_exp_32d),
     .ds_my_fixed_partition_sp_par_b_exp_a128(ds_my_fixed_partition_sp_par_b_exp_a128),
-    .ds_my_fixed_partition_sp_par_b_exp_a64a(ds_my_fixed_partition_sp_par_b_exp_a64a),
-    .ds_my_fixed_partition_sp_par_b_exp_a64b(ds_my_fixed_partition_sp_par_b_exp_a64b),
-    .ds_my_fixed_partition_sp_par_b_exp_a32a(ds_my_fixed_partition_sp_par_b_exp_a32a),
-    .ds_my_fixed_partition_sp_par_b_exp_a32b(ds_my_fixed_partition_sp_par_b_exp_a32b),
-    .ds_my_fixed_partition_sp_par_b_exp_a32c(ds_my_fixed_partition_sp_par_b_exp_a32c),
-    .ds_my_fixed_partition_sp_par_b_exp_a32d(ds_my_fixed_partition_sp_par_b_exp_a32d),
+    .ds_my_fixed_partition_sp_par_b_exp_64a(ds_my_fixed_partition_sp_par_b_exp_64a),
+    .ds_my_fixed_partition_sp_par_b_exp_64b(ds_my_fixed_partition_sp_par_b_exp_64b),
+    .ds_my_fixed_partition_sp_par_b_exp_32a(ds_my_fixed_partition_sp_par_b_exp_32a),
+    .ds_my_fixed_partition_sp_par_b_exp_32b(ds_my_fixed_partition_sp_par_b_exp_32b),
+    .ds_my_fixed_partition_sp_par_b_exp_32c(ds_my_fixed_partition_sp_par_b_exp_32c),
+    .ds_my_fixed_partition_sp_par_b_exp_32d(ds_my_fixed_partition_sp_par_b_exp_32d),
     .ds_my_fixed_partition_sp_par_c_exp_a128(ds_my_fixed_partition_sp_par_c_exp_a128),
-    .ds_my_fixed_partition_sp_par_c_exp_a64a(ds_my_fixed_partition_sp_par_c_exp_a64a),
-    .ds_my_fixed_partition_sp_par_c_exp_a64b(ds_my_fixed_partition_sp_par_c_exp_a64b),
-    .ds_my_fixed_partition_sp_par_c_exp_a32a(ds_my_fixed_partition_sp_par_c_exp_a32a),
-    .ds_my_fixed_partition_sp_par_c_exp_a32b(ds_my_fixed_partition_sp_par_c_exp_a32b),
-    .ds_my_fixed_partition_sp_par_c_exp_a32c(ds_my_fixed_partition_sp_par_c_exp_a32c),
-    .ds_my_fixed_partition_sp_par_c_exp_a32d(ds_my_fixed_partition_sp_par_c_exp_a32d),
+    .ds_my_fixed_partition_sp_par_c_exp_64a(ds_my_fixed_partition_sp_par_c_exp_64a),
+    .ds_my_fixed_partition_sp_par_c_exp_64b(ds_my_fixed_partition_sp_par_c_exp_64b),
+    .ds_my_fixed_partition_sp_par_c_exp_32a(ds_my_fixed_partition_sp_par_c_exp_32a),
+    .ds_my_fixed_partition_sp_par_c_exp_32b(ds_my_fixed_partition_sp_par_c_exp_32b),
+    .ds_my_fixed_partition_sp_par_c_exp_32c(ds_my_fixed_partition_sp_par_c_exp_32c),
+    .ds_my_fixed_partition_sp_par_c_exp_32d(ds_my_fixed_partition_sp_par_c_exp_32d),
     .ds_my_fixed_partition_sp_par_d_exp_a128(ds_my_fixed_partition_sp_par_d_exp_a128),
     .ds_my_fixed_partition_sp_par_e_exp_a128(ds_my_fixed_partition_sp_par_e_exp_a128),
     .ds_my_fixed128_partitionf_ts_exp_f128(ds_my_fixed128_partitionf_ts_exp_f128),
@@ -319,10 +319,6 @@ module SPEX128_top_unit_test;
   // ----------------------------------
   // Helpers
   // ----------------------------------
-  task automatic wait_n_ticks(int n);
-    repeat (n) @(posedge s_i_clk) @(negedge s_i_clk);
-  endtask
-
   `define PRINT_INTERMEDIATE_RESULTS                                                                            \
     $display("<<<<< =================== Intermediate results: ===================");                            \
     $display("<<<<< ------------------------ Level 1 ------------------------");                                \
@@ -334,26 +330,26 @@ module SPEX128_top_unit_test;
                                             ds_my_float_to_fixed_metadata.float_type_d);                        \
     $display("<<<<< ------------------------ Level 2 ------------------------");                                \
     $display("<<<<< s_my_fixed_partition_sp_par_a_exp_a128 = 0x%x", ds_my_fixed_partition_sp_par_a_exp_a128);   \
-    $display("<<<<< s_my_fixed_partition_sp_par_a_exp_a64a = 0x%x", ds_my_fixed_partition_sp_par_a_exp_a64a);   \
-    $display("<<<<< s_my_fixed_partition_sp_par_a_exp_a64b = 0x%x", ds_my_fixed_partition_sp_par_a_exp_a64b);   \
-    $display("<<<<< s_my_fixed_partition_sp_par_a_exp_a32a = 0x%x", ds_my_fixed_partition_sp_par_a_exp_a32a);   \
-    $display("<<<<< s_my_fixed_partition_sp_par_a_exp_a32b = 0x%x", ds_my_fixed_partition_sp_par_a_exp_a32b);   \
-    $display("<<<<< s_my_fixed_partition_sp_par_a_exp_a32c = 0x%x", ds_my_fixed_partition_sp_par_a_exp_a32c);   \
-    $display("<<<<< s_my_fixed_partition_sp_par_a_exp_a32d = 0x%x", ds_my_fixed_partition_sp_par_a_exp_a32d);   \
+    $display("<<<<< s_my_fixed_partition_sp_par_a_exp_64a = 0x%x", ds_my_fixed_partition_sp_par_a_exp_64a);   \
+    $display("<<<<< s_my_fixed_partition_sp_par_a_exp_64b = 0x%x", ds_my_fixed_partition_sp_par_a_exp_64b);   \
+    $display("<<<<< s_my_fixed_partition_sp_par_a_exp_32a = 0x%x", ds_my_fixed_partition_sp_par_a_exp_32a);   \
+    $display("<<<<< s_my_fixed_partition_sp_par_a_exp_32b = 0x%x", ds_my_fixed_partition_sp_par_a_exp_32b);   \
+    $display("<<<<< s_my_fixed_partition_sp_par_a_exp_32c = 0x%x", ds_my_fixed_partition_sp_par_a_exp_32c);   \
+    $display("<<<<< s_my_fixed_partition_sp_par_a_exp_32d = 0x%x", ds_my_fixed_partition_sp_par_a_exp_32d);   \
     $display("<<<<< s_my_fixed_partition_sp_par_b_exp_a128 = 0x%x", ds_my_fixed_partition_sp_par_b_exp_a128);   \
-    $display("<<<<< s_my_fixed_partition_sp_par_b_exp_a64a = 0x%x", ds_my_fixed_partition_sp_par_b_exp_a64a);   \
-    $display("<<<<< s_my_fixed_partition_sp_par_b_exp_a64b = 0x%x", ds_my_fixed_partition_sp_par_b_exp_a64b);   \
-    $display("<<<<< s_my_fixed_partition_sp_par_b_exp_a32a = 0x%x", ds_my_fixed_partition_sp_par_b_exp_a32a);   \
-    $display("<<<<< s_my_fixed_partition_sp_par_b_exp_a32b = 0x%x", ds_my_fixed_partition_sp_par_b_exp_a32b);   \
-    $display("<<<<< s_my_fixed_partition_sp_par_b_exp_a32c = 0x%x", ds_my_fixed_partition_sp_par_b_exp_a32c);   \
-    $display("<<<<< s_my_fixed_partition_sp_par_b_exp_a32d = 0x%x", ds_my_fixed_partition_sp_par_b_exp_a32d);   \
+    $display("<<<<< s_my_fixed_partition_sp_par_b_exp_64a = 0x%x", ds_my_fixed_partition_sp_par_b_exp_64a);   \
+    $display("<<<<< s_my_fixed_partition_sp_par_b_exp_64b = 0x%x", ds_my_fixed_partition_sp_par_b_exp_64b);   \
+    $display("<<<<< s_my_fixed_partition_sp_par_b_exp_32a = 0x%x", ds_my_fixed_partition_sp_par_b_exp_32a);   \
+    $display("<<<<< s_my_fixed_partition_sp_par_b_exp_32b = 0x%x", ds_my_fixed_partition_sp_par_b_exp_32b);   \
+    $display("<<<<< s_my_fixed_partition_sp_par_b_exp_32c = 0x%x", ds_my_fixed_partition_sp_par_b_exp_32c);   \
+    $display("<<<<< s_my_fixed_partition_sp_par_b_exp_32d = 0x%x", ds_my_fixed_partition_sp_par_b_exp_32d);   \
     $display("<<<<< s_my_fixed_partition_sp_par_c_exp_a128 = 0x%x", ds_my_fixed_partition_sp_par_c_exp_a128);   \
-    $display("<<<<< s_my_fixed_partition_sp_par_c_exp_a64a = 0x%x", ds_my_fixed_partition_sp_par_c_exp_a64a);   \
-    $display("<<<<< s_my_fixed_partition_sp_par_c_exp_a64b = 0x%x", ds_my_fixed_partition_sp_par_c_exp_a64b);   \
-    $display("<<<<< s_my_fixed_partition_sp_par_c_exp_a32a = 0x%x", ds_my_fixed_partition_sp_par_c_exp_a32a);   \
-    $display("<<<<< s_my_fixed_partition_sp_par_c_exp_a32b = 0x%x", ds_my_fixed_partition_sp_par_c_exp_a32b);   \
-    $display("<<<<< s_my_fixed_partition_sp_par_c_exp_a32c = 0x%x", ds_my_fixed_partition_sp_par_c_exp_a32c);   \
-    $display("<<<<< s_my_fixed_partition_sp_par_c_exp_a32d = 0x%x", ds_my_fixed_partition_sp_par_c_exp_a32d);   \
+    $display("<<<<< s_my_fixed_partition_sp_par_c_exp_64a = 0x%x", ds_my_fixed_partition_sp_par_c_exp_64a);   \
+    $display("<<<<< s_my_fixed_partition_sp_par_c_exp_64b = 0x%x", ds_my_fixed_partition_sp_par_c_exp_64b);   \
+    $display("<<<<< s_my_fixed_partition_sp_par_c_exp_32a = 0x%x", ds_my_fixed_partition_sp_par_c_exp_32a);   \
+    $display("<<<<< s_my_fixed_partition_sp_par_c_exp_32b = 0x%x", ds_my_fixed_partition_sp_par_c_exp_32b);   \
+    $display("<<<<< s_my_fixed_partition_sp_par_c_exp_32c = 0x%x", ds_my_fixed_partition_sp_par_c_exp_32c);   \
+    $display("<<<<< s_my_fixed_partition_sp_par_c_exp_32d = 0x%x", ds_my_fixed_partition_sp_par_c_exp_32d);   \
     $display("<<<<< s_my_fixed_partition_sp_par_d_exp_a128 = 0x%x", ds_my_fixed_partition_sp_par_d_exp_a128);   \
     $display("<<<<< s_my_fixed_partition_sp_par_e_exp_a128 = 0x%x", ds_my_fixed_partition_sp_par_e_exp_a128);   \
     $display("<<<<< s_my_fixed128_partitionf_ts_exp_f128 = 0x%x", ds_my_fixed128_partitionf_ts_exp_f128);       \
@@ -422,9 +418,23 @@ module SPEX128_top_unit_test;
     $display("<<<<< s_my_sp_fpmultiplier_3_valid32c_jedi = %x", ds_my_sp_fpmultiplier_3_valid32c_jedi); \
     $display("<<<<< s_my_sp_fpmultiplier_3_valid32d_jedi = %x", ds_my_sp_fpmultiplier_3_valid32d_jedi); \
     $display("<<<<< s_my_sp_fpmultiplier_4_valid128_jedi = %x", ds_my_sp_fpmultiplier_4_valid128_jedi); \
-  $display("<<<<< =================== End Intermediate valid bits ===================");
+    $display("<<<<< =================== End Intermediate valid bits ===================");
+
+  `define PRINT_INTERMEDIATE_VALID_BITS_ONELINE \
+    $display("%x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x", ds_my_float_to_fixed_o_valid, ds_my_fixed_partition_sp_par_a_o_valid128, ds_my_fixed_partition_sp_par_a_o_valid64a, ds_my_fixed_partition_sp_par_a_o_valid64b, ds_my_fixed_partition_sp_par_a_o_valid32a, ds_my_fixed_partition_sp_par_a_o_valid32b, ds_my_fixed_partition_sp_par_a_o_valid32c, ds_my_fixed_partition_sp_par_a_o_valid32d, ds_my_fixed_partition_sp_par_b_o_valid128, ds_my_fixed_partition_sp_par_b_o_valid64a, ds_my_fixed_partition_sp_par_b_o_valid64b, ds_my_fixed_partition_sp_par_b_o_valid32a, ds_my_fixed_partition_sp_par_b_o_valid32b, ds_my_fixed_partition_sp_par_b_o_valid32c, ds_my_fixed_partition_sp_par_b_o_valid32d, ds_my_fixed_partition_sp_par_c_o_valid128, ds_my_fixed_partition_sp_par_c_o_valid64a, ds_my_fixed_partition_sp_par_c_o_valid64b, ds_my_fixed_partition_sp_par_c_o_valid32a, ds_my_fixed_partition_sp_par_c_o_valid32b, ds_my_fixed_partition_sp_par_c_o_valid32c, ds_my_fixed_partition_sp_par_c_o_valid32d, ds_my_fixed_partition_sp_par_d_o_valid128, ds_my_fixed_partition_sp_par_e_o_valid128, ds_my_fixed128_partitionf_ts_o_valid, ds_my_fixed64_partitionf_ts_a_o_valid, ds_my_fixed64_partitionf_ts_b_o_valid, ds_my_sp_fpmultiplier_0_valid128_jedi, ds_my_sp_fpmultiplier_0_valid64a_jedi, ds_my_sp_fpmultiplier_0_valid64b_jedi, ds_my_sp_fpmultiplier_0_valid32a_jedi, ds_my_sp_fpmultiplier_0_valid32b_jedi, ds_my_sp_fpmultiplier_0_valid32c_jedi, ds_my_sp_fpmultiplier_0_valid32d_jedi, ds_my_sp_fpmultiplier_1_valid128_jedi, ds_my_sp_fpmultiplier_1_valid64a_jedi, ds_my_sp_fpmultiplier_1_valid64b_jedi, ds_my_sp_fpmultiplier_2_valid128_jedi, ds_my_sp_fpmultiplier_3_valid128_jedi, ds_my_sp_fpmultiplier_3_valid64a_jedi, ds_my_sp_fpmultiplier_3_valid64b_jedi, ds_my_sp_fpmultiplier_3_valid32a_jedi, ds_my_sp_fpmultiplier_3_valid32b_jedi, ds_my_sp_fpmultiplier_3_valid32c_jedi, ds_my_sp_fpmultiplier_3_valid32d_jedi, ds_my_sp_fpmultiplier_4_valid128_jedi);
+
+  task automatic wait_n_ticks(int n);
+    // repeat (n) @(posedge s_i_clk) @(negedge s_i_clk);
+    repeat (n) @(posedge s_i_clk) @(negedge s_i_clk) `PRINT_INTERMEDIATE_VALID_BITS_ONELINE;
+  endtask
+
   // -------- Tunables --------------------------------------------------------
-  `define LATENCY 2+1+5*3/*idk why the +3*/+20 // 21
+  localparam int LATENCY_3264 = my_SPEX128_top.my_float_to_fixed.MODULE_LATENCY +
+                                my_SPEX128_top.my_fixed_partition_sp_par_a.MODULE_LATENCY_32 +
+                                2 * my_SPEX128_top.my_sp_fpmultiplier_0.MODULE_LATENCY;
+  localparam int LATENCY_128 =  LATENCY_3264 +
+                                my_SPEX128_top.my_sp_fpmultiplier_0.MODULE_LATENCY;
+  localparam int LATENCY     =  LATENCY_128;
   // LSB error tolerances (difference in integer value of the LSB slice)
   `define ERR_TOL_LSB_128 200
   `define ERR_TOL_LSB_64  200000 // 200,000 is for latency_and_ordering to pass
@@ -533,7 +543,7 @@ module SPEX128_top_unit_test;
 
   // Wait latency cycles and check o_error==0
   task automatic await_and_check_no_error();
-    wait_n_ticks(`LATENCY);
+    wait_n_ticks(LATENCY);
     `FAIL_UNLESS(s_o_error == '0)
   endtask
 

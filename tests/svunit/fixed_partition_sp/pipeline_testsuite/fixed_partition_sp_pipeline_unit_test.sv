@@ -22,6 +22,10 @@ module fixed_partition_sp_pipeline_unit_test;
   localparam int LANE_BITS_64  = ADDR_BITS_64;
   localparam int LANE_BITS_32  = ADDR_BITS_32;
   localparam int LUT_DEPTH     = (1 << ADDR_BITS_128);
+  localparam int CONVERT_LATENCY      = 6;
+  localparam int SINGLE_MODE_LATENCY  = 2;
+  localparam int TWO_SP_MODE_LATENCY  = 1 + CONVERT_LATENCY; // USE_128_FOR_64=1
+  localparam int FOUR_SP_MODE_LATENCY = 2 + CONVERT_LATENCY; // USE_128_FOR_32=1
 
   string name = "fixed_partition_sp_pipeline_ut";
   svunit_testcase svunit_ut;
@@ -38,12 +42,12 @@ module fixed_partition_sp_pipeline_unit_test;
   logic [LANE_BITS_32-1:0]                s_i_lane_32c;
   logic [LANE_BITS_32-1:0]                s_i_lane_32d;
   binary128_t                             s_o_exp_a128;
-  binary64_t                              s_o_exp_a64a;
-  binary64_t                              s_o_exp_a64b;
-  binary32_t                              s_o_exp_a32a;
-  binary32_t                              s_o_exp_a32b;
-  binary32_t                              s_o_exp_a32c;
-  binary32_t                              s_o_exp_a32d;
+  binary64_t                              s_o_exp_64a;
+  binary64_t                              s_o_exp_64b;
+  binary32_t                              s_o_exp_32a;
+  binary32_t                              s_o_exp_32b;
+  binary32_t                              s_o_exp_32c;
+  binary32_t                              s_o_exp_32d;
   logic                                   s_i_valid128;
   logic                                   s_i_valid64a;
   logic                                   s_i_valid64b;
@@ -69,9 +73,9 @@ module fixed_partition_sp_pipeline_unit_test;
   end
 
   fixed_partition_sp #(
-    .MODULE_LATENCY_128(2),
-    .MODULE_LATENCY_64(4),
-    .MODULE_LATENCY_32(5),
+    .MODULE_LATENCY_128(SINGLE_MODE_LATENCY),
+    .MODULE_LATENCY_64(TWO_SP_MODE_LATENCY),
+    .MODULE_LATENCY_32(FOUR_SP_MODE_LATENCY),
     .HAS_SIGN(1'b0),
     .USE_128_FOR_64(1'b1),
     .USE_128_FOR_32(1'b1),
@@ -96,12 +100,12 @@ module fixed_partition_sp_pipeline_unit_test;
     .i_lane_32c(s_i_lane_32c),
     .i_lane_32d(s_i_lane_32d),
     .o_exp_a128(s_o_exp_a128),
-    .o_exp_a64a(s_o_exp_a64a),
-    .o_exp_a64b(s_o_exp_a64b),
-    .o_exp_a32a(s_o_exp_a32a),
-    .o_exp_a32b(s_o_exp_a32b),
-    .o_exp_a32c(s_o_exp_a32c),
-    .o_exp_a32d(s_o_exp_a32d),
+    .o_exp_64a(s_o_exp_64a),
+    .o_exp_64b(s_o_exp_64b),
+    .o_exp_32a(s_o_exp_32a),
+    .o_exp_32b(s_o_exp_32b),
+    .o_exp_32c(s_o_exp_32c),
+    .o_exp_32d(s_o_exp_32d),
     .i_valid128(s_i_valid128),
     .i_valid64a(s_i_valid64a),
     .i_valid64b(s_i_valid64b),
@@ -278,8 +282,8 @@ module fixed_partition_sp_pipeline_unit_test;
     logic [63:0] exp64a;
     logic [63:0] exp64b;
 
-    got64a = s_o_exp_a64a;
-    got64b = s_o_exp_a64b;
+    got64a = s_o_exp_64a;
+    got64b = s_o_exp_64b;
     exp64a = binary128_to_binary64_rne(s_tb_lut[expected_idx_a]);
     exp64b = binary128_to_binary64_rne(s_tb_lut[expected_idx_b]);
 
@@ -308,10 +312,10 @@ module fixed_partition_sp_pipeline_unit_test;
     logic [31:0] exp32c;
     logic [31:0] exp32d;
 
-    got32a = s_o_exp_a32a;
-    got32b = s_o_exp_a32b;
-    got32c = s_o_exp_a32c;
-    got32d = s_o_exp_a32d;
+    got32a = s_o_exp_32a;
+    got32b = s_o_exp_32b;
+    got32c = s_o_exp_32c;
+    got32d = s_o_exp_32d;
     exp32a = binary128_to_binary32_rne(s_tb_lut[expected_idx_a]);
     exp32b = binary128_to_binary32_rne(s_tb_lut[expected_idx_b]);
     exp32c = binary128_to_binary32_rne(s_tb_lut[expected_idx_c]);

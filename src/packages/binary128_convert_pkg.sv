@@ -1,6 +1,6 @@
 /********************************************************************
  * 
- * Originator   : Jonathan Tan feat. ChatGPT 5.2 Codex
+ * Originator   : Jonathan Tan with some help from Codex 5.2/5.3
  * Date         : 01/11/2026
  * 
  ********************************************************************
@@ -15,6 +15,8 @@
  *       Ver   |  Who       |  Date	       |  Changes
  *     ------- + ---------- + ------------ + --------------------------
  *       1.00  |  Jonathan  |  01/11/2026  |  Birth of this file
+ *       1.01  |  Jonathan  |  03/07/2026  |  Made it 4 stage pipeline (was 3)
+ *       1.02  |  Jonathan  |  03/09/2026  |  Made it 6 stage pipeline (split s0/s1)
  * 
  *******************************************************************/
 
@@ -24,12 +26,48 @@ package binary128_convert_pkg;
   import binary64_pkg::*;
   import binary32_pkg::*;
 
-  localparam int BIAS_128 = 16383;
-  localparam int BIAS_64  = 1023;
-  localparam int BIAS_32  = 127;
+  const int CONVERSION_LATENCY = 6; // Must be the same as fixed_partition_sp.CONVERSION_LATENCY
 
-  // Part-1 payload for binary128 -> binary64 conversion.
-  // This stage classifies and normalizes, but does not shift/round yet.
+  localparam logic signed [17:0] BIAS_128 = 18'sd16383;
+  localparam logic signed [17:0] BIAS_64  = 18'sd1023;
+  localparam logic signed [17:0] BIAS_32  = 18'sd127;
+
+  // Stage-0a payload for binary128 -> binary64 conversion.
+  // This stage only unpacks raw fields.
+  typedef struct packed {
+    logic               sign;
+    logic [14:0]        exp;
+    logic [111:0]       mantissa;
+  } binary128_to_binary64_rne_s0a_t;
+
+  // Stage-0 payload for binary128 -> binary64 conversion.
+  // This stage classifies specials and computes exp_unbiased/full_sig.
+  typedef struct packed {
+    logic               sign;
+    logic               is_nan;
+    logic               is_inf;
+    logic               is_zero;
+    logic [51:0]        nan_payload;
+    logic [112:0]       full_sig;
+    logic signed [17:0] exp_unbiased;
+  } binary128_to_binary64_rne_s0_t;
+
+  // Stage-1a payload for binary128 -> binary64 conversion.
+  // This stage only performs LZC on the significand.
+  typedef struct packed {
+    logic               sign;
+    logic               is_nan;
+    logic               is_inf;
+    logic               is_zero;
+    logic [51:0]        nan_payload;
+
+    logic [112:0]       full_sig;
+    logic signed [17:0] exp_unbiased;
+    logic [6:0]         lz;
+  } binary128_to_binary64_rne_s1a_t;
+
+  // Stage-1 payload for binary128 -> binary64 conversion.
+  // This stage normalizes the exponent and does subnormal bookkeeping.
   typedef struct packed {
     logic               sign;
     logic               is_nan;
@@ -37,14 +75,16 @@ package binary128_convert_pkg;
     logic               is_zero;
     logic               is_overflow;
     logic               is_subnormal;
-    logic [50:0]        nan_payload;
-    logic signed [15:0] exp_norm;
-    logic [112:0]       sig_norm;
-    logic [6:0]         shift_sub;
-  } binary128_to_binary64_rne_p1_t;
+    logic [51:0]        nan_payload;
 
-  // Part-2 payload for binary128 -> binary64 conversion.
-  // This stage does shift + GRS extraction + rounding add.
+    logic [112:0]       full_sig;
+    logic [6:0]         lz;
+    logic signed [17:0] exp_norm;
+    logic [6:0]         sub_rshift_amt;
+  } binary128_to_binary64_rne_s1_t;
+
+  // Stage-2 payload for binary128 -> binary64 conversion.
+  // This stage performs one shift and computes round increment.
   typedef struct packed {
     logic               sign;
     logic               is_nan;
@@ -52,13 +92,49 @@ package binary128_convert_pkg;
     logic               is_zero;
     logic               is_overflow;
     logic               is_subnormal;
-    logic [50:0]        nan_payload;
-    logic signed [15:0] exp_norm;
-    logic [53:0]        rounded;
-  } binary128_to_binary64_rne_p2_t;
+    logic [51:0]        nan_payload;
+    logic signed [17:0] exp_norm;
 
-  // Part-1 payload for binary128 -> binary32 conversion.
-  // This stage classifies and normalizes, but does not shift/round yet.
+    logic [52:0]        keep;
+    logic               round_inc;
+  } binary128_to_binary64_rne_s2_t;
+
+  // Stage-0a payload for binary128 -> binary32 conversion.
+  // This stage only unpacks raw fields.
+  typedef struct packed {
+    logic               sign;
+    logic [14:0]        exp;
+    logic [111:0]       mantissa;
+  } binary128_to_binary32_rne_s0a_t;
+
+  // Stage-0 payload for binary128 -> binary32 conversion.
+  // This stage classifies specials and computes exp_unbiased/full_sig.
+  typedef struct packed {
+    logic               sign;
+    logic               is_nan;
+    logic               is_inf;
+    logic               is_zero;
+    logic [22:0]        nan_payload;
+    logic [112:0]       full_sig;
+    logic signed [17:0] exp_unbiased;
+  } binary128_to_binary32_rne_s0_t;
+
+  // Stage-1a payload for binary128 -> binary32 conversion.
+  // This stage only performs LZC on the significand.
+  typedef struct packed {
+    logic               sign;
+    logic               is_nan;
+    logic               is_inf;
+    logic               is_zero;
+    logic [22:0]        nan_payload;
+
+    logic [112:0]       full_sig;
+    logic signed [17:0] exp_unbiased;
+    logic [6:0]         lz;
+  } binary128_to_binary32_rne_s1a_t;
+
+  // Stage-1 payload for binary128 -> binary32 conversion.
+  // This stage normalizes the exponent and does subnormal bookkeeping.
   typedef struct packed {
     logic               sign;
     logic               is_nan;
@@ -66,14 +142,16 @@ package binary128_convert_pkg;
     logic               is_zero;
     logic               is_overflow;
     logic               is_subnormal;
-    logic [21:0]        nan_payload;
-    logic signed [15:0] exp_norm;
-    logic [112:0]       sig_norm;
-    logic [6:0]         shift_sub;
-  } binary128_to_binary32_rne_p1_t;
+    logic [22:0]        nan_payload;
 
-  // Part-2 payload for binary128 -> binary32 conversion.
-  // This stage does shift + GRS extraction + rounding add.
+    logic [112:0]       full_sig;
+    logic [6:0]         lz;
+    logic signed [17:0] exp_norm;
+    logic [6:0]         sub_rshift_amt;
+  } binary128_to_binary32_rne_s1_t;
+
+  // Stage-2 payload for binary128 -> binary32 conversion.
+  // This stage performs one shift and computes round increment.
   typedef struct packed {
     logic               sign;
     logic               is_nan;
@@ -81,10 +159,12 @@ package binary128_convert_pkg;
     logic               is_zero;
     logic               is_overflow;
     logic               is_subnormal;
-    logic [21:0]        nan_payload;
-    logic signed [15:0] exp_norm;
-    logic [24:0]        rounded;
-  } binary128_to_binary32_rne_p2_t;
+    logic [22:0]        nan_payload;
+    logic signed [17:0] exp_norm;
+
+    logic [23:0]        keep;
+    logic               round_inc;
+  } binary128_to_binary32_rne_s2_t;
 
   // Leading-zero count in one byte (MSB-first).
   function automatic int unsigned lzc_8(input logic [7:0] in);
@@ -171,27 +251,32 @@ package binary128_convert_pkg;
     return lz_total;
   endfunction
 
-  function automatic binary128_to_binary64_rne_p1_t binary128_to_binary64_rne_part1(
+  function automatic binary128_to_binary64_rne_s0a_t binary128_to_binary64_rne_s0a(
     input logic [127:0] in_bits
   );
-    localparam int E_MAX_64 = 1023;
-    localparam int E_MIN_64 = -1022;
-    binary128_to_binary64_rne_p1_t out;
+    binary128_to_binary64_rne_s0a_t out;
     binary128_t in;
-    logic [112:0] full_sig;
-    logic [112:0] sig_norm;
-    int unsigned lz;
-    int signed exp_unbiased;
-    int signed exp_norm;
-    int signed shift_sub_signed;
-    int unsigned shift_sub;
 
-    // Step 0: Initialize and unpack.
     out = '0;
-    in = binary128_t'(in_bits);
+    in  = binary128_t'(in_bits);
+
+    out.sign = in.sign;
+    out.exp = in.exp;
+    out.mantissa = in.mantissa;
+
+    return out;
+  endfunction
+
+  function automatic binary128_to_binary64_rne_s0_t binary128_to_binary64_rne_s0b(
+    input binary128_to_binary64_rne_s0a_t in
+  );
+    binary128_to_binary64_rne_s0_t out;
+
+    out = '0;
+
     out.sign = in.sign;
 
-    // Step 1: Classify specials (NaN/Inf) and preserve NaN payload style.
+    // NaN/Inf
     if (in.exp == 15'h7fff) begin
       if (in.mantissa == '0) begin
         out.is_inf = 1'b1;
@@ -203,98 +288,180 @@ package binary128_convert_pkg;
       return out;
     end
 
-    // Step 2: Classify signed zero.
+    // Signed zero
     if (in.exp == 15'd0 && in.mantissa == '0) begin
       out.is_zero = 1'b1;
       return out;
     end
 
-    // Step 3: Build unbiased exponent and 113-bit significand.
-    // For subnormal binary128, hidden bit is 0; otherwise hidden bit is 1.
-    exp_unbiased = (in.exp == 15'd0) ? (1 - BIAS_128) : ($signed({1'b0, in.exp}) - BIAS_128);
-    full_sig = {(in.exp == 15'd0) ? 1'b0 : 1'b1, in.mantissa};
+    out.exp_unbiased = (in.exp == 15'd0) ? (18'sd1 - BIAS_128)
+                                          : ($signed({3'b0, in.exp}) - BIAS_128);
+    out.full_sig = {(in.exp == 15'd0) ? 1'b0 : 1'b1, in.mantissa};
 
-    // Step 4: Normalize significand and apply normalization shift to exponent.
-    lz = lzc_113(full_sig);
-    sig_norm = full_sig << lz;
-    out.sig_norm = sig_norm;
-    exp_norm = exp_unbiased - $signed(lz);
-    out.exp_norm = exp_norm[15:0];
+    return out;
+  endfunction
 
-    // Step 5: Early overflow check against binary64 max normal exponent.
-    if (exp_norm > E_MAX_64) begin
+  // Compatibility wrapper for legacy 4-stage call sites.
+  function automatic binary128_to_binary64_rne_s0_t binary128_to_binary64_rne_s0(
+    input logic [127:0] in_bits
+  );
+    return binary128_to_binary64_rne_s0b(binary128_to_binary64_rne_s0a(in_bits));
+  endfunction
+
+  function automatic binary128_to_binary64_rne_s1a_t binary128_to_binary64_rne_s1a(
+    input binary128_to_binary64_rne_s0_t in
+  );
+    binary128_to_binary64_rne_s1a_t out;
+    int unsigned lz_u;
+
+    out = '0;
+
+    // passthrough flags
+    out.sign         = in.sign;
+    out.is_nan       = in.is_nan;
+    out.is_inf       = in.is_inf;
+    out.is_zero      = in.is_zero;
+    out.nan_payload  = in.nan_payload;
+    out.full_sig     = in.full_sig;
+    out.exp_unbiased = in.exp_unbiased;
+
+    // Specials/zero: bypass heavy math
+    if (in.is_nan || in.is_inf || in.is_zero) begin
+      return out;
+    end
+
+    // LZC on 113-bit significand
+    lz_u = lzc_113(in.full_sig);
+    if (lz_u > 113) begin
+      out.lz = 7'd113;
+    end
+    else begin
+      out.lz = lz_u[6:0];
+    end
+
+    return out;
+  endfunction
+
+  function automatic binary128_to_binary64_rne_s1_t binary128_to_binary64_rne_s1b(
+    input binary128_to_binary64_rne_s1a_t in
+  );
+    localparam int signed E_MIN_64 = -1022;
+    localparam logic signed [17:0] E_MIN_64_S = -18'sd1022;
+    localparam logic signed [17:0] E_MAX_64_S = 18'sd1023;
+
+    binary128_to_binary64_rne_s1_t out;
+    logic signed [17:0] exp_norm_s;
+    int signed sub_rshift_signed;
+
+    out = '0;
+
+    out.sign         = in.sign;
+    out.is_nan       = in.is_nan;
+    out.is_inf       = in.is_inf;
+    out.is_zero      = in.is_zero;
+    out.nan_payload  = in.nan_payload;
+    out.full_sig     = in.full_sig;
+    out.lz           = in.lz;
+
+    if (in.is_nan || in.is_inf || in.is_zero) begin
+      return out;
+    end
+
+    exp_norm_s = in.exp_unbiased - $signed({11'b0, in.lz});
+    out.exp_norm = exp_norm_s;
+
+    if (exp_norm_s > E_MAX_64_S) begin
       out.is_overflow = 1'b1;
       return out;
     end
 
-    // Step 6: Determine if final result is subnormal in binary64.
-    // If subnormal, pre-shift right so part2 can directly round/pack.
-    out.is_subnormal = (exp_norm < E_MIN_64);
+    // Subnormal classification (binary64)
+    out.is_subnormal = (exp_norm_s < E_MIN_64_S);
+
+    // For subnormals, avoid double-barrel shift:
+    // sig_shifted = full_sig >> (E_MIN - exp_unbiased)
     if (out.is_subnormal) begin
-      shift_sub_signed = E_MIN_64 - exp_norm;
-      shift_sub = (shift_sub_signed > 113) ? 113 : shift_sub_signed;
+      sub_rshift_signed = E_MIN_64 - int'(in.exp_unbiased);
+      if (sub_rshift_signed < 0) begin
+        out.sub_rshift_amt = 7'd0;
+      end
+      else if (sub_rshift_signed > 113) begin
+        out.sub_rshift_amt = 7'd113;
+      end
+      else begin
+        out.sub_rshift_amt = sub_rshift_signed[6:0];
+      end
     end
     else begin
-      shift_sub = 0;
+      out.sub_rshift_amt = 7'd0;
     end
-    out.shift_sub = shift_sub[6:0];
 
     return out;
   endfunction
 
-  function automatic binary128_to_binary64_rne_p2_t binary128_to_binary64_rne_part2(
-    input binary128_to_binary64_rne_p1_t in
+  // Compatibility wrapper for legacy 4-stage call sites.
+  function automatic binary128_to_binary64_rne_s1_t binary128_to_binary64_rne_s1(
+    input binary128_to_binary64_rne_s0_t in
   );
-    binary128_to_binary64_rne_p2_t out;
+    return binary128_to_binary64_rne_s1b(binary128_to_binary64_rne_s1a(in));
+  endfunction
+
+  function automatic binary128_to_binary64_rne_s2_t binary128_to_binary64_rne_s2(
+    input binary128_to_binary64_rne_s1_t in
+  );
+    binary128_to_binary64_rne_s2_t out;
     logic [112:0] sig_shifted;
-    logic [52:0] keep;
     logic guard;
     logic round;
     logic sticky;
-    logic round_inc;
 
-    // Step 0: Initialize output with passthrough payload.
     out = '0;
-    out.sign = in.sign;
-    out.is_nan = in.is_nan;
-    out.is_inf = in.is_inf;
-    out.is_zero = in.is_zero;
-    out.is_overflow = in.is_overflow;
-    out.is_subnormal = in.is_subnormal;
-    out.nan_payload = in.nan_payload;
-    out.exp_norm = in.exp_norm;
 
-    // Step 1: Specials/zero/overflow do not need shift+round.
-    if (in.is_nan || in.is_inf || in.is_overflow || in.is_zero) begin
+    out.sign         = in.sign;
+    out.is_nan       = in.is_nan;
+    out.is_inf       = in.is_inf;
+    out.is_zero      = in.is_zero;
+    out.is_overflow  = in.is_overflow;
+    out.is_subnormal = in.is_subnormal;
+    out.nan_payload  = in.nan_payload;
+    out.exp_norm     = in.exp_norm;
+
+    if (in.is_nan || in.is_inf || in.is_zero || in.is_overflow) begin
       return out;
     end
 
-    // Step 2: Shift to subnormal boundary if needed and extract G/R/S bits.
-    sig_shifted = in.sig_norm >> in.shift_sub;
-    keep = sig_shifted[112 -: 53];
+    if (in.is_subnormal) begin
+      sig_shifted = in.full_sig >> in.sub_rshift_amt;
+    end
+    else begin
+      sig_shifted = in.full_sig << in.lz;
+    end
+
+    out.keep = sig_shifted[112 -: 53];
     guard = sig_shifted[112-53];
     round = sig_shifted[112-54];
     sticky = |sig_shifted[112-55:0];
 
-    // Step 3: RNE increment and adder.
-    round_inc = guard && (round || sticky || keep[0]);
-    out.rounded = {1'b0, keep} + round_inc;
+    out.round_inc = guard && (round || sticky || out.keep[0]);
 
     return out;
   endfunction
 
-  function automatic binary64_t binary128_to_binary64_rne_part3(
-    input binary128_to_binary64_rne_p2_t in
+  function automatic binary64_t binary128_to_binary64_rne_s3(
+    input binary128_to_binary64_rne_s2_t in
   );
-    localparam int E_MAX_64 = 1023;
-    binary64_t out;
-    int signed exp_out;
+    localparam logic signed [17:0] E_MAX_64_S = 18'sd1023;
 
-    // Step 0: Initialize output with sign propagated from part2.
+    binary64_t out;
+    logic [53:0] rounded;
+    logic carry;
+    logic signed [17:0] exp_out_s;
+    logic signed [17:0] exp_biased_s;
+
     out = '0;
     out.sign = in.sign;
 
-    // Step 1: Handle specials first (NaN, Inf, overflow-to-Inf, zero).
+    // specials first
     if (in.is_nan) begin
       out.exp = 11'h7ff;
       out.mantissa = in.nan_payload;
@@ -311,60 +478,65 @@ package binary128_convert_pkg;
       return out;
     end
 
-    // Step 2: Normal path pack (with post-round carry into exponent).
+    // rounding add
+    rounded = {1'b0, in.keep} + {{53{1'b0}}, in.round_inc};
+    carry = rounded[53];
+
+    // pack
     if (!in.is_subnormal) begin
-      exp_out = in.exp_norm + (in.rounded[53] ? 1 : 0);
-      if (exp_out > E_MAX_64) begin
+      exp_out_s = in.exp_norm + $signed({17'b0, carry});
+
+      if (exp_out_s > E_MAX_64_S) begin
         out.exp = 11'h7ff;
         out.mantissa = '0;
       end
       else begin
-        out.exp = exp_out + BIAS_64;
-        if (in.rounded[53]) begin
-          out.mantissa = in.rounded[52:1];
-        end
-        else begin
-          out.mantissa = in.rounded[51:0];
-        end
+        exp_biased_s = exp_out_s + BIAS_64;
+        out.exp = exp_biased_s[10:0];
+        out.mantissa = carry ? rounded[52:1] : rounded[51:0];
       end
     end
-
-    // Step 3: Subnormal path pack (including subnormal-to-normal bump).
     else begin
-      if (in.rounded[53] || in.rounded[52]) begin
+      // subnormal pack + bump
+      if (rounded[53] || rounded[52]) begin
         out.exp = 11'd1;
         out.mantissa = '0;
       end
       else begin
         out.exp = '0;
-        out.mantissa = in.rounded[51:0];
+        out.mantissa = rounded[51:0];
       end
     end
 
     return out;
   endfunction
 
-  function automatic binary128_to_binary32_rne_p1_t binary128_to_binary32_rne_part1(
+  function automatic binary128_to_binary32_rne_s0a_t binary128_to_binary32_rne_s0a(
     input logic [127:0] in_bits
   );
-    localparam int E_MAX_32 = 127;
-    localparam int E_MIN_32 = -126;
-    binary128_to_binary32_rne_p1_t out;
+    binary128_to_binary32_rne_s0a_t out;
     binary128_t in;
-    logic [112:0] full_sig;
-    logic [112:0] sig_norm;
-    int unsigned lz;
-    int signed exp_unbiased;
-    int signed exp_norm;
-    int signed shift_sub_signed;
-    int unsigned shift_sub;
 
-    // Step 0: Initialize and unpack.
     out = '0;
-    in = binary128_t'(in_bits);
+    in  = binary128_t'(in_bits);
+
+    out.sign = in.sign;
+    out.exp = in.exp;
+    out.mantissa = in.mantissa;
+
+    return out;
+  endfunction
+
+  function automatic binary128_to_binary32_rne_s0_t binary128_to_binary32_rne_s0b(
+    input binary128_to_binary32_rne_s0a_t in
+  );
+    binary128_to_binary32_rne_s0_t out;
+
+    out = '0;
+
     out.sign = in.sign;
 
-    // Step 1: Classify specials (NaN/Inf) and preserve NaN payload style.
+    // NaN/Inf
     if (in.exp == 15'h7fff) begin
       if (in.mantissa == '0) begin
         out.is_inf = 1'b1;
@@ -376,142 +548,223 @@ package binary128_convert_pkg;
       return out;
     end
 
-    // Step 2: Classify signed zero.
+    // Signed zero
     if (in.exp == 15'd0 && in.mantissa == '0) begin
       out.is_zero = 1'b1;
       return out;
     end
 
-    // Step 3: Build unbiased exponent and 113-bit significand.
-    exp_unbiased = (in.exp == 15'd0) ? (1 - BIAS_128) : ($signed({1'b0, in.exp}) - BIAS_128);
-    full_sig = {(in.exp == 15'd0) ? 1'b0 : 1'b1, in.mantissa};
+    out.exp_unbiased = (in.exp == 15'd0) ? (18'sd1 - BIAS_128)
+                                          : ($signed({3'b0, in.exp}) - BIAS_128);
+    out.full_sig = {(in.exp == 15'd0) ? 1'b0 : 1'b1, in.mantissa};
 
-    // Step 4: Normalize significand and apply normalization shift to exponent.
-    lz = lzc_113(full_sig);
-    sig_norm = full_sig << lz;
-    out.sig_norm = sig_norm;
-    exp_norm = exp_unbiased - $signed(lz);
-    out.exp_norm = exp_norm[15:0];
+    return out;
+  endfunction
 
-    // Step 5: Early overflow check against binary32 max normal exponent.
-    if (exp_norm > E_MAX_32) begin
+  // Compatibility wrapper for legacy 4-stage call sites.
+  function automatic binary128_to_binary32_rne_s0_t binary128_to_binary32_rne_s0(
+    input logic [127:0] in_bits
+  );
+    return binary128_to_binary32_rne_s0b(binary128_to_binary32_rne_s0a(in_bits));
+  endfunction
+
+  function automatic binary128_to_binary32_rne_s1a_t binary128_to_binary32_rne_s1a(
+    input binary128_to_binary32_rne_s0_t in
+  );
+    binary128_to_binary32_rne_s1a_t out;
+    int unsigned lz_u;
+
+    out = '0;
+
+    // passthrough flags
+    out.sign         = in.sign;
+    out.is_nan       = in.is_nan;
+    out.is_inf       = in.is_inf;
+    out.is_zero      = in.is_zero;
+    out.nan_payload  = in.nan_payload;
+    out.full_sig     = in.full_sig;
+    out.exp_unbiased = in.exp_unbiased;
+
+    // Specials/zero: bypass heavy math
+    if (in.is_nan || in.is_inf || in.is_zero) begin
+      return out;
+    end
+
+    // LZC on 113-bit significand
+    lz_u = lzc_113(in.full_sig);
+    if (lz_u > 113) begin
+      out.lz = 7'd113;
+    end
+    else begin
+      out.lz = lz_u[6:0];
+    end
+
+    return out;
+  endfunction
+
+  function automatic binary128_to_binary32_rne_s1_t binary128_to_binary32_rne_s1b(
+    input binary128_to_binary32_rne_s1a_t in
+  );
+    localparam int signed E_MIN_32 = -126;
+    localparam logic signed [17:0] E_MIN_32_S = -18'sd126;
+    localparam logic signed [17:0] E_MAX_32_S = 18'sd127;
+
+    binary128_to_binary32_rne_s1_t out;
+    logic signed [17:0] exp_norm_s;
+    int signed sub_rshift_signed;
+
+    out = '0;
+
+    out.sign         = in.sign;
+    out.is_nan       = in.is_nan;
+    out.is_inf       = in.is_inf;
+    out.is_zero      = in.is_zero;
+    out.nan_payload  = in.nan_payload;
+    out.full_sig     = in.full_sig;
+    out.lz           = in.lz;
+
+    if (in.is_nan || in.is_inf || in.is_zero) begin
+      return out;
+    end
+
+    exp_norm_s = in.exp_unbiased - $signed({11'b0, in.lz});
+    out.exp_norm = exp_norm_s;
+
+    if (exp_norm_s > E_MAX_32_S) begin
       out.is_overflow = 1'b1;
       return out;
     end
 
-    // Step 6: Determine if final result is subnormal in binary32.
-    // If subnormal, pre-shift right so part2 can directly round/pack.
-    out.is_subnormal = (exp_norm < E_MIN_32);
+    // Subnormal classification (binary32)
+    out.is_subnormal = (exp_norm_s < E_MIN_32_S);
+
+    // For subnormals, avoid double-barrel shift:
+    // sig_shifted = full_sig >> (E_MIN - exp_unbiased)
     if (out.is_subnormal) begin
-      shift_sub_signed = E_MIN_32 - exp_norm;
-      shift_sub = (shift_sub_signed > 113) ? 113 : shift_sub_signed;
+      sub_rshift_signed = E_MIN_32 - int'(in.exp_unbiased);
+      if (sub_rshift_signed < 0) begin
+        out.sub_rshift_amt = 7'd0;
+      end
+      else if (sub_rshift_signed > 113) begin
+        out.sub_rshift_amt = 7'd113;
+      end
+      else begin
+        out.sub_rshift_amt = sub_rshift_signed[6:0];
+      end
     end
     else begin
-      shift_sub = 0;
+      out.sub_rshift_amt = 7'd0;
     end
-    out.shift_sub = shift_sub[6:0];
 
     return out;
   endfunction
 
-  function automatic binary128_to_binary32_rne_p2_t binary128_to_binary32_rne_part2(
-    input binary128_to_binary32_rne_p1_t in
+  // Compatibility wrapper for legacy 4-stage call sites.
+  function automatic binary128_to_binary32_rne_s1_t binary128_to_binary32_rne_s1(
+    input binary128_to_binary32_rne_s0_t in
   );
-    binary128_to_binary32_rne_p2_t out;
+    return binary128_to_binary32_rne_s1b(binary128_to_binary32_rne_s1a(in));
+  endfunction
+
+  function automatic binary128_to_binary32_rne_s2_t binary128_to_binary32_rne_s2(
+    input binary128_to_binary32_rne_s1_t in
+  );
+    binary128_to_binary32_rne_s2_t out;
     logic [112:0] sig_shifted;
-    logic [23:0] keep;
     logic guard;
     logic round;
     logic sticky;
-    logic round_inc;
 
-    // Step 0: Initialize output with passthrough payload.
     out = '0;
-    out.sign = in.sign;
-    out.is_nan = in.is_nan;
-    out.is_inf = in.is_inf;
-    out.is_zero = in.is_zero;
-    out.is_overflow = in.is_overflow;
-    out.is_subnormal = in.is_subnormal;
-    out.nan_payload = in.nan_payload;
-    out.exp_norm = in.exp_norm;
 
-    // Step 1: Specials/zero/overflow do not need shift+round.
-    if (in.is_nan || in.is_inf || in.is_overflow || in.is_zero) begin
+    out.sign         = in.sign;
+    out.is_nan       = in.is_nan;
+    out.is_inf       = in.is_inf;
+    out.is_zero      = in.is_zero;
+    out.is_overflow  = in.is_overflow;
+    out.is_subnormal = in.is_subnormal;
+    out.nan_payload  = in.nan_payload;
+    out.exp_norm     = in.exp_norm;
+
+    if (in.is_nan || in.is_inf || in.is_zero || in.is_overflow) begin
       return out;
     end
 
-    // Step 2: Shift to subnormal boundary if needed and extract G/R/S bits.
-    sig_shifted = in.sig_norm >> in.shift_sub;
-    keep = sig_shifted[112 -: 24];
-    guard = sig_shifted[112-24];
-    round = sig_shifted[112-25];
-    sticky = |sig_shifted[112-26:0];
+    if (in.is_subnormal) begin
+      sig_shifted = in.full_sig >> in.sub_rshift_amt;
+    end
+    else begin
+      sig_shifted = in.full_sig << in.lz;
+    end
 
-    // Step 3: RNE increment and adder.
-    round_inc = guard && (round || sticky || keep[0]);
-    out.rounded = {1'b0, keep} + round_inc;
+    out.keep = sig_shifted[112 -: 24];
+    guard = sig_shifted[88];
+    round = sig_shifted[87];
+    sticky = |sig_shifted[86:0];
+
+    out.round_inc = guard && (round || sticky || out.keep[0]);
 
     return out;
   endfunction
 
-  function automatic binary32_t binary128_to_binary32_rne_part3(
-    input binary128_to_binary32_rne_p2_t in
+  function automatic binary32_t binary128_to_binary32_rne_s3(
+    input binary128_to_binary32_rne_s2_t in
   );
-    localparam int E_MAX_32 = 127;
-    binary32_t out;
-    int signed exp_out;
+    localparam logic signed [17:0] E_MAX_32_S = 18'sd127;
 
-    // Step 0: Initialize output with sign propagated from part2.
+    binary32_t out;
+    logic [24:0] rounded;
+    logic carry;
+    logic signed [17:0] exp_out_s;
+    logic signed [17:0] exp_biased_s;
+
     out = '0;
     out.sign = in.sign;
 
-    // Step 1: Handle specials first (NaN, Inf, overflow-to-Inf, zero).
+    // specials first
     if (in.is_nan) begin
       out.exp = 8'hff;
       out.mantissa = in.nan_payload;
       return out;
     end
-
     if (in.is_inf || in.is_overflow) begin
       out.exp = 8'hff;
       out.mantissa = '0;
       return out;
     end
-
     if (in.is_zero) begin
       out.exp = '0;
       out.mantissa = '0;
       return out;
     end
 
-    // Step 2: Normal path pack (with post-round carry into exponent).
+    // rounding add
+    rounded = {1'b0, in.keep} + {{24{1'b0}}, in.round_inc};
+    carry = rounded[24];
+
+    // pack
     if (!in.is_subnormal) begin
-      exp_out = in.exp_norm + (in.rounded[24] ? 1 : 0);
-      if (exp_out > E_MAX_32) begin
+      exp_out_s = in.exp_norm + $signed({17'b0, carry});
+
+      if (exp_out_s > E_MAX_32_S) begin
         out.exp = 8'hff;
         out.mantissa = '0;
       end
       else begin
-        out.exp = exp_out + BIAS_32;
-        if (in.rounded[24]) begin
-          out.mantissa = in.rounded[23:1];
-        end
-        else begin
-          out.mantissa = in.rounded[22:0];
-        end
+        exp_biased_s = exp_out_s + BIAS_32;
+        out.exp = exp_biased_s[7:0];
+        out.mantissa = carry ? rounded[23:1] : rounded[22:0];
       end
     end
-    
-    // Step 3: Subnormal path pack (including subnormal-to-normal bump).
     else begin
-      if (in.rounded[24] || in.rounded[23]) begin
+      // subnormal pack + bump
+      if (rounded[24] || rounded[23]) begin
         out.exp = 8'd1;
         out.mantissa = '0;
       end
       else begin
         out.exp = '0;
-        out.mantissa = in.rounded[22:0];
+        out.mantissa = rounded[22:0];
       end
     end
 
@@ -519,21 +772,36 @@ package binary128_convert_pkg;
   endfunction
 
   function automatic binary64_t binary128_to_binary64_rne(input logic [127:0] in_bits);
-    // Backward-compatible 1-call wrapper: part1 then part2 then part3.
-    return binary128_to_binary64_rne_part3(
-      binary128_to_binary64_rne_part2(
-        binary128_to_binary64_rne_part1(in_bits)
-      )
-    );
+    return binary128_to_binary64_rne_s3(
+             binary128_to_binary64_rne_s2(
+               binary128_to_binary64_rne_s1b(
+                 binary128_to_binary64_rne_s1a(
+                   binary128_to_binary64_rne_s0b(
+                     binary128_to_binary64_rne_s0a(in_bits)
+                   )
+                 )
+               )
+             )
+           );
+  endfunction
+
+  // Backward-compatible alias used in some call sites.
+  function automatic binary64_t binary128_to_binary64_rne0(input logic [127:0] in_bits);
+    return binary128_to_binary64_rne(in_bits);
   endfunction
 
   function automatic binary32_t binary128_to_binary32_rne(input logic [127:0] in_bits);
-    // Backward-compatible 1-call wrapper: part1 then part2 then part3.
-    return binary128_to_binary32_rne_part3(
-      binary128_to_binary32_rne_part2(
-        binary128_to_binary32_rne_part1(in_bits)
-      )
-    );
+    return binary128_to_binary32_rne_s3(
+             binary128_to_binary32_rne_s2(
+               binary128_to_binary32_rne_s1b(
+                 binary128_to_binary32_rne_s1a(
+                   binary128_to_binary32_rne_s0b(
+                     binary128_to_binary32_rne_s0a(in_bits)
+                   )
+                 )
+               )
+             )
+           );
   endfunction
 
 endpackage : binary128_convert_pkg

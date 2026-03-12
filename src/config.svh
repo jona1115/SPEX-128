@@ -37,6 +37,13 @@
  */
 // `define RUNNING_GENUS_SYNTHESIS // knob
 
+// Mutex assert
+`ifdef RUNNING_VIVADO_SYNTHESIS
+  `ifdef RUNNING_GENUS_SYNTHESIS
+    $fatal("Both RUNNING_VIVADO_SYNTHESIS and RUNNING_GENUS_SYNTHESIS flags are on! They are mutually exclusive. Fix it in config.svh!");
+  `endif
+`endif
+
 /**
   * Turn this define ON (uncomment) when synthesizing using Vivado, as it only recognize .data binary files
   * Turn thie design OFF (comment) when simulating using non-Vivado, as the testing infrastructure is set up
@@ -67,12 +74,12 @@
  * synthesis tools (e.g. Genus) ignore initial blocks, which can cause the LUT
  * datapaths to be optimized away (since the ROM contents become "don't care").
  *
- * When SPEX_LUT_DUMMY is defined, fixed_partition_sp replaces LUT reads with a
+ * When USE_STUB_FOR_MEM_RD is defined, fixed_partition_sp replaces LUT reads with a
  * deterministic, address-dependent dummy function (no memory inference). This
  * preserves the surrounding datapath for PPA studies when the ROM is off-chip.
  */
 `ifdef RUNNING_GENUS_SYNTHESIS
-  `define SPEX_LUT_DUMMY
+  `define USE_STUB_FOR_MEM_RD
 `endif
 
 /**
@@ -95,6 +102,14 @@
 // `define EN_DEBUG_PRINT
 // `define USE_DSP  // knob // DO NOT turn on in final product! Will cause output to be very wrong
 `define USE_RADIX4_RECODING // knob
+
+/**
+ * Used in SPEX128_top.sv
+ * 
+ * As mentioned in the paper, a naive L2 is where each mode have its own lookup tables, and no conversion
+ * logic is needed. If you want that, uncomment NAIVE_L2.
+ */
+// `define NAIVE_L2 // knob
 
 /**
  * Sometimes, if code changed when Vivado is closed, it won't know something changed. In that case,
