@@ -309,6 +309,7 @@ localparam int PROD_W       = 45;
 localparam int NA           = (W + A_PAYLOAD_W - 1) / A_PAYLOAD_W;    // 5
 localparam int NB           = (W + B_PAYLOAD_W - 1) / B_PAYLOAD_W;    // 7
 localparam int NPP          = NA * NB;                                // 35
+localparam int EXTRA_NPP    = 1;                                      // duplicate A2 x B3 for TWO_SP_MODE lane-a
 localparam int A_PAD_W      = NA * A_PAYLOAD_W;                       // 130
 localparam int B_PAD_W      = NB * B_PAYLOAD_W;                       // 119
 
@@ -318,7 +319,11 @@ localparam int DSP_TREE_STAGES = 6;
 // In USE_DSP mode, upstream logic should treat intmult latency as DSP_TOTAL_LAT.
 localparam int DSP_TOTAL_LAT   = DSP_MULT_STAGES + DSP_TREE_STAGES;
 
-localparam int L0_N = NPP;
+localparam int DUP_TERM_INDEX = NPP;
+localparam int DUP_TERM_A_IDX = 2;
+localparam int DUP_TERM_B_IDX = 3;
+
+localparam int L0_N = NPP + EXTRA_NPP;                                // 36
 localparam int L1_N = (L0_N + 1) / 2;
 localparam int L2_N = (L1_N + 1) / 2;
 localparam int L3_N = (L2_N + 1) / 2;
@@ -333,10 +338,10 @@ logic [DSP_TOTAL_LAT-1 : 0] s_pipe_valid_next;
 logic [A_PAD_W-1 : 0] s_a_pad;
 logic [B_PAD_W-1 : 0] s_b_pad;
 
-logic signed [A_DSP_W-1 : 0] s_a_tile_s1 [0 : NA-1];
-logic signed [B_DSP_W-1 : 0] s_b_tile_s1 [0 : NB-1];
-(* use_dsp = "yes" *) logic signed [PROD_W-1 : 0] s_pp_s2 [0 : NA-1][0 : NB-1];
-logic signed [PROD_W-1 : 0] s_pp_s3 [0 : NA-1][0 : NB-1];
+logic signed [A_DSP_W-1 : 0] s_a_term_s1 [0 : L0_N-1];
+logic signed [B_DSP_W-1 : 0] s_b_term_s1 [0 : L0_N-1];
+(* use_dsp = "yes" *) logic signed [PROD_W-1 : 0] s_pp_s2 [0 : L0_N-1];
+logic signed [PROD_W-1 : 0] s_pp_s3 [0 : L0_N-1];
 
 logic [OUT_W-1 : 0] s_term_l0 [0 : L0_N-1];
 logic [OUT_W-1 : 0] s_term_l1 [0 : L1_N-1];
@@ -345,6 +350,206 @@ logic [OUT_W-1 : 0] s_term_l3 [0 : L3_N-1];
 logic [OUT_W-1 : 0] s_term_l4 [0 : L4_N-1];
 logic [OUT_W-1 : 0] s_term_l5 [0 : L5_N-1];
 logic [OUT_W-1 : 0] s_term_l6 [0 : L6_N-1];
+
+function automatic logic [A_PAYLOAD_W-1 : 0] fn_mask_a_payload(
+  input sp_mode_t                 i_sp_mode,
+  input int                       i_a_idx,
+  input int                       i_b_idx,
+  input logic                     i_use_hi_lane,
+  input logic [A_PAYLOAD_W-1 : 0] i_payload
+);
+  logic [A_PAYLOAD_W-1 : 0] hs_masked;
+  begin
+    hs_masked = '0;
+
+    unique case (i_sp_mode)
+      SINGLE_MODE: begin
+        hs_masked = i_payload;
+      end
+
+      TWO_SP_MODE: begin
+        unique case (i_a_idx)
+          0, 1: begin
+            if (i_b_idx <= 3) begin
+              hs_masked = i_payload;
+            end
+          end
+
+          2: begin
+            if (i_b_idx <= 2) begin
+              hs_masked[0] = i_payload[0];
+            end
+            else if (i_b_idx == 3) begin
+              if (i_use_hi_lane) begin
+                hs_masked[25:3] = i_payload[25:3];
+              end
+              else begin
+                hs_masked[0] = i_payload[0];
+              end
+            end
+            else begin
+              hs_masked[25:3] = i_payload[25:3];
+            end
+          end
+
+          3, 4: begin
+            if (i_b_idx >= 3) begin
+              hs_masked = i_payload;
+            end
+          end
+
+          default: begin
+          end
+        endcase
+      end
+
+      FOUR_SP_MODE: begin
+        unique case (i_a_idx)
+          0: begin
+            if (i_b_idx <= 1) begin
+              hs_masked[23:0] = i_payload[23:0];
+            end
+          end
+
+          1: begin
+            if (i_b_idx >= 1 && i_b_idx <= 2) begin
+              hs_masked[23:0] = i_payload[23:0];
+            end
+          end
+
+          2: begin
+            if (i_b_idx >= 3 && i_b_idx <= 4) begin
+              hs_masked[24:1] = i_payload[24:1];
+            end
+          end
+
+          3: begin
+            if (i_b_idx >= 4 && i_b_idx <= 6) begin
+              hs_masked[24:1] = i_payload[24:1];
+            end
+          end
+
+          default: begin
+          end
+        endcase
+      end
+
+      default: begin
+      end
+    endcase
+
+    fn_mask_a_payload = hs_masked;
+  end
+endfunction
+
+function automatic logic [B_PAYLOAD_W-1 : 0] fn_mask_b_payload(
+  input sp_mode_t                 i_sp_mode,
+  input int                       i_a_idx,
+  input int                       i_b_idx,
+  input logic                     i_use_hi_lane,
+  input logic [B_PAYLOAD_W-1 : 0] i_payload
+);
+  logic [B_PAYLOAD_W-1 : 0] hs_masked;
+  begin
+    hs_masked = '0;
+
+    unique case (i_sp_mode)
+      SINGLE_MODE: begin
+        hs_masked = i_payload;
+      end
+
+      TWO_SP_MODE: begin
+        unique case (i_b_idx)
+          0, 1, 2: begin
+            if (i_a_idx <= 2) begin
+              hs_masked = i_payload;
+            end
+          end
+
+          3: begin
+            if (i_a_idx <= 1) begin
+              hs_masked[1:0] = i_payload[1:0];
+            end
+            else if (i_a_idx == 2) begin
+              if (i_use_hi_lane) begin
+                hs_masked[16:4] = i_payload[16:4];
+              end
+              else begin
+                hs_masked[1:0] = i_payload[1:0];
+              end
+            end
+            else begin
+              hs_masked[16:4] = i_payload[16:4];
+            end
+          end
+
+          4, 5, 6: begin
+            if (i_a_idx >= 2) begin
+              hs_masked = i_payload;
+            end
+          end
+
+          default: begin
+          end
+        endcase
+      end
+
+      FOUR_SP_MODE: begin
+        unique case (i_b_idx)
+          0: begin
+            if (i_a_idx == 0) begin
+              hs_masked = i_payload;
+            end
+          end
+
+          1: begin
+            if (i_a_idx == 0) begin
+              hs_masked[6:0] = i_payload[6:0];
+            end
+            else if (i_a_idx == 1) begin
+              hs_masked[16:9] = i_payload[16:9];
+            end
+          end
+
+          2: begin
+            if (i_a_idx == 1) begin
+              hs_masked = i_payload;
+            end
+          end
+
+          3: begin
+            if (i_a_idx == 2) begin
+              hs_masked = i_payload;
+            end
+          end
+
+          4: begin
+            if (i_a_idx == 2) begin
+              hs_masked[8:0] = i_payload[8:0];
+            end
+            else if (i_a_idx == 3) begin
+              hs_masked[16:11] = i_payload[16:11];
+            end
+          end
+
+          5, 6: begin
+            if (i_a_idx == 3) begin
+              hs_masked = i_payload;
+            end
+          end
+
+          default: begin
+          end
+        endcase
+      end
+
+      default: begin
+      end
+    endcase
+
+    fn_mask_b_payload = hs_masked;
+  end
+endfunction
 
 assign s_fire = i_valid_anikin & i_valid_force;
 assign s_pipe_valid_next = {s_pipe_valid[DSP_TOTAL_LAT-2 : 0], s_fire};
@@ -360,18 +565,58 @@ always_ff @( posedge i_clk ) begin : sp_intmultiplier_dsp_valid_pipe
   end
 end
 
-// Stage 1: register tile inputs as non-negative signed 27x18 operands.
+// Stage 1: register per-term masked DSP operands so each tile pair can select its legal lane slice.
 always_ff @( posedge i_clk ) begin : dsp_stage1_tiles
+  int                       hs_term_idx;
+  int                       hs_a_idx;
+  int                       hs_b_idx;
+  logic                     hs_term_active;
+  logic                     hs_use_hi_lane;
+  logic [A_PAYLOAD_W-1 : 0] hs_a_payload;
+  logic [B_PAYLOAD_W-1 : 0] hs_b_payload;
+
   if (!i_rst_n) begin
-    s_a_tile_s1 <= '{default:'0};
-    s_b_tile_s1 <= '{default:'0};
+    s_a_term_s1 <= '{default:'0};
+    s_b_term_s1 <= '{default:'0};
   end
   else begin
-    for (int i = 0; i < NA; i++) begin
-      s_a_tile_s1[i] <= $signed({1'b0, s_a_pad[i*A_PAYLOAD_W +: A_PAYLOAD_W]});
-    end
-    for (int j = 0; j < NB; j++) begin
-      s_b_tile_s1[j] <= $signed({1'b0, s_b_pad[j*B_PAYLOAD_W +: B_PAYLOAD_W]});
+    for (hs_term_idx = 0; hs_term_idx < L0_N; hs_term_idx++) begin
+      if (hs_term_idx == DUP_TERM_INDEX) begin
+        hs_a_idx       = DUP_TERM_A_IDX;
+        hs_b_idx       = DUP_TERM_B_IDX;
+        hs_term_active = (i_metadata.sp_mode == TWO_SP_MODE);
+        hs_use_hi_lane = hs_term_active;
+      end
+      else begin
+        hs_a_idx       = hs_term_idx / NB;
+        hs_b_idx       = hs_term_idx % NB;
+        hs_term_active = 1'b1;
+        hs_use_hi_lane = 1'b0;
+      end
+
+      if (hs_term_active) begin
+        hs_a_payload = fn_mask_a_payload(
+          i_metadata.sp_mode,
+          hs_a_idx,
+          hs_b_idx,
+          hs_use_hi_lane,
+          s_a_pad[hs_a_idx*A_PAYLOAD_W +: A_PAYLOAD_W]
+        );
+        hs_b_payload = fn_mask_b_payload(
+          i_metadata.sp_mode,
+          hs_a_idx,
+          hs_b_idx,
+          hs_use_hi_lane,
+          s_b_pad[hs_b_idx*B_PAYLOAD_W +: B_PAYLOAD_W]
+        );
+      end
+      else begin
+        hs_a_payload = '0;
+        hs_b_payload = '0;
+      end
+
+      s_a_term_s1[hs_term_idx] <= $signed({1'b0, hs_a_payload});
+      s_b_term_s1[hs_term_idx] <= $signed({1'b0, hs_b_payload});
     end
   end
 end
@@ -379,17 +624,13 @@ end
 // Stage 2: isolated signed partial-product multiplies to encourage DSP inference.
 always_ff @( posedge i_clk ) begin : dsp_stage2_mult
   if (!i_rst_n) begin
-    for (int i = 0; i < NA; i++) begin
-      for (int j = 0; j < NB; j++) begin
-        s_pp_s2[i][j] <= '0;
-      end
+    for (int term_idx = 0; term_idx < L0_N; term_idx++) begin
+      s_pp_s2[term_idx] <= '0;
     end
   end
   else begin
-    for (int i = 0; i < NA; i++) begin
-      for (int j = 0; j < NB; j++) begin
-        s_pp_s2[i][j] <= s_a_tile_s1[i] * s_b_tile_s1[j];
-      end
+    for (int term_idx = 0; term_idx < L0_N; term_idx++) begin
+      s_pp_s2[term_idx] <= s_a_term_s1[term_idx] * s_b_term_s1[term_idx];
     end
   end
 end
@@ -397,30 +638,41 @@ end
 // Stage 3: register multiplier outputs again before wide accumulation.
 always_ff @( posedge i_clk ) begin : dsp_stage3_mult_pipe
   if (!i_rst_n) begin
-    for (int i = 0; i < NA; i++) begin
-      for (int j = 0; j < NB; j++) begin
-        s_pp_s3[i][j] <= '0;
-      end
+    for (int term_idx = 0; term_idx < L0_N; term_idx++) begin
+      s_pp_s3[term_idx] <= '0;
     end
   end
   else begin
-    for (int i = 0; i < NA; i++) begin
-      for (int j = 0; j < NB; j++) begin
-        s_pp_s3[i][j] <= s_pp_s2[i][j];
-      end
+    for (int term_idx = 0; term_idx < L0_N; term_idx++) begin
+      s_pp_s3[term_idx] <= s_pp_s2[term_idx];
     end
   end
 end
 
-for (genvar i = 0; i < NA; i++) begin : dsp_term_i
-  for (genvar j = 0; j < NB; j++) begin : dsp_term_j
-    localparam int TERM_INDEX = (i * NB) + j;
-    localparam int SHIFT      = (i * A_PAYLOAD_W) + (j * B_PAYLOAD_W);
-    assign s_term_l0[TERM_INDEX] = ({{(OUT_W-PROD_W){1'b0}}, $unsigned(s_pp_s3[i][j])} << SHIFT);
+always_comb begin : dsp_term_align
+  int hs_term_idx;
+  int hs_a_idx;
+  int hs_b_idx;
+  int hs_shift;
+
+  s_term_l0 = '{default:'0};
+
+  for (hs_term_idx = 0; hs_term_idx < L0_N; hs_term_idx++) begin
+    if (hs_term_idx == DUP_TERM_INDEX) begin
+      hs_a_idx = DUP_TERM_A_IDX;
+      hs_b_idx = DUP_TERM_B_IDX;
+    end
+    else begin
+      hs_a_idx = hs_term_idx / NB;
+      hs_b_idx = hs_term_idx % NB;
+    end
+
+    hs_shift = (hs_a_idx * A_PAYLOAD_W) + (hs_b_idx * B_PAYLOAD_W);
+    s_term_l0[hs_term_idx] = ({{(OUT_W-PROD_W){1'b0}}, $unsigned(s_pp_s3[hs_term_idx])} << hs_shift);
   end
 end
 
-// Registered binary adder tree for 35 aligned OUT_W terms.
+// Registered binary adder tree for 36 aligned OUT_W terms.
 always_ff @( posedge i_clk ) begin : dsp_tree_l1
   if (!i_rst_n) begin
     s_term_l1 <= '{default:'0};
@@ -519,6 +771,7 @@ end
 
 assign o_jedi = s_term_l6[0];
 assign o_valid_jedi = s_pipe_valid[DSP_TOTAL_LAT-1];
+assign s_o_error = '0;
 
 `endif // end of `ifndef USE_DSP
 
