@@ -236,10 +236,13 @@ fixed_partition_sp #(
 `else
   .USE_128_FOR_64(1'b1),
   .USE_128_FOR_32(1'b1),
+  .USE_DEDICATED_32_FOR_CD(1'b1),
   .ENABLE_64(1'b1),
   .ENABLE_32(1'b1),
   .INIT_128_POS_FILE({"fixed128_0a_partition.", `SPEX_RAM_EXT}),
-  .INIT_128_NEG_FILE({"fixed128_1a_partition.", `SPEX_RAM_EXT})
+  .INIT_128_NEG_FILE({"fixed128_1a_partition.", `SPEX_RAM_EXT}),
+  .INIT_32_POS_FILE({"fixed32_0a_partition.", `SPEX_RAM_EXT}),
+  .INIT_32_NEG_FILE({"fixed32_1a_partition.", `SPEX_RAM_EXT})
 `endif
 ) my_fixed_partition_sp_par_a (
   .i_clk(i_clk),
@@ -314,9 +317,11 @@ fixed_partition_sp #(
 `else
   .USE_128_FOR_64(1'b1),
   .USE_128_FOR_32(1'b1),
+  .USE_DEDICATED_32_FOR_CD(1'b1),
   .ENABLE_64(1'b1),
   .ENABLE_32(1'b1),
-  .INIT_128_FILE({"fixed128_b_partition.", `SPEX_RAM_EXT})
+  .INIT_128_FILE({"fixed128_b_partition.", `SPEX_RAM_EXT}),
+  .INIT_32_FILE({"fixed32_b_partition.", `SPEX_RAM_EXT})
 `endif
 ) my_fixed_partition_sp_par_b (
   .i_clk(i_clk),
@@ -391,9 +396,11 @@ fixed_partition_sp #(
 `else
   .USE_128_FOR_64(1'b1),
   .USE_128_FOR_32(1'b1),
+  .USE_DEDICATED_32_FOR_CD(1'b1),
   .ENABLE_64(1'b1),
   .ENABLE_32(1'b1),
-  .INIT_128_FILE({"fixed128_c_partition.", `SPEX_RAM_EXT})
+  .INIT_128_FILE({"fixed128_c_partition.", `SPEX_RAM_EXT}),
+  .INIT_32_FILE({"fixed32_c_partition.", `SPEX_RAM_EXT})
 `endif
 ) my_fixed_partition_sp_par_c (
   .i_clk(i_clk),
@@ -640,6 +647,13 @@ end // always_ff
  * Level 3
  * 
  *****************************************************************/
+`ifdef USE_DSP
+localparam int SP_FPMULT_INTMUL_LATENCY = 9;
+`else
+localparam int SP_FPMULT_INTMUL_LATENCY = 3;
+`endif
+localparam int SP_FPMULT_MODULE_LATENCY = SP_FPMULT_INTMUL_LATENCY + 4;
+
 `define S (s_level2_metadata.sp_mode) // todo give this macro a better name
 logic [127:0] s_mux_0;
 logic         s_mux_0_valid;
@@ -768,7 +782,10 @@ logic s_my_sp_fpmultiplier_0_valid32d_jedi;
 logic [3:0] s_my_sp_fpmultiplier_0_identifier;
 logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_0_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_0_debug;
-sp_fpmultiplier #() my_sp_fpmultiplier_0 (
+sp_fpmultiplier #(
+  .INTMUL_LATENCY(SP_FPMULT_INTMUL_LATENCY),
+  .MODULE_LATENCY(SP_FPMULT_MODULE_LATENCY)
+) my_sp_fpmultiplier_0 (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
   .i_metadata(s_level2_metadata),
@@ -816,7 +833,10 @@ logic [3:0] s_my_sp_fpmultiplier_1_identifier;
 logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_1_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_1_debug;
 logic unused_mul1_1, unused_mul1_2, unused_mul1_3, unused_mul1_4;
-sp_fpmultiplier #() my_sp_fpmultiplier_1 (
+sp_fpmultiplier #(
+  .INTMUL_LATENCY(SP_FPMULT_INTMUL_LATENCY),
+  .MODULE_LATENCY(SP_FPMULT_MODULE_LATENCY)
+) my_sp_fpmultiplier_1 (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
   .i_metadata(s_level2_metadata),
@@ -864,7 +884,10 @@ logic [3:0] s_my_sp_fpmultiplier_2_identifier;
 logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_2_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_2_debug;
 logic unused_mul2_1, unused_mul2_2, unused_mul2_3, unused_mul2_4, unused_mul2_5, unused_mul2_6;
-sp_fpmultiplier #() my_sp_fpmultiplier_2 (
+sp_fpmultiplier #(
+  .INTMUL_LATENCY(SP_FPMULT_INTMUL_LATENCY),
+  .MODULE_LATENCY(SP_FPMULT_MODULE_LATENCY)
+) my_sp_fpmultiplier_2 (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
   .i_metadata(s_level2_metadata),
@@ -902,6 +925,8 @@ logic [127:0] s_mux_4;
 logic         s_mux_4_valid;
 logic [127:0] s_mux_4_foursp_raw;
 logic         s_mux_4_foursp_valid_raw;
+logic [127:0] s_mux_4_foursp_pipe [SP_FPMULT_MODULE_LATENCY-1:0];
+logic         s_mux_4_foursp_valid_pipe [SP_FPMULT_MODULE_LATENCY-1:0];
 logic [127:0] s_mux_4_foursp_aligned;
 logic         s_mux_4_foursp_valid_aligned;
 
@@ -914,17 +939,26 @@ assign s_mux_4_foursp_valid_raw = s_my_fixed_partition_sp_par_c_o_valid32a &
                                   s_my_fixed_partition_sp_par_c_o_valid32c &
                                   s_my_fixed_partition_sp_par_c_o_valid32d;
 
-// Align FOUR_SP force path with sp_fpmultiplier_0 after its extra internal stage.
+// FOUR_SP bypasses multiplier_1, so delay partition-c by the bypassed multiplier latency.
 always_ff @(posedge i_clk) begin : mux_4_foursp_align
+  int i;
   if (!i_rst_n) begin
-    s_mux_4_foursp_aligned <= '0;
-    s_mux_4_foursp_valid_aligned <= 1'b0;
+    s_mux_4_foursp_pipe <= '{default:'0};
+    s_mux_4_foursp_valid_pipe <= '{default:'0};
   end
   else begin
-    s_mux_4_foursp_aligned <= s_mux_4_foursp_raw;
-    s_mux_4_foursp_valid_aligned <= s_mux_4_foursp_valid_raw;
+    s_mux_4_foursp_pipe[0] <= s_mux_4_foursp_raw;
+    s_mux_4_foursp_valid_pipe[0] <= s_mux_4_foursp_valid_raw;
+
+    for (i = 1; i < SP_FPMULT_MODULE_LATENCY; i++) begin
+      s_mux_4_foursp_pipe[i] <= s_mux_4_foursp_pipe[i-1];
+      s_mux_4_foursp_valid_pipe[i] <= s_mux_4_foursp_valid_pipe[i-1];
+    end
   end
 end
+
+assign s_mux_4_foursp_aligned = s_mux_4_foursp_pipe[SP_FPMULT_MODULE_LATENCY-1];
+assign s_mux_4_foursp_valid_aligned = s_mux_4_foursp_valid_pipe[SP_FPMULT_MODULE_LATENCY-1];
 
 always_comb begin : mux_4
   case (`S)
@@ -966,6 +1000,8 @@ logic [3:0] s_my_sp_fpmultiplier_3_identifier;
 logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_3_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_3_debug;
 sp_fpmultiplier #(
+  .INTMUL_LATENCY(SP_FPMULT_INTMUL_LATENCY),
+  .MODULE_LATENCY(SP_FPMULT_MODULE_LATENCY),
   .DEBUG_PRINT_EN(0)
 ) my_sp_fpmultiplier_3 (
   .i_clk(i_clk),
@@ -1016,6 +1052,8 @@ logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_4_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_4_debug;
 logic unused_mul4_1, unused_mul4_2, unused_mul4_3, unused_mul4_4, unused_mul4_5, unused_mul4_6;
 sp_fpmultiplier #(
+  .INTMUL_LATENCY(SP_FPMULT_INTMUL_LATENCY),
+  .MODULE_LATENCY(SP_FPMULT_MODULE_LATENCY),
   .DEBUG_PRINT_EN(0)
 ) my_sp_fpmultiplier_4 (
   .i_clk(i_clk),
