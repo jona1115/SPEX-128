@@ -170,12 +170,12 @@ endfunction
 // flag is cleared (commented out).
 //=====================================================================================
 `ifndef USE_STUB_FOR_MEM_RD
-(* ram_style = "block", rom_style = "block" *) logic [127:0] mem128_pos  [0:DEPTH_128-1];
-(* ram_style = "block", rom_style = "block" *) logic [127:0] mem128_neg  [0:DEPTH_128-1];
-(* ram_style = "block", rom_style = "block" *) logic [63:0]  mem64_pos   [0:DEPTH_64-1];
-(* ram_style = "block", rom_style = "block" *) logic [63:0]  mem64_neg   [0:DEPTH_64-1];
-(* ram_style = "block", rom_style = "block" *) logic [31:0]  mem32_pos   [0:DEPTH_32-1];
-(* ram_style = "block", rom_style = "block" *) logic [31:0]  mem32_neg   [0:DEPTH_32-1];
+`RAM_STYLE_WANTED logic [127:0] mem128_pos  [0:DEPTH_128-1];
+`RAM_STYLE_WANTED logic [127:0] mem128_neg  [0:DEPTH_128-1];
+`RAM_STYLE_WANTED logic [63:0]  mem64_pos   [0:DEPTH_64-1];
+`RAM_STYLE_WANTED logic [63:0]  mem64_neg   [0:DEPTH_64-1];
+`RAM_STYLE_WANTED logic [31:0]  mem32_pos   [0:DEPTH_32-1];
+`RAM_STYLE_WANTED logic [31:0]  mem32_neg   [0:DEPTH_32-1];
 
 initial begin
   if (HAS_SIGN) begin

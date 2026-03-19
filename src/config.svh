@@ -97,6 +97,28 @@
 `endif
 
 /**
+ * In fixed_partition_sp there are flags that forces Vivado to use BRAM or Distributed RAM etc.
+ * These can be controlled by the below macros. The list of all available options on Xilinx
+ * docs can be found here: https://docs.amd.com/r/en-US/ug901-vivado-synthesis/RAM_STYLE?tocId=zwm5O2Ah27nECzbaosBcJA
+ * 
+ * Note: Only for Vivado flow, Cadence Genus will just ignore them.
+ */
+// `define FORCE_ALL_USE_BRAM    // knob
+// `define FORCE_ALL_USE_LUTRAM  // knob
+// `define FORCE_ALL_USE_MIXED   // knob
+`define FORCE_ALL_USE_AUTO    // knob
+
+`ifdef FORCE_ALL_USE_BRAM
+  `define RAM_STYLE_WANTED (* ram_style = "block", rom_style = "block" *)
+`elsif FORCE_ALL_USE_LUTRAM
+  `define RAM_STYLE_WANTED (* ram_style = "distributed", rom_style = "distributed" *)
+`elsif FORCE_ALL_USE_MIXED
+  `define RAM_STYLE_WANTED (* ram_style = "mixed", rom_style = "mixed" *)
+`elsif FORCE_ALL_USE_AUTO
+  `define RAM_STYLE_WANTED (* ram_style = "auto", rom_style = "auto" *)
+`endif
+
+/**
  * Used in sp_intmultiplier
  */
 // `define EN_DEBUG_PRINT
