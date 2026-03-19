@@ -250,12 +250,12 @@ fixed_partition_sp #(
   .i_metadata(s_my_float_to_fixed_metadata),
   .o_metadata(s_my_fixed_partition_sp_par_a_metadata),
   .i_lane_128(s_my_float_to_fixed_fixed[127:117]),
-  .i_lane_64a(s_my_float_to_fixed_fixed[127:117]), // not really tested since the TWO/FOUR sp mode test are never passed
-  .i_lane_64b(s_my_float_to_fixed_fixed[63:53]), // not really tested since the TWO/FOUR sp mode test are never passed
-  .i_lane_32a(s_my_float_to_fixed_fixed[127:117]), // not really tested since the TWO/FOUR sp mode test are never passed
-  .i_lane_32b(s_my_float_to_fixed_fixed[95:85]), // not really tested since the TWO/FOUR sp mode test are never passed
-  .i_lane_32c(s_my_float_to_fixed_fixed[63:53]), // not really tested since the TWO/FOUR sp mode test are never passed
-  .i_lane_32d(s_my_float_to_fixed_fixed[31:21]), // not really tested since the TWO/FOUR sp mode test are never passed
+  .i_lane_64a(s_my_float_to_fixed_fixed[127:117]),
+  .i_lane_64b(s_my_float_to_fixed_fixed[63:53]),
+  .i_lane_32a(s_my_float_to_fixed_fixed[127:117]),
+  .i_lane_32b(s_my_float_to_fixed_fixed[95:85]),
+  .i_lane_32c(s_my_float_to_fixed_fixed[63:53]),
+  .i_lane_32d(s_my_float_to_fixed_fixed[31:21]),
   .o_exp_a128(s_my_fixed_partition_sp_par_a_exp_a128),
   .o_exp_64a(s_my_fixed_partition_sp_par_a_exp_64a),
   .o_exp_64b(s_my_fixed_partition_sp_par_a_exp_64b),
@@ -329,12 +329,12 @@ fixed_partition_sp #(
   .i_metadata(s_my_float_to_fixed_metadata),
   .o_metadata(s_my_fixed_partition_sp_par_b_metadata),
   .i_lane_128(s_my_float_to_fixed_fixed[116:104]),
-  .i_lane_64a(s_my_float_to_fixed_fixed[116:104]), // not really tested since the TWO/FOUR sp mode test are never passed
-  .i_lane_64b(s_my_float_to_fixed_fixed[52:40]), // not really tested since the TWO/FOUR sp mode test are never passed
-  .i_lane_32a(s_my_float_to_fixed_fixed[116:104]), // not really tested since the TWO/FOUR sp mode test are never passed
-  .i_lane_32b(s_my_float_to_fixed_fixed[84:72]), // not really tested since the TWO/FOUR sp mode test are never passed
-  .i_lane_32c(s_my_float_to_fixed_fixed[52:40]), // not really tested since the TWO/FOUR sp mode test are never passed
-  .i_lane_32d(s_my_float_to_fixed_fixed[20:8]), // not really tested since the TWO/FOUR sp mode test are never passed
+  .i_lane_64a(s_my_float_to_fixed_fixed[116:104]),
+  .i_lane_64b(s_my_float_to_fixed_fixed[52:40]),
+  .i_lane_32a(s_my_float_to_fixed_fixed[116:104]),
+  .i_lane_32b(s_my_float_to_fixed_fixed[84:72]),
+  .i_lane_32c(s_my_float_to_fixed_fixed[52:40]),
+  .i_lane_32d(s_my_float_to_fixed_fixed[20:8]),
   .o_exp_a128(s_my_fixed_partition_sp_par_b_exp_a128),
   .o_exp_64a(s_my_fixed_partition_sp_par_b_exp_64a),
   .o_exp_64b(s_my_fixed_partition_sp_par_b_exp_64b),
@@ -408,12 +408,12 @@ fixed_partition_sp #(
   .i_metadata(s_my_float_to_fixed_metadata),
   .o_metadata(s_my_fixed_partition_sp_par_c_metadata),
   .i_lane_128(s_my_float_to_fixed_fixed[103:91]),
-  .i_lane_64a(s_my_float_to_fixed_fixed[103:91]), // not really tested since the TWO/FOUR sp mode test are never passed
-  .i_lane_64b(s_my_float_to_fixed_fixed[39:27]), // not really tested since the TWO/FOUR sp mode test are never passed
-  .i_lane_32a(s_my_float_to_fixed_fixed[106:96]), // not really tested since the TWO/FOUR sp mode test are never passed
-  .i_lane_32b(s_my_float_to_fixed_fixed[74:64]), // not really tested since the TWO/FOUR sp mode test are never passed
-  .i_lane_32c(s_my_float_to_fixed_fixed[42:32]), // not really tested since the TWO/FOUR sp mode test are never passed
-  .i_lane_32d(s_my_float_to_fixed_fixed[10:0]), // not really tested since the TWO/FOUR sp mode test are never passed
+  .i_lane_64a(s_my_float_to_fixed_fixed[103:91]),
+  .i_lane_64b(s_my_float_to_fixed_fixed[39:27]),
+  .i_lane_32a(s_my_float_to_fixed_fixed[106:96]),
+  .i_lane_32b(s_my_float_to_fixed_fixed[74:64]),
+  .i_lane_32c(s_my_float_to_fixed_fixed[42:32]),
+  .i_lane_32d(s_my_float_to_fixed_fixed[10:0]),
   .o_exp_a128(s_my_fixed_partition_sp_par_c_exp_a128),
   .o_exp_64a(s_my_fixed_partition_sp_par_c_exp_64a),
   .o_exp_64b(s_my_fixed_partition_sp_par_c_exp_64b),
