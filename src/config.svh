@@ -112,6 +112,14 @@
 // `define NAIVE_L2 // knob
 
 /**
+ * Used in SPEX128_top.sv
+ * 
+ * If this flag is turned off, the througput of 32-bit mode is 4 32-bit results per 2 cycles. With this turned
+ * on, it is 4 32-bit results per cycle, at the cost of about 10 more RAMB36E2 slices.
+ */
+`define USE_DEDICATED_LUT_FOR_LANE_CD // knob
+
+/**
  * Sometimes, if code changed when Vivado is closed, it won't know something changed. In that case,
  * feel free to use this flag to trigger a "file changed" detection.
  * 

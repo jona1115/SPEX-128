@@ -222,6 +222,9 @@ fixed_partition_sp #(
   .ADDR_BITS_128(10),
   .ADDR_BITS_64(10),
   .ADDR_BITS_32(10),
+`ifdef USE_DEDICATED_LUT_FOR_LANE_CD
+  .USE_DEDICATED_32_FOR_CD(1'b1),
+`endif
 `ifdef NAIVE_L2
   .USE_128_FOR_64(1'b0),
   .USE_128_FOR_32(1'b0),
@@ -236,13 +239,14 @@ fixed_partition_sp #(
 `else
   .USE_128_FOR_64(1'b1),
   .USE_128_FOR_32(1'b1),
-  .USE_DEDICATED_32_FOR_CD(1'b1),
   .ENABLE_64(1'b1),
   .ENABLE_32(1'b1),
+  `ifdef USE_DEDICATED_LUT_FOR_LANE_CD
+    .INIT_32_POS_FILE({"fixed32_0a_partition.", `SPEX_RAM_EXT}),
+    .INIT_32_NEG_FILE({"fixed32_1a_partition.", `SPEX_RAM_EXT}),
+  `endif
   .INIT_128_POS_FILE({"fixed128_0a_partition.", `SPEX_RAM_EXT}),
-  .INIT_128_NEG_FILE({"fixed128_1a_partition.", `SPEX_RAM_EXT}),
-  .INIT_32_POS_FILE({"fixed32_0a_partition.", `SPEX_RAM_EXT}),
-  .INIT_32_NEG_FILE({"fixed32_1a_partition.", `SPEX_RAM_EXT})
+  .INIT_128_NEG_FILE({"fixed128_1a_partition.", `SPEX_RAM_EXT})
 `endif
 ) my_fixed_partition_sp_par_a (
   .i_clk(i_clk),
@@ -306,6 +310,9 @@ fixed_partition_sp #(
   .ADDR_BITS_128(13),
   .ADDR_BITS_64(13),
   .ADDR_BITS_32(13),
+`ifdef USE_DEDICATED_LUT_FOR_LANE_CD
+  .USE_DEDICATED_32_FOR_CD(1'b1),
+`endif
 `ifdef NAIVE_L2
   .USE_128_FOR_64(1'b0),
   .USE_128_FOR_32(1'b0),
@@ -317,11 +324,12 @@ fixed_partition_sp #(
 `else
   .USE_128_FOR_64(1'b1),
   .USE_128_FOR_32(1'b1),
-  .USE_DEDICATED_32_FOR_CD(1'b1),
   .ENABLE_64(1'b1),
   .ENABLE_32(1'b1),
-  .INIT_128_FILE({"fixed128_b_partition.", `SPEX_RAM_EXT}),
-  .INIT_32_FILE({"fixed32_b_partition.", `SPEX_RAM_EXT})
+  `ifdef USE_DEDICATED_LUT_FOR_LANE_CD
+    .INIT_32_FILE({"fixed32_b_partition.", `SPEX_RAM_EXT}),
+  `endif
+  .INIT_128_FILE({"fixed128_b_partition.", `SPEX_RAM_EXT})
 `endif
 ) my_fixed_partition_sp_par_b (
   .i_clk(i_clk),
@@ -385,6 +393,9 @@ fixed_partition_sp #(
   .ADDR_BITS_128(13),
   .ADDR_BITS_64(13),
   .ADDR_BITS_32(11),
+`ifdef USE_DEDICATED_LUT_FOR_LANE_CD
+  .USE_DEDICATED_32_FOR_CD(1'b1),
+`endif
 `ifdef NAIVE_L2
   .USE_128_FOR_64(1'b0),
   .USE_128_FOR_32(1'b0),
@@ -396,11 +407,12 @@ fixed_partition_sp #(
 `else
   .USE_128_FOR_64(1'b1),
   .USE_128_FOR_32(1'b1),
-  .USE_DEDICATED_32_FOR_CD(1'b1),
   .ENABLE_64(1'b1),
   .ENABLE_32(1'b1),
-  .INIT_128_FILE({"fixed128_c_partition.", `SPEX_RAM_EXT}),
-  .INIT_32_FILE({"fixed32_c_partition.", `SPEX_RAM_EXT})
+  `ifdef USE_DEDICATED_LUT_FOR_LANE_CD
+    .INIT_32_FILE({"fixed32_c_partition.", `SPEX_RAM_EXT}),
+  `endif
+  .INIT_128_FILE({"fixed128_c_partition.", `SPEX_RAM_EXT})
 `endif
 ) my_fixed_partition_sp_par_c (
   .i_clk(i_clk),
