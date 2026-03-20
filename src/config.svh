@@ -122,7 +122,7 @@
  * Used in sp_intmultiplier
  */
 // `define EN_DEBUG_PRINT
-// `define USE_DSP  // knob
+`define USE_DSP  // knob
 `define USE_RADIX4_RECODING // knob
 
 /**

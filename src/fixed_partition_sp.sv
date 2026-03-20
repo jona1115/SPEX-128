@@ -58,7 +58,8 @@ module fixed_partition_sp #(
   parameter int LANE_BITS_64            = ADDR_BITS_64  + (HAS_SIGN ? 1 : 0),
   parameter int LANE_BITS_32            = ADDR_BITS_32  + (HAS_SIGN ? 1 : 0),
 
-  // LUT files (use *_POS/_NEG when HAS_SIGN=1, otherwise *_FILE)
+  // LUT files. For signed partitions, either provide *_POS/_NEG files or enable
+  // USE_COMBINED_SIGNED_* and provide the combined *_FILE.
 `ifndef RUNNING_GENUS_SYNTHESIS
   parameter string INIT_128_POS_FILE    = "",
   parameter string INIT_128_NEG_FILE    = "",
@@ -80,6 +81,12 @@ module fixed_partition_sp #(
   parameter INIT_32_NEG_FILE            = "",
   parameter INIT_32_FILE                = "",
 `endif
+
+  // Signed LUT file controls. When enabled, the sign bit becomes the MSB of the
+  // ROM address and INIT_*_FILE is used instead of separate pos/neg files.
+  parameter bit USE_COMBINED_SIGNED_128 = 1'b0,
+  parameter bit USE_COMBINED_SIGNED_64  = 1'b0,
+  parameter bit USE_COMBINED_SIGNED_32  = 1'b0,
 
   // Error and debug parameters
   parameter int ERROR_SIGNAL_NUM_BITS = 32,
@@ -142,6 +149,12 @@ module fixed_partition_sp #(
 localparam int DEPTH_128 = (ADDR_BITS_128 > 0) ? (1 << ADDR_BITS_128) : 1;
 localparam int DEPTH_64  = (ADDR_BITS_64  > 0) ? (1 << ADDR_BITS_64)  : 1;
 localparam int DEPTH_32  = (ADDR_BITS_32  > 0) ? (1 << ADDR_BITS_32)  : 1;
+localparam bit USE_COMBINED_SIGNED_128_L = HAS_SIGN && USE_COMBINED_SIGNED_128;
+localparam bit USE_COMBINED_SIGNED_64_L  = HAS_SIGN && USE_COMBINED_SIGNED_64;
+localparam bit USE_COMBINED_SIGNED_32_L  = HAS_SIGN && USE_COMBINED_SIGNED_32;
+localparam int DEPTH_128_COMBINED = USE_COMBINED_SIGNED_128_L ? (1 << LANE_BITS_128) : 1;
+localparam int DEPTH_64_COMBINED  = USE_COMBINED_SIGNED_64_L  ? (1 << LANE_BITS_64)  : 1;
+localparam int DEPTH_32_COMBINED  = USE_COMBINED_SIGNED_32_L  ? (1 << LANE_BITS_32)  : 1;
 
 function automatic logic [ADDR_BITS_128-1:0] addr128_from_64(
   input logic [ADDR_BITS_64-1:0] addr64
@@ -170,15 +183,21 @@ endfunction
 // flag is cleared (commented out).
 //=====================================================================================
 `ifndef USE_STUB_FOR_MEM_RD
+`RAM_STYLE_WANTED logic [127:0] mem128_signed [0:DEPTH_128_COMBINED-1];
 `RAM_STYLE_WANTED logic [127:0] mem128_pos  [0:DEPTH_128-1];
 `RAM_STYLE_WANTED logic [127:0] mem128_neg  [0:DEPTH_128-1];
+`RAM_STYLE_WANTED logic [63:0]  mem64_signed [0:DEPTH_64_COMBINED-1];
 `RAM_STYLE_WANTED logic [63:0]  mem64_pos   [0:DEPTH_64-1];
 `RAM_STYLE_WANTED logic [63:0]  mem64_neg   [0:DEPTH_64-1];
+`RAM_STYLE_WANTED logic [31:0]  mem32_signed [0:DEPTH_32_COMBINED-1];
 `RAM_STYLE_WANTED logic [31:0]  mem32_pos   [0:DEPTH_32-1];
 `RAM_STYLE_WANTED logic [31:0]  mem32_neg   [0:DEPTH_32-1];
 
 initial begin
-  if (HAS_SIGN) begin
+  if (USE_COMBINED_SIGNED_128_L) begin
+    if (INIT_128_FILE != "") `SPEX_READMEM(INIT_128_FILE, mem128_signed);
+  end
+  else if (HAS_SIGN) begin
     if (INIT_128_POS_FILE != "") `SPEX_READMEM(INIT_128_POS_FILE, mem128_pos);
     if (INIT_128_NEG_FILE != "") `SPEX_READMEM(INIT_128_NEG_FILE, mem128_neg);
   end
@@ -189,7 +208,10 @@ end
 
 initial begin
   if (ENABLE_64 && !USE_128_FOR_64) begin
-    if (HAS_SIGN) begin
+    if (USE_COMBINED_SIGNED_64_L) begin
+      if (INIT_64_FILE != "") `SPEX_READMEM(INIT_64_FILE, mem64_signed);
+    end
+    else if (HAS_SIGN) begin
       if (INIT_64_POS_FILE != "") `SPEX_READMEM(INIT_64_POS_FILE, mem64_pos);
       if (INIT_64_NEG_FILE != "") `SPEX_READMEM(INIT_64_NEG_FILE, mem64_neg);
     end
@@ -199,7 +221,10 @@ initial begin
   end
 
   if (ENABLE_32 && (!USE_128_FOR_32 || USE_DEDICATED_32_FOR_CD)) begin
-    if (HAS_SIGN) begin
+    if (USE_COMBINED_SIGNED_32_L) begin
+      if (INIT_32_FILE != "") `SPEX_READMEM(INIT_32_FILE, mem32_signed);
+    end
+    else if (HAS_SIGN) begin
       if (INIT_32_POS_FILE != "") `SPEX_READMEM(INIT_32_POS_FILE, mem32_pos);
       if (INIT_32_NEG_FILE != "") `SPEX_READMEM(INIT_32_NEG_FILE, mem32_neg);
     end
@@ -278,7 +303,8 @@ endfunction
             spex_lut128_read_stub(i_use_neg, i_addr);
 `else
   `define SPEX_LUT128_READ_MACRO(i_use_neg, i_addr) \
-            (HAS_SIGN && i_use_neg) ? mem128_neg[i_addr] : mem128_pos[i_addr];
+            USE_COMBINED_SIGNED_128_L ? mem128_signed[{i_use_neg, i_addr}] : \
+            ((HAS_SIGN && i_use_neg) ? mem128_neg[i_addr] : mem128_pos[i_addr]);
 `endif
 
 `ifdef USE_STUB_FOR_MEM_RD
@@ -286,7 +312,8 @@ endfunction
             spex_lut64_read_stub(i_use_neg, i_addr);
 `else
   `define SPEX_LUT64_READ_MACRO(i_use_neg, i_addr) \
-            (HAS_SIGN && i_use_neg) ? mem64_neg[i_addr] : mem64_pos[i_addr];
+            USE_COMBINED_SIGNED_64_L ? mem64_signed[{i_use_neg, i_addr}] : \
+            ((HAS_SIGN && i_use_neg) ? mem64_neg[i_addr] : mem64_pos[i_addr]);
 `endif
 
 `ifdef USE_STUB_FOR_MEM_RD
@@ -294,7 +321,8 @@ endfunction
             spex_lut32_read(i_use_neg, i_addr);
 `else
   `define SPEX_LUT32_READ_MACRO(i_use_neg, i_addr) \
-            (HAS_SIGN && i_use_neg) ? mem32_neg[i_addr] : mem32_pos[i_addr];
+            USE_COMBINED_SIGNED_32_L ? mem32_signed[{i_use_neg, i_addr}] : \
+            ((HAS_SIGN && i_use_neg) ? mem32_neg[i_addr] : mem32_pos[i_addr]);
 `endif
 
 

@@ -219,6 +219,9 @@ logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed_partition_sp_par_a_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed_partition_sp_par_a_debug;
 fixed_partition_sp #(
   .HAS_SIGN(1'b1),
+  .USE_COMBINED_SIGNED_128(1'b1),
+  .USE_COMBINED_SIGNED_64(1'b1),
+  .USE_COMBINED_SIGNED_32(1'b1),
   .ADDR_BITS_128(10),
   .ADDR_BITS_64(10),
   .ADDR_BITS_32(10),
@@ -230,23 +233,18 @@ fixed_partition_sp #(
   .USE_128_FOR_32(1'b0),
   .ENABLE_64(1'b1),
   .ENABLE_32(1'b1),
-  .INIT_128_POS_FILE({"fixed128_0a_partition.", `SPEX_RAM_EXT}),
-  .INIT_128_NEG_FILE({"fixed128_1a_partition.", `SPEX_RAM_EXT}),
-  .INIT_64_POS_FILE({"fixed64_0a_partition.", `SPEX_RAM_EXT}),
-  .INIT_64_NEG_FILE({"fixed64_1a_partition.", `SPEX_RAM_EXT}),
-  .INIT_32_POS_FILE({"fixed32_0a_partition.", `SPEX_RAM_EXT}),
-  .INIT_32_NEG_FILE({"fixed32_1a_partition.", `SPEX_RAM_EXT})
+  .INIT_128_FILE({"fixed128_01a_partition.", `SPEX_RAM_EXT}),
+  .INIT_64_FILE({"fixed64_01a_partition.", `SPEX_RAM_EXT}),
+  .INIT_32_FILE({"fixed32_01a_partition.", `SPEX_RAM_EXT})
 `else
   .USE_128_FOR_64(1'b1),
   .USE_128_FOR_32(1'b1),
   .ENABLE_64(1'b1),
   .ENABLE_32(1'b1),
   `ifdef USE_DEDICATED_LUT_FOR_LANE_CD
-    .INIT_32_POS_FILE({"fixed32_0a_partition.", `SPEX_RAM_EXT}),
-    .INIT_32_NEG_FILE({"fixed32_1a_partition.", `SPEX_RAM_EXT}),
+    .INIT_32_FILE({"fixed32_01a_partition.", `SPEX_RAM_EXT}),
   `endif
-  .INIT_128_POS_FILE({"fixed128_0a_partition.", `SPEX_RAM_EXT}),
-  .INIT_128_NEG_FILE({"fixed128_1a_partition.", `SPEX_RAM_EXT})
+  .INIT_128_FILE({"fixed128_01a_partition.", `SPEX_RAM_EXT})
 `endif
 ) my_fixed_partition_sp_par_a (
   .i_clk(i_clk),
