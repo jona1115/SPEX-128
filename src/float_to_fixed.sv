@@ -86,14 +86,7 @@ binary32_t s_binary32_a;
 binary32_t s_binary32_b;
 binary32_t s_binary32_c;
 binary32_t s_binary32_d;
-// For internal output
-fixed128_t s_fixed128;
-fixed64_t s_fixed64_a;
-fixed64_t s_fixed64_b;
-fixed32_t s_fixed32_a;
-fixed32_t s_fixed32_b;
-fixed32_t s_fixed32_c;
-fixed32_t s_fixed32_d;
+logic [127:0] s_fixed_packed_q;
 // Mantissa extended
 logic [112:0] s_binary128_mantissa_extended;
 logic [52:0]  s_binary64_a_mantissa_extended;
@@ -110,15 +103,6 @@ logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_o_debug;
 // Using assign will make it "continuous assignment", so it is eval-ed before always_comb 
 // blocks, usually we use assign for decoders. -ChatGPT
 sp_mode_t s_current_sp;
-sp_mode_t s_S1_sp;
-
-logic s_S1_sign_128;
-logic s_S1_sign_64_a;
-logic s_S1_sign_64_b;
-logic s_S1_sign_32_a;
-logic s_S1_sign_32_b;
-logic s_S1_sign_32_c;
-logic s_S1_sign_32_d;
 
 float_metadata_t s_metadata_decoded;
 assign s_current_sp =
@@ -243,30 +227,7 @@ always_ff @( posedge i_clk ) begin : stage1_convert
   sh_t shift_amount_a, shift_amount_b, shift_amount_c, shift_amount_d;
 
   if (!i_rst_n) begin
-    s_fixed128.int_portion    <= '0;
-    s_fixed128.frac_portion   <= '0;
-    s_fixed64_a.int_portion   <= '0;
-    s_fixed64_a.frac_portion  <= '0;
-    s_fixed64_b.int_portion   <= '0;
-    s_fixed64_b.frac_portion  <= '0;
-    s_fixed32_a.int_portion   <= '0;
-    s_fixed32_a.frac_portion  <= '0;
-    s_fixed32_b.int_portion   <= '0;
-    s_fixed32_b.frac_portion  <= '0;
-    s_fixed32_c.int_portion   <= '0;
-    s_fixed32_c.frac_portion  <= '0;
-    s_fixed32_d.int_portion   <= '0;
-    s_fixed32_d.frac_portion  <= '0;
-
-    s_S1_sp         <= INVALID_SP_MODE;
-    s_S1_sign_128   <= 1'b0;
-    s_S1_sign_64_a  <= 1'b0;
-    s_S1_sign_64_b  <= 1'b0;
-    s_S1_sign_32_a  <= 1'b0;
-    s_S1_sign_32_b  <= 1'b0;
-    s_S1_sign_32_c  <= 1'b0;
-    s_S1_sign_32_d  <= 1'b0;
-
+    s_fixed_packed_q <= '0;
     s_o_error <= '0;
   end
   else begin
@@ -315,16 +276,8 @@ always_ff @( posedge i_clk ) begin : stage1_convert
         end
       endcase
 
-      s_S1_sp         <= s_current_sp;
-      s_S1_sign_128   <= s_binary128.sign;
-      s_S1_sign_64_a  <= s_binary64_a.sign;
-      s_S1_sign_64_b  <= s_binary64_b.sign;
-      s_S1_sign_32_a  <= s_binary32_a.sign;
-      s_S1_sign_32_b  <= s_binary32_b.sign;
-      s_S1_sign_32_c  <= s_binary32_c.sign;
-      s_S1_sign_32_d  <= s_binary32_d.sign;
-
-      // assign the integer and frac
+      // Register the packed output directly so downstream logic sees a FF output
+      // instead of a mode-select mux hanging off of the output bus.
       case (s_current_sp)
         SINGLE_MODE: begin
           if (shift_amount_a >= 0 && shift_amount_a <= 9) begin
@@ -352,8 +305,7 @@ always_ff @( posedge i_clk ) begin : stage1_convert
               // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
           end
-          s_fixed128.int_portion  <= fixed128_shifted[126:117];
-          s_fixed128.frac_portion <= fixed128_shifted[116:0];
+          s_fixed_packed_q <= {s_binary128.sign, fixed128_shifted[126:117], fixed128_shifted[116:0]};
         end
 
         TWO_SP_MODE: begin
@@ -382,9 +334,6 @@ always_ff @( posedge i_clk ) begin : stage1_convert
               // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
           end
-          s_fixed64_a.int_portion  <= fixed64_a_shifted[62:52];
-          s_fixed64_a.frac_portion <= fixed64_a_shifted[51:0];
-
           if (shift_amount_b >= 0 && shift_amount_b <= 9) begin
             // Case a:
             fixed64_b_shifted = fixed64_b_temp << shift_amount_b;
@@ -410,8 +359,8 @@ always_ff @( posedge i_clk ) begin : stage1_convert
               // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
           end
-          s_fixed64_b.int_portion  <= fixed64_b_shifted[62:52];
-          s_fixed64_b.frac_portion <= fixed64_b_shifted[51:0];
+          s_fixed_packed_q <= {{s_binary64_a.sign, fixed64_a_shifted[62:52], fixed64_a_shifted[51:0]},
+                               {s_binary64_b.sign, fixed64_b_shifted[62:52], fixed64_b_shifted[51:0]}};
         end
 
         FOUR_SP_MODE: begin
@@ -440,8 +389,6 @@ always_ff @( posedge i_clk ) begin : stage1_convert
               // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
           end
-          s_fixed32_a.int_portion  <= fixed32_a_shifted[30:21];
-          s_fixed32_a.frac_portion <= fixed32_a_shifted[20:0];
 
           if (shift_amount_b >= 0 && shift_amount_b <= 9) begin
             // Case a:
@@ -468,8 +415,6 @@ always_ff @( posedge i_clk ) begin : stage1_convert
               // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
           end
-          s_fixed32_b.int_portion  <= fixed32_b_shifted[30:21];
-          s_fixed32_b.frac_portion <= fixed32_b_shifted[20:0];
 
           if (shift_amount_c >= 0 && shift_amount_c <= 9) begin
             // Case a:
@@ -496,8 +441,6 @@ always_ff @( posedge i_clk ) begin : stage1_convert
               // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
           end
-          s_fixed32_c.int_portion  <= fixed32_c_shifted[30:21];
-          s_fixed32_c.frac_portion <= fixed32_c_shifted[20:0];
 
           if (shift_amount_d >= 0 && shift_amount_d <= 9) begin
             // Case a:
@@ -524,11 +467,13 @@ always_ff @( posedge i_clk ) begin : stage1_convert
               // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
             end
           end
-          s_fixed32_d.int_portion  <= fixed32_d_shifted[30:21];
-          s_fixed32_d.frac_portion <= fixed32_d_shifted[20:0];
+          s_fixed_packed_q <= {{s_binary32_a.sign, fixed32_a_shifted[30:21], fixed32_a_shifted[20:0]},
+                               {s_binary32_b.sign, fixed32_b_shifted[30:21], fixed32_b_shifted[20:0]},
+                               {s_binary32_c.sign, fixed32_c_shifted[30:21], fixed32_c_shifted[20:0]},
+                               {s_binary32_d.sign, fixed32_d_shifted[30:21], fixed32_d_shifted[20:0]}};
         end
         default: begin
-
+          s_fixed_packed_q <= '0;
         end
       endcase // case (s_current_sp)
     end // if (s_S1_en) begin
@@ -540,14 +485,7 @@ end // always_ff
 //=====================================================================================
 assign o_metadata = s_metadata_decoded;
 
-assign o_fixed = (s_S1_sp == SINGLE_MODE)  ? {s_S1_sign_128, s_fixed128.int_portion, s_fixed128.frac_portion} :
-                 (s_S1_sp == TWO_SP_MODE)  ? {{s_S1_sign_64_a, s_fixed64_a.int_portion, s_fixed64_a.frac_portion},
-                                              {s_S1_sign_64_b, s_fixed64_b.int_portion, s_fixed64_b.frac_portion}} :
-                 (s_S1_sp == FOUR_SP_MODE) ? {{s_S1_sign_32_a, s_fixed32_a.int_portion, s_fixed32_a.frac_portion},
-                                              {s_S1_sign_32_b, s_fixed32_b.int_portion, s_fixed32_b.frac_portion},
-                                              {s_S1_sign_32_c, s_fixed32_c.int_portion, s_fixed32_c.frac_portion},
-                                              {s_S1_sign_32_d, s_fixed32_d.int_portion, s_fixed32_d.frac_portion}} :
-                 '0;
+assign o_fixed = s_fixed_packed_q;
 
 // This is the identifier (ie version number) of this block
 assign o_sanity_identifier      = MODULE_IDENTIFIER;
