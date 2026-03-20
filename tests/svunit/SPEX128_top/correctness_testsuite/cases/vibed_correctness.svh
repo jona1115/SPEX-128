@@ -1,14 +1,13 @@
 // ---------------------------------------------------------
 // Sanity: reset behavior + no activity when i_valid=0
-// We shall accept the bug where even when i_valid==0, the 
-// module will treat the input as 0 and produce an output of 
-// e^0=1
+// When output valid is low, o_exp_x is not part of the contract.
+// The meaningful requirement is that the pipeline stays idle.
 // ---------------------------------------------------------
 `SVTEST(noop_when_valid_low)
-  logic [127:0] snapshot;
-  // snapshot = s_o_exp_x;
   wait_n_ticks(LATENCY + 2);
-  `FAIL_UNLESS_EQUAL(s_o_exp_x, Q_ONE)
+  `FAIL_UNLESS_EQUAL(s_o_valid, 1'b0)
+  `FAIL_UNLESS_EQUAL(ds_my_float_to_fixed_o_valid, 1'b0)
+  `FAIL_UNLESS(s_o_error == '0)
 `SVTEST_END
 
 // ---------------------------------------------------------
@@ -274,4 +273,3 @@
   `FAIL_UNLESS(is_inf64(outA) && (outA[63] == 1'b0))
   `FAIL_UNLESS_EQUAL(gd2B, outB)
 `SVTEST_END
-

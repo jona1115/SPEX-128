@@ -41,8 +41,7 @@ module float_to_fixed #(
   parameter int ERROR_SIGNAL_NUM_BITS     = 32,
   parameter int DEBUG_SIGNAL_NUM_BITS     = 32,
 
-  // Do not change unless intentional:
-  parameter int MODULE_LATENCY            = 1,
+  parameter int MODULE_LATENCY            = 2, // Do not change unless you know what you are doing
 
   // Identifier const
   parameter logic [3:0] MODULE_IDENTIFIER = 4'b0000
@@ -68,15 +67,6 @@ module float_to_fixed #(
 );
 
 //=====================================================================================
-// State definition
-//=====================================================================================
-typedef enum logic [1:0] { 
-  S0_IDLE               = 2'b00,
-  S1_GET_SHIFT_AMOUNT   = 2'b01,
-  S2_CONVERT            = 2'b10
-} state_t;
-
-//=====================================================================================
 // Signal definitions
 //=====================================================================================
 binary128_t s_binary128;
@@ -98,13 +88,34 @@ logic [23:0]  s_binary32_d_mantissa_extended;
 // Error and debug signals
 logic [ERROR_SIGNAL_NUM_BITS-1:0] s_o_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_o_debug;
+float_metadata_t s_S0_metadata_q;
+float_metadata_t s_metadata_q;
 
 // Determine what sp (subword parallel) mode we are in based on input control signals.
 // Using assign will make it "continuous assignment", so it is eval-ed before always_comb 
 // blocks, usually we use assign for decoders. -ChatGPT
 sp_mode_t s_current_sp;
+sp_mode_t s_S0_current_sp_q;
 
 float_metadata_t s_metadata_decoded;
+logic s_S0_binary128_sign_q;
+logic s_S0_binary64_a_sign_q;
+logic s_S0_binary64_b_sign_q;
+logic s_S0_binary32_a_sign_q;
+logic s_S0_binary32_b_sign_q;
+logic s_S0_binary32_c_sign_q;
+logic s_S0_binary32_d_sign_q;
+logic [NUM_BITS_128-1:0] s_S0_fixed128_temp_q;
+logic [NUM_BITS_64-1:0]  s_S0_fixed64_a_temp_q;
+logic [NUM_BITS_64-1:0]  s_S0_fixed64_b_temp_q;
+logic [NUM_BITS_32-1:0]  s_S0_fixed32_a_temp_q;
+logic [NUM_BITS_32-1:0]  s_S0_fixed32_b_temp_q;
+logic [NUM_BITS_32-1:0]  s_S0_fixed32_c_temp_q;
+logic [NUM_BITS_32-1:0]  s_S0_fixed32_d_temp_q;
+sh_t s_S0_shift_amount_a_q;
+sh_t s_S0_shift_amount_b_q;
+sh_t s_S0_shift_amount_c_q;
+sh_t s_S0_shift_amount_d_q;
 assign s_current_sp =
   (i_ctrl[1:0] == 2'b00) ? SINGLE_MODE  :
   (i_ctrl[1:0] == 2'b01) ? TWO_SP_MODE  :
@@ -169,17 +180,72 @@ float_classifier #() my_float_classifier_0 (
   .o_metadata(s_metadata_decoded)
 );
 
+function automatic logic [NUM_BITS_128-1:0] apply_shift_128(
+  input logic [NUM_BITS_128-1:0] i_fixed_temp,
+  input sh_t                     i_shift_amount
+);
+  logic [NUM_BITS_128-1:0] fixed_shifted;
+
+  if ((i_shift_amount >= 0) && (i_shift_amount <= 9)) begin
+    fixed_shifted = i_fixed_temp << i_shift_amount;
+  end
+  else if (i_shift_amount < 0) begin
+    fixed_shifted = i_fixed_temp >> -i_shift_amount;
+  end
+  else begin
+    fixed_shifted = '1;
+  end
+  return fixed_shifted;
+endfunction
+
+function automatic logic [NUM_BITS_64-1:0] apply_shift_64(
+  input logic [NUM_BITS_64-1:0] i_fixed_temp,
+  input sh_t                    i_shift_amount
+);
+  logic [NUM_BITS_64-1:0] fixed_shifted;
+
+  if ((i_shift_amount >= 0) && (i_shift_amount <= 9)) begin
+    fixed_shifted = i_fixed_temp << i_shift_amount;
+  end
+  else if (i_shift_amount < 0) begin
+    fixed_shifted = i_fixed_temp >> -i_shift_amount;
+  end
+  else begin
+    fixed_shifted = '1;
+  end
+  return fixed_shifted;
+endfunction
+
+function automatic logic [NUM_BITS_32-1:0] apply_shift_32(
+  input logic [NUM_BITS_32-1:0] i_fixed_temp,
+  input sh_t                    i_shift_amount
+);
+  logic [NUM_BITS_32-1:0] fixed_shifted;
+
+  if ((i_shift_amount >= 0) && (i_shift_amount <= 9)) begin
+    fixed_shifted = i_fixed_temp << i_shift_amount;
+  end
+  else if (i_shift_amount < 0) begin
+    fixed_shifted = i_fixed_temp >> -i_shift_amount;
+  end
+  else begin
+    fixed_shifted = '1;
+  end
+  return fixed_shifted;
+endfunction
+
 /**
  * 
  * State transition control
  * 
  */
-logic s_S1_en;
 localparam int PIPE_DEPTH = MODULE_LATENCY;
 logic [PIPE_DEPTH-1 : 0] s_pipe_valid;
 logic [PIPE_DEPTH-1 : 0] s_pipe_valid_next;
 
 logic s_fire;
+logic s_S0_en;
+logic s_S1_en;
 assign s_fire = i_valid; // "decodes" the valid bit
 
 generate
@@ -191,7 +257,13 @@ generate
   end
 endgenerate
 
-assign s_S1_en = s_fire;
+assign s_S0_en = s_fire;
+assign s_S1_en = s_pipe_valid[0];
+
+initial begin
+  assert (MODULE_LATENCY == 2)
+    else $error("float_to_fixed MODULE_LATENCY must be 2 for the explicit 2-stage pipeline.");
+end
 
 /**
  * FSM
@@ -206,9 +278,9 @@ always_ff @( posedge i_clk ) begin : float_to_fixed_FSM
 end
 
 //=====================================================================================
-// Stage 1 (conversion)
+// Stage 0 (mantissa map + shift amount decode)
 //=====================================================================================
-always_ff @( posedge i_clk ) begin : stage1_convert
+always_ff @( posedge i_clk ) begin : stage0_prepare
   logic [NUM_BITS_128-1:0] fixed128_temp;
   logic [NUM_BITS_64-1:0] fixed64_a_temp;
   logic [NUM_BITS_64-1:0] fixed64_b_temp;
@@ -216,7 +288,104 @@ always_ff @( posedge i_clk ) begin : stage1_convert
   logic [NUM_BITS_32-1:0] fixed32_b_temp;
   logic [NUM_BITS_32-1:0] fixed32_c_temp;
   logic [NUM_BITS_32-1:0] fixed32_d_temp;
+  sh_t shift_amount_a, shift_amount_b, shift_amount_c, shift_amount_d;
 
+  if (!i_rst_n) begin
+    s_S0_current_sp_q <= INVALID_SP_MODE;
+    s_S0_metadata_q <= '0;
+    s_metadata_q <= '0;
+    s_S0_binary128_sign_q <= '0;
+    s_S0_binary64_a_sign_q <= '0;
+    s_S0_binary64_b_sign_q <= '0;
+    s_S0_binary32_a_sign_q <= '0;
+    s_S0_binary32_b_sign_q <= '0;
+    s_S0_binary32_c_sign_q <= '0;
+    s_S0_binary32_d_sign_q <= '0;
+    s_S0_fixed128_temp_q <= '0;
+    s_S0_fixed64_a_temp_q <= '0;
+    s_S0_fixed64_b_temp_q <= '0;
+    s_S0_fixed32_a_temp_q <= '0;
+    s_S0_fixed32_b_temp_q <= '0;
+    s_S0_fixed32_c_temp_q <= '0;
+    s_S0_fixed32_d_temp_q <= '0;
+    s_S0_shift_amount_a_q <= '0;
+    s_S0_shift_amount_b_q <= '0;
+    s_S0_shift_amount_c_q <= '0;
+    s_S0_shift_amount_d_q <= '0;
+    s_o_error <= '0;
+  end
+  else if (s_S0_en) begin
+    shift_amount_a = '0;
+    shift_amount_b = '0;
+    shift_amount_c = '0;
+    shift_amount_d = '0;
+
+    fixed128_temp = '0;
+    fixed64_a_temp = '0;
+    fixed64_b_temp = '0;
+    fixed32_a_temp = '0;
+    fixed32_b_temp = '0;
+    fixed32_c_temp = '0;
+    fixed32_d_temp = '0;
+
+    // Stage-0 only maps the significands into the fixed-point lanes and
+    // precomputes unbiased exponents. Stage-1 gets only the wide shifts.
+    fixed128_temp[117:5] = s_binary128_mantissa_extended;
+    fixed64_a_temp[53:1] = s_binary64_a_mantissa_extended;
+    fixed64_b_temp[53:1] = s_binary64_b_mantissa_extended;
+    fixed32_a_temp[21:0] = s_binary32_a_mantissa_extended[23:2];
+    fixed32_b_temp[21:0] = s_binary32_b_mantissa_extended[23:2];
+    fixed32_c_temp[21:0] = s_binary32_c_mantissa_extended[23:2];
+    fixed32_d_temp[21:0] = s_binary32_d_mantissa_extended[23:2];
+
+    case (s_current_sp)
+      SINGLE_MODE: begin
+        shift_amount_a = unbias_q128(s_binary128.exp);
+      end
+      TWO_SP_MODE: begin
+        shift_amount_a = unbias_q64(s_binary64_a.exp);
+        shift_amount_b = unbias_q64(s_binary64_b.exp);
+      end
+      FOUR_SP_MODE: begin
+        shift_amount_a = unbias_q32(s_binary32_a.exp);
+        shift_amount_b = unbias_q32(s_binary32_b.exp);
+        shift_amount_c = unbias_q32(s_binary32_c.exp);
+        shift_amount_d = unbias_q32(s_binary32_d.exp);
+      end
+      default: begin
+        assert (0) else begin
+          s_o_error[1] <= 1'b1;
+        end
+      end
+    endcase
+
+    s_S0_current_sp_q <= s_current_sp;
+    s_S0_metadata_q <= s_metadata_decoded;
+    s_S0_binary128_sign_q <= s_binary128.sign;
+    s_S0_binary64_a_sign_q <= s_binary64_a.sign;
+    s_S0_binary64_b_sign_q <= s_binary64_b.sign;
+    s_S0_binary32_a_sign_q <= s_binary32_a.sign;
+    s_S0_binary32_b_sign_q <= s_binary32_b.sign;
+    s_S0_binary32_c_sign_q <= s_binary32_c.sign;
+    s_S0_binary32_d_sign_q <= s_binary32_d.sign;
+    s_S0_fixed128_temp_q <= fixed128_temp;
+    s_S0_fixed64_a_temp_q <= fixed64_a_temp;
+    s_S0_fixed64_b_temp_q <= fixed64_b_temp;
+    s_S0_fixed32_a_temp_q <= fixed32_a_temp;
+    s_S0_fixed32_b_temp_q <= fixed32_b_temp;
+    s_S0_fixed32_c_temp_q <= fixed32_c_temp;
+    s_S0_fixed32_d_temp_q <= fixed32_d_temp;
+    s_S0_shift_amount_a_q <= shift_amount_a;
+    s_S0_shift_amount_b_q <= shift_amount_b;
+    s_S0_shift_amount_c_q <= shift_amount_c;
+    s_S0_shift_amount_d_q <= shift_amount_d;
+  end
+end
+
+//=====================================================================================
+// Stage 1 (wide shift + pack)
+//=====================================================================================
+always_ff @( posedge i_clk ) begin : stage1_convert
   logic [NUM_BITS_128-1:0] fixed128_shifted;
   logic [NUM_BITS_64-1:0] fixed64_a_shifted;
   logic [NUM_BITS_64-1:0] fixed64_b_shifted;
@@ -224,266 +393,48 @@ always_ff @( posedge i_clk ) begin : stage1_convert
   logic [NUM_BITS_32-1:0] fixed32_b_shifted;
   logic [NUM_BITS_32-1:0] fixed32_c_shifted;
   logic [NUM_BITS_32-1:0] fixed32_d_shifted;
-  sh_t shift_amount_a, shift_amount_b, shift_amount_c, shift_amount_d;
 
   if (!i_rst_n) begin
     s_fixed_packed_q <= '0;
-    s_o_error <= '0;
+    s_metadata_q <= '0;
   end
-  else begin
-    if (s_S1_en) begin
-      shift_amount_a = '0;
-      shift_amount_b = '0;
-      shift_amount_c = '0;
-      shift_amount_d = '0;
+  else if (s_S1_en) begin
+    s_metadata_q <= s_S0_metadata_q;
+    case (s_S0_current_sp_q)
+      SINGLE_MODE: begin
+        fixed128_shifted = apply_shift_128(s_S0_fixed128_temp_q, s_S0_shift_amount_a_q);
+        s_fixed_packed_q <= {s_S0_binary128_sign_q, fixed128_shifted[126:117], fixed128_shifted[116:0]};
+      end
 
-      fixed128_temp = '0;
-      fixed64_a_temp = '0;
-      fixed64_b_temp = '0;
-      fixed32_a_temp = '0;
-      fixed32_b_temp = '0;
-      fixed32_c_temp = '0;
-      fixed32_d_temp = '0;
+      TWO_SP_MODE: begin
+        fixed64_a_shifted = apply_shift_64(s_S0_fixed64_a_temp_q, s_S0_shift_amount_a_q);
+        fixed64_b_shifted = apply_shift_64(s_S0_fixed64_b_temp_q, s_S0_shift_amount_b_q);
+        s_fixed_packed_q <= {{s_S0_binary64_a_sign_q, fixed64_a_shifted[62:52], fixed64_a_shifted[51:0]},
+                             {s_S0_binary64_b_sign_q, fixed64_b_shifted[62:52], fixed64_b_shifted[51:0]}};
+      end
 
-      // Map extended mantissa(s) of input to fixed temporarily
-      fixed128_temp[117:5] = s_binary128_mantissa_extended;
-      fixed64_a_temp[53:1] = s_binary64_a_mantissa_extended;
-      fixed64_b_temp[53:1] = s_binary64_b_mantissa_extended;
-      fixed32_a_temp[21:0] = s_binary32_a_mantissa_extended[23:2]; // should be good not tested yet
-      fixed32_b_temp[21:0] = s_binary32_b_mantissa_extended[23:2]; // should be good not tested yet
-      fixed32_c_temp[21:0] = s_binary32_c_mantissa_extended[23:2]; // should be good not tested yet
-      fixed32_d_temp[21:0] = s_binary32_d_mantissa_extended[23:2]; // should be good not tested yet
+      FOUR_SP_MODE: begin
+        fixed32_a_shifted = apply_shift_32(s_S0_fixed32_a_temp_q, s_S0_shift_amount_a_q);
+        fixed32_b_shifted = apply_shift_32(s_S0_fixed32_b_temp_q, s_S0_shift_amount_b_q);
+        fixed32_c_shifted = apply_shift_32(s_S0_fixed32_c_temp_q, s_S0_shift_amount_c_q);
+        fixed32_d_shifted = apply_shift_32(s_S0_fixed32_d_temp_q, s_S0_shift_amount_d_q);
+        s_fixed_packed_q <= {{s_S0_binary32_a_sign_q, fixed32_a_shifted[30:21], fixed32_a_shifted[20:0]},
+                             {s_S0_binary32_b_sign_q, fixed32_b_shifted[30:21], fixed32_b_shifted[20:0]},
+                             {s_S0_binary32_c_sign_q, fixed32_c_shifted[30:21], fixed32_c_shifted[20:0]},
+                             {s_S0_binary32_d_sign_q, fixed32_d_shifted[30:21], fixed32_d_shifted[20:0]}};
+      end
 
-      case (s_current_sp)
-        SINGLE_MODE: begin
-          shift_amount_a = unbias_q128(s_binary128.exp);
-        end
-        TWO_SP_MODE: begin
-          shift_amount_a = unbias_q64(s_binary64_a.exp);
-          shift_amount_b = unbias_q64(s_binary64_b.exp);
-        end
-        FOUR_SP_MODE: begin
-          shift_amount_a = unbias_q32(s_binary32_a.exp);
-          shift_amount_b = unbias_q32(s_binary32_b.exp);
-          shift_amount_c = unbias_q32(s_binary32_c.exp);
-          shift_amount_d = unbias_q32(s_binary32_d.exp);
-        end
-        default: begin
-          assert (0) else begin
-            s_o_error[1] <= 1'b1;
-            // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
-          end
-        end
-      endcase
-
-      // Register the packed output directly so downstream logic sees a FF output
-      // instead of a mode-select mux hanging off of the output bus.
-      case (s_current_sp)
-        SINGLE_MODE: begin
-          if (shift_amount_a >= 0 && shift_amount_a <= 9) begin
-            // Case a:
-            fixed128_shifted = fixed128_temp << shift_amount_a;
-          end
-          else if (shift_amount_a < 0) begin
-            // Case b: (shift_amount_a >= -4 && shift_amount_a < 0)
-            // Case d: (shift_amount_a < -4)
-            // This else if statement combines both
-            fixed128_shifted = fixed128_temp >> -shift_amount_a;
-          end
-          else if (shift_amount_a > 9) begin
-            // Case c:
-            // In this case, we have a overflow in the int part, an overflow in the int part
-            // is an overflow in the overall value, so fill everything with 1s. (the sign bit
-            // is assigned in the final assignment section).
-            fixed128_shifted = '1;
-          end
-          else begin
-            // Should never be the case
-            fixed128_shifted = '0;
-            assert (0) else begin
-              s_o_error[0] <= 1'b1;
-              // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
-            end
-          end
-          s_fixed_packed_q <= {s_binary128.sign, fixed128_shifted[126:117], fixed128_shifted[116:0]};
-        end
-
-        TWO_SP_MODE: begin
-          if (shift_amount_a >= 0 && shift_amount_a <= 9) begin
-            // Case a:
-            fixed64_a_shifted = fixed64_a_temp << shift_amount_a;
-          end
-          else if (shift_amount_a < 0) begin
-            // Case b: (shift_amount_a >= -4 && shift_amount_a < 0)
-            // Case d: (shift_amount_a < -4)
-            // This else if statement combines both
-            fixed64_a_shifted = fixed64_a_temp >> -shift_amount_a;
-          end
-          else if (shift_amount_a > 9) begin
-            // Case c:
-            // In this case, we have a overflow in the int part, an overflow in the int part
-            // is an overflow in the overall value, so fill everything with 1s. (the sign bit
-            // is assigned in the final assignment section).
-            fixed64_a_shifted = '1;
-          end
-          else begin
-            // Should never be the case
-            fixed64_a_shifted = '0;
-            assert (0) else begin
-              s_o_error[0] <= 1'b1;
-              // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
-            end
-          end
-          if (shift_amount_b >= 0 && shift_amount_b <= 9) begin
-            // Case a:
-            fixed64_b_shifted = fixed64_b_temp << shift_amount_b;
-          end
-          else if (shift_amount_b < 0) begin
-            // Case b: (shift_amount_b >= -4 && shift_amount_b < 0)
-            // Case d: (shift_amount_b < -4)
-            // This else if statement combines both
-            fixed64_b_shifted = fixed64_b_temp >> -shift_amount_b;
-          end
-          else if (shift_amount_b > 9) begin
-            // Case c:
-            // In this case, we have a overflow in the int part, an overflow in the int part
-            // is an overflow in the overall value, so fill everything with 1s. (the sign bit
-            // is assigned in the final assignment section).
-            fixed64_b_shifted = '1;
-          end
-          else begin
-            // Should never be the case
-            fixed64_b_shifted = '0;
-            assert (0) else begin
-              s_o_error[0] <= 1'b1;
-              // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
-            end
-          end
-          s_fixed_packed_q <= {{s_binary64_a.sign, fixed64_a_shifted[62:52], fixed64_a_shifted[51:0]},
-                               {s_binary64_b.sign, fixed64_b_shifted[62:52], fixed64_b_shifted[51:0]}};
-        end
-
-        FOUR_SP_MODE: begin
-          if (shift_amount_a >= 0 && shift_amount_a <= 9) begin
-            // Case a:
-            fixed32_a_shifted = fixed32_a_temp << shift_amount_a;
-          end
-          else if (shift_amount_a < 0) begin
-            // Case b: (shift_amount_a >= -4 && shift_amount_a < 0)
-            // Case d: (shift_amount_a < -4)
-            // This else if statement combines both
-            fixed32_a_shifted = fixed32_a_temp >> -shift_amount_a;
-          end
-          else if (shift_amount_a > 9) begin
-            // Case c:
-            // In this case, we have a overflow in the int part, an overflow in the int part
-            // is an overflow in the overall value, so fill everything with 1s. (the sign bit
-            // is assigned in the final assignment section).
-            fixed32_a_shifted = '1;
-          end
-          else begin
-            // Should never be the case
-            fixed32_a_shifted = '0;
-            assert (0) else begin
-              s_o_error[0] <= 1'b1;
-              // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
-            end
-          end
-
-          if (shift_amount_b >= 0 && shift_amount_b <= 9) begin
-            // Case a:
-            fixed32_b_shifted = fixed32_b_temp << shift_amount_b;
-          end
-          else if (shift_amount_b < 0) begin
-            // Case b: (shift_amount_b >= -4 && shift_amount_b < 0)
-            // Case d: (shift_amount_b < -4)
-            // This else if statement combines both
-            fixed32_b_shifted = fixed32_b_temp >> -shift_amount_b;
-          end
-          else if (shift_amount_b > 9) begin
-            // Case c:
-            // In this case, we have a overflow in the int part, an overflow in the int part
-            // is an overflow in the overall value, so fill everything with 1s. (the sign bit
-            // is assigned in the final assignment section).
-            fixed32_b_shifted = '1;
-          end
-          else begin
-            // Should never be the case
-            fixed32_b_shifted = '0;
-            assert (0) else begin
-              s_o_error[0] <= 1'b1;
-              // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
-            end
-          end
-
-          if (shift_amount_c >= 0 && shift_amount_c <= 9) begin
-            // Case a:
-            fixed32_c_shifted = fixed32_c_temp << shift_amount_c;
-          end
-          else if (shift_amount_c < 0) begin
-            // Case b: (shift_amount_c >= -4 && shift_amount_c < 0)
-            // Case d: (shift_amount_c < -4)
-            // This else if statement combines both
-            fixed32_c_shifted = fixed32_c_temp >> -shift_amount_c;
-          end
-          else if (shift_amount_c > 9) begin
-            // Case c:
-            // In this case, we have a overflow in the int part, an overflow in the int part
-            // is an overflow in the overall value, so fill everything with 1s. (the sign bit
-            // is assigned in the final assignment section).
-            fixed32_c_shifted = '1;
-          end
-          else begin
-            // Should never be the case
-            fixed32_c_shifted = '0;
-            assert (0) else begin
-              s_o_error[0] <= 1'b1;
-              // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
-            end
-          end
-
-          if (shift_amount_d >= 0 && shift_amount_d <= 9) begin
-            // Case a:
-            fixed32_d_shifted = fixed32_d_temp << shift_amount_d;
-          end
-          else if (shift_amount_d < 0) begin
-            // Case b: (shift_amount_d >= -4 && shift_amount_d < 0)
-            // Case d: (shift_amount_d < -4)
-            // This else if statement combines both
-            fixed32_d_shifted = fixed32_d_temp >> -shift_amount_d;
-          end
-          else if (shift_amount_d > 9) begin
-            // Case c:
-            // In this case, we have a overflow in the int part, an overflow in the int part
-            // is an overflow in the overall value, so fill everything with 1s. (the sign bit
-            // is assigned in the final assignment section).
-            fixed32_d_shifted = '1;
-          end
-          else begin
-            // Should never be the case
-            fixed32_d_shifted = '0;
-            assert (0) else begin
-              s_o_error[0] <= 1'b1;
-              // $fatal(1, "Entered illegal branch"); // This is for simulator not synthesis
-            end
-          end
-          s_fixed_packed_q <= {{s_binary32_a.sign, fixed32_a_shifted[30:21], fixed32_a_shifted[20:0]},
-                               {s_binary32_b.sign, fixed32_b_shifted[30:21], fixed32_b_shifted[20:0]},
-                               {s_binary32_c.sign, fixed32_c_shifted[30:21], fixed32_c_shifted[20:0]},
-                               {s_binary32_d.sign, fixed32_d_shifted[30:21], fixed32_d_shifted[20:0]}};
-        end
-        default: begin
-          s_fixed_packed_q <= '0;
-        end
-      endcase // case (s_current_sp)
-    end // if (s_S1_en) begin
-  end // else begin
-end // always_ff
+      default: begin
+        s_fixed_packed_q <= '0;
+      end
+    endcase
+  end
+end
 
 //=====================================================================================
 // Final assignment
 //=====================================================================================
-assign o_metadata = s_metadata_decoded;
+assign o_metadata = s_metadata_q;
 
 assign o_fixed = s_fixed_packed_q;
 
