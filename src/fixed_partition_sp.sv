@@ -184,14 +184,17 @@ endfunction
 //=====================================================================================
 `ifndef USE_STUB_FOR_MEM_RD
 `RAM_STYLE_WANTED logic [127:0] mem128_signed [0:DEPTH_128_COMBINED-1];
-`RAM_STYLE_WANTED logic [127:0] mem128_pos  [0:DEPTH_128-1];
-`RAM_STYLE_WANTED logic [127:0] mem128_neg  [0:DEPTH_128-1];
-`RAM_STYLE_WANTED logic [63:0]  mem64_signed [0:DEPTH_64_COMBINED-1];
-`RAM_STYLE_WANTED logic [63:0]  mem64_pos   [0:DEPTH_64-1];
-`RAM_STYLE_WANTED logic [63:0]  mem64_neg   [0:DEPTH_64-1];
-`RAM_STYLE_WANTED logic [31:0]  mem32_signed [0:DEPTH_32_COMBINED-1];
-`RAM_STYLE_WANTED logic [31:0]  mem32_pos   [0:DEPTH_32-1];
-`RAM_STYLE_WANTED logic [31:0]  mem32_neg   [0:DEPTH_32-1];
+`RAM_STYLE_WANTED logic [127:0] mem128_pos    [0:DEPTH_128-1];
+`RAM_STYLE_WANTED logic [127:0] mem128_neg    [0:DEPTH_128-1];
+`RAM_STYLE_WANTED logic [63:0]  mem64_signed  [0:DEPTH_64_COMBINED-1];
+`RAM_STYLE_WANTED logic [63:0]  mem64_pos     [0:DEPTH_64-1];
+`RAM_STYLE_WANTED logic [63:0]  mem64_neg     [0:DEPTH_64-1];
+`RAM_STYLE_WANTED logic [31:0]  mem32_signed  [0:DEPTH_32_COMBINED-1];
+`RAM_STYLE_WANTED logic [31:0]  mem32_pos     [0:DEPTH_32-1];
+`RAM_STYLE_WANTED logic [31:0]  mem32_neg     [0:DEPTH_32-1];
+`DEDICATED_CD_32_RAM_STYLE_WANTED logic [31:0] mem32_cd_signed [0:DEPTH_32_COMBINED-1];
+`DEDICATED_CD_32_RAM_STYLE_WANTED logic [31:0] mem32_cd_pos    [0:DEPTH_32-1];
+`DEDICATED_CD_32_RAM_STYLE_WANTED logic [31:0] mem32_cd_neg    [0:DEPTH_32-1];
 
 initial begin
   if (USE_COMBINED_SIGNED_128_L) begin
@@ -230,6 +233,19 @@ initial begin
     end
     else begin
       if (INIT_32_FILE != "") `SPEX_READMEM(INIT_32_FILE, mem32_pos);
+    end
+  end
+
+  if (ENABLE_32 && USE_128_FOR_32 && USE_DEDICATED_32_FOR_CD) begin
+    if (USE_COMBINED_SIGNED_32_L) begin
+      if (INIT_32_FILE != "") `SPEX_READMEM(INIT_32_FILE, mem32_cd_signed);
+    end
+    else if (HAS_SIGN) begin
+      if (INIT_32_POS_FILE != "") `SPEX_READMEM(INIT_32_POS_FILE, mem32_cd_pos);
+      if (INIT_32_NEG_FILE != "") `SPEX_READMEM(INIT_32_NEG_FILE, mem32_cd_neg);
+    end
+    else begin
+      if (INIT_32_FILE != "") `SPEX_READMEM(INIT_32_FILE, mem32_cd_pos);
     end
   end
 end
@@ -319,10 +335,15 @@ endfunction
 `ifdef USE_STUB_FOR_MEM_RD
   `define SPEX_LUT32_READ_MACRO(i_use_neg, i_addr) \
             spex_lut32_read(i_use_neg, i_addr);
+  `define SPEX_LUT32_CD_READ_MACRO(i_use_neg, i_addr) \
+            spex_lut32_read(i_use_neg, i_addr);
 `else
   `define SPEX_LUT32_READ_MACRO(i_use_neg, i_addr) \
             USE_COMBINED_SIGNED_32_L ? mem32_signed[{i_use_neg, i_addr}] : \
             ((HAS_SIGN && i_use_neg) ? mem32_neg[i_addr] : mem32_pos[i_addr]);
+  `define SPEX_LUT32_CD_READ_MACRO(i_use_neg, i_addr) \
+            USE_COMBINED_SIGNED_32_L ? mem32_cd_signed[{i_use_neg, i_addr}] : \
+            ((HAS_SIGN && i_use_neg) ? mem32_cd_neg[i_addr] : mem32_cd_pos[i_addr]);
 `endif
 
 
@@ -553,8 +574,8 @@ always_ff @( posedge i_clk ) begin : dedicated_lut_read // aka "dlr"
       else if (USE_HYBRID_32_CD) begin
         s_dlr_mem32_douta <= '0;
         s_dlr_mem32_doutb <= '0;
-        s_dlr_mem32_doutc <= `SPEX_LUT32_READ_MACRO(i_lane_32c[LANE_BITS_32-1], i_lane_32c[ADDR_BITS_32-1:0]);
-        s_dlr_mem32_doutd <= `SPEX_LUT32_READ_MACRO(i_lane_32d[LANE_BITS_32-1], i_lane_32d[ADDR_BITS_32-1:0]);
+        s_dlr_mem32_doutc <= `SPEX_LUT32_CD_READ_MACRO(i_lane_32c[LANE_BITS_32-1], i_lane_32c[ADDR_BITS_32-1:0]);
+        s_dlr_mem32_doutd <= `SPEX_LUT32_CD_READ_MACRO(i_lane_32d[LANE_BITS_32-1], i_lane_32d[ADDR_BITS_32-1:0]);
       end
       else begin
         s_dlr_mem32_douta <= '0;

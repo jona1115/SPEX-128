@@ -100,7 +100,9 @@
  * In fixed_partition_sp there are flags that forces Vivado to use BRAM or Distributed RAM etc.
  * These can be controlled by the below macros. The list of all available options on Xilinx
  * docs can be found here: https://docs.amd.com/r/en-US/ug901-vivado-synthesis/RAM_STYLE?tocId=zwm5O2Ah27nECzbaosBcJA
- * 
+ *
+ * Boolean define knobs in this section are on/off: comment or uncomment the whole line.
+ *
  * Note: Only for Vivado flow, Cadence Genus will just ignore them.
  */
 // `define FORCE_ALL_USE_BRAM    // knob
@@ -137,9 +139,24 @@
  * Used in SPEX128_top.sv
  * 
  * If this flag is turned off, the througput of 32-bit mode is 4 32-bit results per 2 cycles. With this turned
- * on, it is 4 32-bit results per cycle, at the cost of about 10 more RAMB36E2 slices.
+ * on, it is 4 32-bit results per cycle, at the cost of about 10 more RAMB36E2 slices or CLB_LUT if using LUR
+ * which is controlled below RAM.
  */
 `define USE_DEDICATED_LUT_FOR_LANE_CD // knob
+
+/**
+ * Boolean define knob for the hybrid FOUR_SP path.
+ *
+ * Uncomment this define to force the dedicated fixed32_* LUTs used for FOUR_SP_MODE
+ * lanes c/d onto LUTRAM, while all other lookup tables continue to use RAM_STYLE_WANTED.
+ */
+// `define FORCE_DEDICATED_LANE_CD_32_USE_LUTRAM // knob
+
+`ifdef FORCE_DEDICATED_LANE_CD_32_USE_LUTRAM
+  `define DEDICATED_CD_32_RAM_STYLE_WANTED (* ram_style = "distributed", rom_style = "distributed" *)
+`else
+  `define DEDICATED_CD_32_RAM_STYLE_WANTED `RAM_STYLE_WANTED
+`endif
 
 /**
  * Sometimes, if code changed when Vivado is closed, it won't know something changed. In that case,
