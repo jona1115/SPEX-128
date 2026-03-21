@@ -293,7 +293,6 @@ always_ff @( posedge i_clk ) begin : stage0_prepare
   if (!i_rst_n) begin
     s_S0_current_sp_q <= INVALID_SP_MODE;
     s_S0_metadata_q <= '0;
-    s_metadata_q <= '0;
     s_S0_binary128_sign_q <= '0;
     s_S0_binary64_a_sign_q <= '0;
     s_S0_binary64_b_sign_q <= '0;
