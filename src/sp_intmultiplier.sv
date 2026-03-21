@@ -70,7 +70,7 @@ module sp_intmultiplier #(
   parameter int RADIX2_DADDA_Z_NBITS  = 226,
 
 `ifdef USE_DSP
-  parameter int MODULE_LATENCY        = 9, // This has to match sp_fpmultiplier's INTMUL_LATENCY
+  parameter int MODULE_LATENCY        = 12, // This has to match sp_fpmultiplier's INTMUL_LATENCY
 `else
   parameter int MODULE_LATENCY        = 3, // This has to match sp_fpmultiplier's INTMUL_LATENCY
 `endif
@@ -306,50 +306,188 @@ localparam int B_PAYLOAD_W  = 17;
 localparam int A_DSP_W      = 27;
 localparam int B_DSP_W      = 18;
 localparam int PROD_W       = 45;
-localparam int NA           = (W + A_PAYLOAD_W - 1) / A_PAYLOAD_W;    // 5
-localparam int NB           = (W + B_PAYLOAD_W - 1) / B_PAYLOAD_W;    // 7
-localparam int NPP          = NA * NB;                                // 35
-localparam int EXTRA_NPP    = 1;                                      // duplicate A2 x B3 for TWO_SP_MODE lane-a
+localparam int NA           = (W + A_PAYLOAD_W - 1) / A_PAYLOAD_W;    // 5 rows of A tiles
+localparam int NB           = (W + B_PAYLOAD_W - 1) / B_PAYLOAD_W;    // 7 columns of B tiles
 localparam int A_PAD_W      = NA * A_PAYLOAD_W;                       // 130
 localparam int B_PAD_W      = NB * B_PAYLOAD_W;                       // 119
-
-localparam int DSP_MULT_STAGES = 3;
-localparam int DSP_TREE_STAGES = 6;
-// DSP branch latency is fixed to 9 cycles from i_valid_* to o_valid_jedi.
-// In USE_DSP mode, upstream logic should treat intmult latency as DSP_TOTAL_LAT.
-localparam int DSP_TOTAL_LAT   = DSP_MULT_STAGES + DSP_TREE_STAGES;
-
-localparam int DUP_TERM_INDEX = NPP;
 localparam int DUP_TERM_A_IDX = 2;
 localparam int DUP_TERM_B_IDX = 3;
 
-localparam int L0_N = NPP + EXTRA_NPP;                                // 36
-localparam int L1_N = (L0_N + 1) / 2;
-localparam int L2_N = (L1_N + 1) / 2;
-localparam int L3_N = (L2_N + 1) / 2;
-localparam int L4_N = (L3_N + 1) / 2;
-localparam int L5_N = (L4_N + 1) / 2;
-localparam int L6_N = (L5_N + 1) / 2;
+localparam int ROW_CHAIN_STAGES    = 8;
+localparam int ROW_LOW_DIGITS      = 6;
+localparam int ROW_DIGITS_W        = ROW_LOW_DIGITS * B_PAYLOAD_W;
+localparam int ROW_RESULT_W        = 48 + (ROW_LOW_DIGITS * B_PAYLOAD_W); // 150 bits
+localparam int ROW_TREE_STAGES     = 3;
+// DSP branch latency is fixed to 12 cycles from i_valid_* to o_valid_jedi:
+// one operand capture stage, eight row-chain stages, and three final row-add stages.
+localparam int DSP_TOTAL_LAT       = 1 + ROW_CHAIN_STAGES + ROW_TREE_STAGES;
+
+localparam int ROW_STAGE_MUL_ONLY    = 0;
+localparam int ROW_STAGE_MUL_SHR17   = 1;
+localparam int ROW_STAGE_MUL_SAME    = 2;
+localparam int ROW_STAGE_PASS        = 3;
 
 logic s_fire;
 logic [DSP_TOTAL_LAT-1 : 0] s_pipe_valid;
 logic [DSP_TOTAL_LAT-1 : 0] s_pipe_valid_next;
 
-logic [A_PAD_W-1 : 0] s_a_pad;
-logic [B_PAD_W-1 : 0] s_b_pad;
+logic [W-1 : 0] s_anikin_pipe [0 : ROW_CHAIN_STAGES-1];
+logic [W-1 : 0] s_force_pipe  [0 : ROW_CHAIN_STAGES-1];
+sp_mode_t       s_sp_mode_pipe [0 : ROW_CHAIN_STAGES-1];
 
-logic signed [A_DSP_W-1 : 0] s_a_term_s1 [0 : L0_N-1];
-logic signed [B_DSP_W-1 : 0] s_b_term_s1 [0 : L0_N-1];
-(* use_dsp = "yes" *) logic signed [PROD_W-1 : 0] s_pp_s2 [0 : L0_N-1];
-logic signed [PROD_W-1 : 0] s_pp_s3 [0 : L0_N-1];
+(* use_dsp = "yes" *) logic [47 : 0] s_row_q [0 : NA-1][0 : ROW_CHAIN_STAGES-1];
+logic [ROW_DIGITS_W-1 : 0]   s_row_digits [0 : NA-1][0 : ROW_CHAIN_STAGES-1];
+logic [ROW_RESULT_W-1 : 0] s_row_full [0 : NA-1];
+logic [OUT_W-1 : 0]        s_row_aligned [0 : NA-1];
+logic [OUT_W-1 : 0]        s_row_sum_l1 [0 : 2];
+logic [OUT_W-1 : 0]        s_row_sum_l2 [0 : 1];
+logic [OUT_W-1 : 0]        s_row_sum_l3;
 
-logic [OUT_W-1 : 0] s_term_l0 [0 : L0_N-1];
-logic [OUT_W-1 : 0] s_term_l1 [0 : L1_N-1];
-logic [OUT_W-1 : 0] s_term_l2 [0 : L2_N-1];
-logic [OUT_W-1 : 0] s_term_l3 [0 : L3_N-1];
-logic [OUT_W-1 : 0] s_term_l4 [0 : L4_N-1];
-logic [OUT_W-1 : 0] s_term_l5 [0 : L5_N-1];
-logic [OUT_W-1 : 0] s_term_l6 [0 : L6_N-1];
+function automatic int fn_row_stage_mode(
+  input sp_mode_t i_sp_mode,
+  input int i_row_idx,
+  input int i_stage_idx
+);
+  begin
+    if (i_sp_mode == TWO_SP_MODE && i_row_idx == DUP_TERM_A_IDX) begin
+      if (i_stage_idx == 0) begin
+        fn_row_stage_mode = ROW_STAGE_MUL_ONLY;
+      end
+      else if (i_stage_idx == 4) begin
+        fn_row_stage_mode = ROW_STAGE_MUL_SAME;
+      end
+      else begin
+        fn_row_stage_mode = ROW_STAGE_MUL_SHR17;
+      end
+    end
+    else begin
+      if (i_stage_idx == 0) begin
+        fn_row_stage_mode = ROW_STAGE_MUL_ONLY;
+      end
+      else if (i_stage_idx == ROW_CHAIN_STAGES-1) begin
+        fn_row_stage_mode = ROW_STAGE_PASS;
+      end
+      else begin
+        fn_row_stage_mode = ROW_STAGE_MUL_SHR17;
+      end
+    end
+  end
+endfunction
+
+function automatic int fn_row_stage_b_idx(
+  input sp_mode_t i_sp_mode,
+  input int i_row_idx,
+  input int i_stage_idx
+);
+  begin
+    if (i_sp_mode == TWO_SP_MODE && i_row_idx == DUP_TERM_A_IDX && i_stage_idx >= 4) begin
+      fn_row_stage_b_idx = i_stage_idx - 1;
+    end
+    else begin
+      fn_row_stage_b_idx = i_stage_idx;
+    end
+  end
+endfunction
+
+function automatic logic fn_row_stage_use_hi_lane(
+  input sp_mode_t i_sp_mode,
+  input int i_row_idx,
+  input int i_stage_idx
+);
+  begin
+    fn_row_stage_use_hi_lane = (i_sp_mode == TWO_SP_MODE) &&
+                               (i_row_idx == DUP_TERM_A_IDX) &&
+                               (i_stage_idx == 4);
+  end
+endfunction
+
+function automatic int fn_row_stage_digit_idx(
+  input sp_mode_t i_sp_mode,
+  input int       i_row_idx,
+  input int       i_stage_idx
+);
+  begin
+    fn_row_stage_digit_idx = -1;
+
+    if (i_stage_idx == 0) begin
+      fn_row_stage_digit_idx = 0;
+    end
+    else if (i_sp_mode == TWO_SP_MODE && i_row_idx == DUP_TERM_A_IDX) begin
+      unique case (i_stage_idx)
+        1: fn_row_stage_digit_idx = 1;
+        2: fn_row_stage_digit_idx = 2;
+        4: fn_row_stage_digit_idx = 3;
+        5: fn_row_stage_digit_idx = 4;
+        6: fn_row_stage_digit_idx = 5;
+        default: begin
+        end
+      endcase
+    end
+    else begin
+      if (i_stage_idx >= 1 && i_stage_idx <= 5) begin
+        fn_row_stage_digit_idx = i_stage_idx;
+      end
+    end
+  end
+endfunction
+
+function automatic logic [A_PAYLOAD_W-1 : 0] fn_row_a_payload(
+  input logic [W-1 : 0] i_anikin,
+  input sp_mode_t       i_sp_mode,
+  input int             i_row_idx,
+  input int             i_stage_idx
+);
+  logic [A_PAD_W-1 : 0] hs_a_pad;
+  int                   hs_b_idx;
+  logic                 hs_use_hi_lane;
+  begin
+    hs_a_pad       = {{(A_PAD_W-W){1'b0}}, i_anikin};
+    hs_b_idx       = fn_row_stage_b_idx(i_sp_mode, i_row_idx, i_stage_idx);
+    hs_use_hi_lane = fn_row_stage_use_hi_lane(i_sp_mode, i_row_idx, i_stage_idx);
+
+    if (fn_row_stage_mode(i_sp_mode, i_row_idx, i_stage_idx) == ROW_STAGE_PASS) begin
+      fn_row_a_payload = '0;
+    end
+    else begin
+      fn_row_a_payload = fn_mask_a_payload(
+        i_sp_mode,
+        i_row_idx,
+        hs_b_idx,
+        hs_use_hi_lane,
+        hs_a_pad[i_row_idx*A_PAYLOAD_W +: A_PAYLOAD_W]
+      );
+    end
+  end
+endfunction
+
+function automatic logic [B_PAYLOAD_W-1 : 0] fn_row_b_payload(
+  input logic [W-1 : 0] i_force,
+  input sp_mode_t       i_sp_mode,
+  input int             i_row_idx,
+  input int             i_stage_idx
+);
+  logic [B_PAD_W-1 : 0] hs_b_pad;
+  int                   hs_b_idx;
+  logic                 hs_use_hi_lane;
+  begin
+    hs_b_pad       = {{(B_PAD_W-W){1'b0}}, i_force};
+    hs_b_idx       = fn_row_stage_b_idx(i_sp_mode, i_row_idx, i_stage_idx);
+    hs_use_hi_lane = fn_row_stage_use_hi_lane(i_sp_mode, i_row_idx, i_stage_idx);
+
+    if (fn_row_stage_mode(i_sp_mode, i_row_idx, i_stage_idx) == ROW_STAGE_PASS) begin
+      fn_row_b_payload = '0;
+    end
+    else begin
+      fn_row_b_payload = fn_mask_b_payload(
+        i_sp_mode,
+        i_row_idx,
+        hs_b_idx,
+        hs_use_hi_lane,
+        hs_b_pad[hs_b_idx*B_PAYLOAD_W +: B_PAYLOAD_W]
+      );
+    end
+  end
+endfunction
 
 function automatic logic [A_PAYLOAD_W-1 : 0] fn_mask_a_payload(
   input sp_mode_t                 i_sp_mode,
@@ -553,8 +691,6 @@ endfunction
 
 assign s_fire = i_valid_anikin & i_valid_force;
 assign s_pipe_valid_next = {s_pipe_valid[DSP_TOTAL_LAT-2 : 0], s_fire};
-assign s_a_pad = {{(A_PAD_W-W){1'b0}}, i_anikin};
-assign s_b_pad = {{(B_PAD_W-W){1'b0}}, i_force};
 
 always_ff @( posedge i_clk ) begin : sp_intmultiplier_dsp_valid_pipe
   if (!i_rst_n) begin
@@ -565,211 +701,161 @@ always_ff @( posedge i_clk ) begin : sp_intmultiplier_dsp_valid_pipe
   end
 end
 
-// Stage 1: register per-term masked DSP operands so each tile pair can select its legal lane slice.
-always_ff @( posedge i_clk ) begin : dsp_stage1_tiles
-  int                       hs_term_idx;
-  int                       hs_a_idx;
-  int                       hs_b_idx;
-  logic                     hs_term_active;
-  logic                     hs_use_hi_lane;
-  logic [A_PAYLOAD_W-1 : 0] hs_a_payload;
-  logic [B_PAYLOAD_W-1 : 0] hs_b_payload;
-
+// Operand pipeline feeding the DSP-friendly row chains. Each row-chain stage consumes
+// one cycle-delayed copy of the input mantissas so every sample carries its own future
+// B-tile operands alongside the running 48-bit cascade state.
+always_ff @( posedge i_clk ) begin : dsp_operand_pipe
   if (!i_rst_n) begin
-    s_a_term_s1 <= '{default:'0};
-    s_b_term_s1 <= '{default:'0};
+    s_anikin_pipe  <= '{default:'0};
+    s_force_pipe   <= '{default:'0};
+    s_sp_mode_pipe <= '{default:SINGLE_MODE};
   end
   else begin
-    for (hs_term_idx = 0; hs_term_idx < L0_N; hs_term_idx++) begin
-      if (hs_term_idx == DUP_TERM_INDEX) begin
-        hs_a_idx       = DUP_TERM_A_IDX;
-        hs_b_idx       = DUP_TERM_B_IDX;
-        hs_term_active = (i_metadata.sp_mode == TWO_SP_MODE);
-        hs_use_hi_lane = hs_term_active;
-      end
-      else begin
-        hs_a_idx       = hs_term_idx / NB;
-        hs_b_idx       = hs_term_idx % NB;
-        hs_term_active = 1'b1;
-        hs_use_hi_lane = 1'b0;
-      end
+    s_anikin_pipe[0]  <= i_anikin;
+    s_force_pipe[0]   <= i_force;
+    s_sp_mode_pipe[0] <= i_metadata.sp_mode;
 
-      if (hs_term_active) begin
-        hs_a_payload = fn_mask_a_payload(
-          i_metadata.sp_mode,
-          hs_a_idx,
-          hs_b_idx,
-          hs_use_hi_lane,
-          s_a_pad[hs_a_idx*A_PAYLOAD_W +: A_PAYLOAD_W]
-        );
-        hs_b_payload = fn_mask_b_payload(
-          i_metadata.sp_mode,
-          hs_a_idx,
-          hs_b_idx,
-          hs_use_hi_lane,
-          s_b_pad[hs_b_idx*B_PAYLOAD_W +: B_PAYLOAD_W]
-        );
-      end
-      else begin
-        hs_a_payload = '0;
-        hs_b_payload = '0;
-      end
-
-      s_a_term_s1[hs_term_idx] <= $signed({1'b0, hs_a_payload});
-      s_b_term_s1[hs_term_idx] <= $signed({1'b0, hs_b_payload});
+    for (int stage_idx = 1; stage_idx < ROW_CHAIN_STAGES; stage_idx++) begin
+      s_anikin_pipe[stage_idx]  <= s_anikin_pipe[stage_idx-1];
+      s_force_pipe[stage_idx]   <= s_force_pipe[stage_idx-1];
+      s_sp_mode_pipe[stage_idx] <= s_sp_mode_pipe[stage_idx-1];
     end
   end
 end
 
-// Stage 2: isolated signed partial-product multiplies to encourage DSP inference.
-always_ff @( posedge i_clk ) begin : dsp_stage2_mult
+// Each row collapses its seven B tiles inside an 8-stage 48-bit cascade:
+//   q_j = M_j + (q_{j-1} >> 17)
+// The duplicated A2xB3 split tile in TWO_SP_MODE uses one same-shift stage so the two
+// disjoint lane fragments are summed before the radix-2^17 carry propagation continues.
+always_ff @( posedge i_clk ) begin : dsp_row_chain
+  int                        hs_row_idx;
+  int                        hs_stage_idx;
+  int                        hs_stage_mode;
+  int                        hs_digit_idx;
+  logic [A_PAYLOAD_W-1 : 0]  hs_a_payload;
+  logic [B_PAYLOAD_W-1 : 0]  hs_b_payload;
+  logic [A_DSP_W-1 : 0]      hs_a_term;
+  logic [B_DSP_W-1 : 0]      hs_b_term;
+  logic [47 : 0]             hs_product;
+  logic [47 : 0]             hs_prev_q;
+  logic [47 : 0]             hs_cascade_q;
+  logic [47 : 0]             hs_q_next;
+  logic [ROW_DIGITS_W-1 : 0] hs_next_digits;
+
   if (!i_rst_n) begin
-    for (int term_idx = 0; term_idx < L0_N; term_idx++) begin
-      s_pp_s2[term_idx] <= '0;
+    for (hs_row_idx = 0; hs_row_idx < NA; hs_row_idx++) begin
+      for (hs_stage_idx = 0; hs_stage_idx < ROW_CHAIN_STAGES; hs_stage_idx++) begin
+        s_row_q[hs_row_idx][hs_stage_idx] <= '0;
+        s_row_digits[hs_row_idx][hs_stage_idx] <= '0;
+      end
     end
   end
   else begin
-    for (int term_idx = 0; term_idx < L0_N; term_idx++) begin
-      s_pp_s2[term_idx] <= s_a_term_s1[term_idx] * s_b_term_s1[term_idx];
+    for (hs_row_idx = 0; hs_row_idx < NA; hs_row_idx++) begin
+      for (hs_stage_idx = 0; hs_stage_idx < ROW_CHAIN_STAGES; hs_stage_idx++) begin
+        hs_stage_mode = fn_row_stage_mode(s_sp_mode_pipe[hs_stage_idx], hs_row_idx, hs_stage_idx);
+
+        case (hs_stage_mode)
+          ROW_STAGE_PASS: begin
+            s_row_q[hs_row_idx][hs_stage_idx] <= s_row_q[hs_row_idx][hs_stage_idx-1];
+            s_row_digits[hs_row_idx][hs_stage_idx] <= s_row_digits[hs_row_idx][hs_stage_idx-1];
+          end
+
+          default: begin
+            hs_a_payload = fn_row_a_payload(
+              s_anikin_pipe[hs_stage_idx],
+              s_sp_mode_pipe[hs_stage_idx],
+              hs_row_idx,
+              hs_stage_idx
+            );
+            hs_b_payload = fn_row_b_payload(
+              s_force_pipe[hs_stage_idx],
+              s_sp_mode_pipe[hs_stage_idx],
+              hs_row_idx,
+              hs_stage_idx
+            );
+            hs_a_term    = {1'b0, hs_a_payload};
+            hs_b_term    = {1'b0, hs_b_payload};
+            hs_product   = hs_a_term * hs_b_term;
+            hs_digit_idx = fn_row_stage_digit_idx(
+              s_sp_mode_pipe[hs_stage_idx],
+              hs_row_idx,
+              hs_stage_idx
+            );
+            hs_next_digits = (hs_stage_idx == 0) ? '0 : s_row_digits[hs_row_idx][hs_stage_idx-1];
+
+            if (hs_stage_idx == 0) begin
+              hs_q_next = hs_product;
+            end
+            else begin
+              hs_prev_q = s_row_q[hs_row_idx][hs_stage_idx-1];
+
+              if (hs_stage_mode == ROW_STAGE_MUL_SAME) begin
+                hs_cascade_q = hs_prev_q;
+              end
+              else begin
+                hs_cascade_q = hs_prev_q >> B_PAYLOAD_W;
+              end
+
+              hs_q_next = hs_product + hs_cascade_q;
+            end
+
+            if (hs_digit_idx >= 0) begin
+              hs_next_digits[hs_digit_idx*B_PAYLOAD_W +: B_PAYLOAD_W] = hs_q_next[B_PAYLOAD_W-1:0];
+            end
+
+            s_row_q[hs_row_idx][hs_stage_idx] <= hs_q_next;
+            s_row_digits[hs_row_idx][hs_stage_idx] <= hs_next_digits;
+          end
+        endcase
+      end
     end
   end
 end
 
-// Stage 3: register multiplier outputs again before wide accumulation.
-always_ff @( posedge i_clk ) begin : dsp_stage3_mult_pipe
+always_comb begin : dsp_row_reconstruct
+  int hs_row_idx;
+
+  s_row_full    = '{default:'0};
+  s_row_aligned = '{default:'0};
+
+  for (hs_row_idx = 0; hs_row_idx < NA; hs_row_idx++) begin
+    s_row_full[hs_row_idx] = {s_row_q[hs_row_idx][7], s_row_digits[hs_row_idx][7]};
+    s_row_aligned[hs_row_idx] = ({{(OUT_W-ROW_RESULT_W){1'b0}}, s_row_full[hs_row_idx]} << (hs_row_idx * A_PAYLOAD_W));
+  end
+end
+
+always_ff @( posedge i_clk ) begin : dsp_row_tree_l1
   if (!i_rst_n) begin
-    for (int term_idx = 0; term_idx < L0_N; term_idx++) begin
-      s_pp_s3[term_idx] <= '0;
-    end
+    s_row_sum_l1 <= '{default:'0};
   end
   else begin
-    for (int term_idx = 0; term_idx < L0_N; term_idx++) begin
-      s_pp_s3[term_idx] <= s_pp_s2[term_idx];
-    end
+    s_row_sum_l1[0] <= s_row_aligned[0] + s_row_aligned[1];
+    s_row_sum_l1[1] <= s_row_aligned[2] + s_row_aligned[3];
+    s_row_sum_l1[2] <= s_row_aligned[4];
   end
 end
 
-always_comb begin : dsp_term_align
-  int hs_term_idx;
-  int hs_a_idx;
-  int hs_b_idx;
-  int hs_shift;
-
-  s_term_l0 = '{default:'0};
-
-  for (hs_term_idx = 0; hs_term_idx < L0_N; hs_term_idx++) begin
-    if (hs_term_idx == DUP_TERM_INDEX) begin
-      hs_a_idx = DUP_TERM_A_IDX;
-      hs_b_idx = DUP_TERM_B_IDX;
-    end
-    else begin
-      hs_a_idx = hs_term_idx / NB;
-      hs_b_idx = hs_term_idx % NB;
-    end
-
-    hs_shift = (hs_a_idx * A_PAYLOAD_W) + (hs_b_idx * B_PAYLOAD_W);
-    s_term_l0[hs_term_idx] = ({{(OUT_W-PROD_W){1'b0}}, $unsigned(s_pp_s3[hs_term_idx])} << hs_shift);
-  end
-end
-
-// Registered binary adder tree for 36 aligned OUT_W terms.
-always_ff @( posedge i_clk ) begin : dsp_tree_l1
+always_ff @( posedge i_clk ) begin : dsp_row_tree_l2
   if (!i_rst_n) begin
-    s_term_l1 <= '{default:'0};
+    s_row_sum_l2 <= '{default:'0};
   end
   else begin
-    for (int idx = 0; idx < L1_N; idx++) begin
-      if ((2*idx + 1) < L0_N) begin
-        s_term_l1[idx] <= s_term_l0[2*idx] + s_term_l0[2*idx + 1];
-      end
-      else begin
-        s_term_l1[idx] <= s_term_l0[2*idx];
-      end
-    end
+    s_row_sum_l2[0] <= s_row_sum_l1[0] + s_row_sum_l1[1];
+    s_row_sum_l2[1] <= s_row_sum_l1[2];
   end
 end
 
-always_ff @( posedge i_clk ) begin : dsp_tree_l2
+always_ff @( posedge i_clk ) begin : dsp_row_tree_l3
   if (!i_rst_n) begin
-    s_term_l2 <= '{default:'0};
+    s_row_sum_l3 <= '0;
   end
   else begin
-    for (int idx = 0; idx < L2_N; idx++) begin
-      if ((2*idx + 1) < L1_N) begin
-        s_term_l2[idx] <= s_term_l1[2*idx] + s_term_l1[2*idx + 1];
-      end
-      else begin
-        s_term_l2[idx] <= s_term_l1[2*idx];
-      end
-    end
+    s_row_sum_l3 <= s_row_sum_l2[0] + s_row_sum_l2[1];
   end
 end
 
-always_ff @( posedge i_clk ) begin : dsp_tree_l3
-  if (!i_rst_n) begin
-    s_term_l3 <= '{default:'0};
-  end
-  else begin
-    for (int idx = 0; idx < L3_N; idx++) begin
-      if ((2*idx + 1) < L2_N) begin
-        s_term_l3[idx] <= s_term_l2[2*idx] + s_term_l2[2*idx + 1];
-      end
-      else begin
-        s_term_l3[idx] <= s_term_l2[2*idx];
-      end
-    end
-  end
-end
-
-always_ff @( posedge i_clk ) begin : dsp_tree_l4
-  if (!i_rst_n) begin
-    s_term_l4 <= '{default:'0};
-  end
-  else begin
-    for (int idx = 0; idx < L4_N; idx++) begin
-      if ((2*idx + 1) < L3_N) begin
-        s_term_l4[idx] <= s_term_l3[2*idx] + s_term_l3[2*idx + 1];
-      end
-      else begin
-        s_term_l4[idx] <= s_term_l3[2*idx];
-      end
-    end
-  end
-end
-
-always_ff @( posedge i_clk ) begin : dsp_tree_l5
-  if (!i_rst_n) begin
-    s_term_l5 <= '{default:'0};
-  end
-  else begin
-    for (int idx = 0; idx < L5_N; idx++) begin
-      if ((2*idx + 1) < L4_N) begin
-        s_term_l5[idx] <= s_term_l4[2*idx] + s_term_l4[2*idx + 1];
-      end
-      else begin
-        s_term_l5[idx] <= s_term_l4[2*idx];
-      end
-    end
-  end
-end
-
-always_ff @( posedge i_clk ) begin : dsp_tree_l6
-  if (!i_rst_n) begin
-    s_term_l6 <= '{default:'0};
-  end
-  else begin
-    for (int idx = 0; idx < L6_N; idx++) begin
-      if ((2*idx + 1) < L5_N) begin
-        s_term_l6[idx] <= s_term_l5[2*idx] + s_term_l5[2*idx + 1];
-      end
-      else begin
-        s_term_l6[idx] <= s_term_l5[2*idx];
-      end
-    end
-  end
-end
-
-assign o_jedi = s_term_l6[0];
+assign o_jedi = s_row_sum_l3;
 assign o_valid_jedi = s_pipe_valid[DSP_TOTAL_LAT-1];
 assign s_o_error = '0;
 

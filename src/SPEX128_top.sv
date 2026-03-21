@@ -658,7 +658,7 @@ end // always_ff
  * 
  *****************************************************************/
 `ifdef USE_DSP
-localparam int SP_FPMULT_INTMUL_LATENCY = 9;
+localparam int SP_FPMULT_INTMUL_LATENCY = 12;
 `else
 localparam int SP_FPMULT_INTMUL_LATENCY = 3;
 `endif
