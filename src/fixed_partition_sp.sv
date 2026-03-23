@@ -19,6 +19,7 @@
  *       Ver   |  Who       |  Date	       |  Changes
  *     ------- + ---------- + ------------ + -----------------------
  *       1.00  |  Jonathan  |  1/8/2026    |  Birth of this file
+ *       1.01  |  Jonathan  |  3/23/2026    |  Split 128->64/32 pack stage for timing
  * 
  *******************************************************************/
 
@@ -36,7 +37,7 @@ import fixed64_pkg::*;
 import fixed32_pkg::*;
 
 module fixed_partition_sp #(
-  parameter int CONVERSION_LATENCY      = 6,    // Must be the same as binary128_convert_pkg::CONVERSION_LATENCY
+  parameter int CONVERSION_LATENCY      = 7,    // Must be the same as binary128_convert_pkg::CONVERSION_LATENCY
 
   // Behavior controls
   parameter bit HAS_SIGN                = 1'b0, // MSB is sign bit when set
@@ -383,7 +384,7 @@ float_metadata_t          s_S1b_metadata;
  * State transition control
  *
  */
-localparam int PIPE_DEPTH = (MODULE_LATENCY_32 < 7) ? 7 : MODULE_LATENCY_32;
+localparam int PIPE_DEPTH = (MODULE_LATENCY_32 < 8) ? 8 : MODULE_LATENCY_32;
 logic [PIPE_DEPTH-1 : 0]  s_pipe_valid;
 logic [PIPE_DEPTH-1 : 0]  s_pipe_valid_next;
 
@@ -394,6 +395,7 @@ localparam int S5_OFFSET = S4_OFFSET + 1;
 localparam int S6_OFFSET = S5_OFFSET + 1;
 localparam int S7_OFFSET = S6_OFFSET + 1;
 localparam int S8_OFFSET = S7_OFFSET + 1;
+localparam int S9_OFFSET = S8_OFFSET + 1;
 localparam bit USE_HYBRID_32_CD = ENABLE_32 && USE_128_FOR_32 && USE_DEDICATED_32_FOR_CD;
 localparam bit USE_LEGACY_32_CD_READ = ENABLE_32 && USE_128_FOR_32 && !USE_DEDICATED_32_FOR_CD;
 localparam int HYBRID_32_CD_ALIGN_REGS = CONVERSION_LATENCY - 1;
@@ -422,7 +424,7 @@ assign s_fire = s_fire_raw & ~s_mem_busy;
 
 assign s_pipe_valid_next = {s_pipe_valid[PIPE_DEPTH-2 : 0], s_fire};
 
-logic s_S1_en, s_S2_en, s_S3_en, s_S4_en, s_S5_en, s_S6_en, s_S7_en, s_S8_en;
+logic s_S1_en, s_S2_en, s_S3_en, s_S4_en, s_S5_en, s_S6_en, s_S7_en, s_S8_en, s_S9_en;
 assign s_S1_en = s_fire;
 assign s_S2_en = s_pipe_valid[S2_OFFSET];
 assign s_S3_en = s_pipe_valid[S3_OFFSET];
@@ -431,6 +433,7 @@ assign s_S5_en = s_pipe_valid[S5_OFFSET];
 assign s_S6_en = s_pipe_valid[S6_OFFSET];
 assign s_S7_en = s_pipe_valid[S7_OFFSET];
 assign s_S8_en = s_pipe_valid[S8_OFFSET];
+assign s_S9_en = s_pipe_valid[S9_OFFSET];
 
 /**
  * FSM
@@ -777,7 +780,7 @@ end // stage2c_signal_passthrough
 
 //=====================================================================================
 // binary128 -> binary64/binary32 conversion pipelines
-// (6 stages: s0a unpack, s0b classify+prep, s1a lzc, s1b normalize+bookkeep, s2 shift+round, s3 pack)
+// (7 stages: s0a unpack, s0b classify+prep, s1a lzc, s1b normalize+bookkeep, s2 shift+round, s3 rounding-add, s4 pack)
 //=====================================================================================
 localparam int CONV64_LANES = 2;
 localparam int CONV32_LANES = 4;
@@ -789,11 +792,13 @@ binary128_to_binary64_rne_s0_t s_conv64_s0b_q [CONV64_LANES];
 binary128_to_binary64_rne_s1a_t s_conv64_s1a_q [CONV64_LANES];
 binary128_to_binary64_rne_s1_t s_conv64_s1b_q [CONV64_LANES];
 binary128_to_binary64_rne_s2_t s_conv64_s2_q [CONV64_LANES];
+binary128_to_binary64_rne_s3_t s_conv64_s3_q [CONV64_LANES];
 binary128_to_binary64_rne_s0a_t s_conv64_s0a_d [CONV64_LANES];
 binary128_to_binary64_rne_s0_t s_conv64_s0b_d [CONV64_LANES];
 binary128_to_binary64_rne_s1a_t s_conv64_s1a_d [CONV64_LANES];
 binary128_to_binary64_rne_s1_t s_conv64_s1b_d [CONV64_LANES];
 binary128_to_binary64_rne_s2_t s_conv64_s2_d [CONV64_LANES];
+binary128_to_binary64_rne_s3_t s_conv64_s3_d [CONV64_LANES];
 binary64_t s_conv64_out_d [CONV64_LANES];
 binary64_t s_conv64_out_q [CONV64_LANES];
 logic [CONV64_LANES-1:0] s_conv64_v0_q;
@@ -802,6 +807,7 @@ logic [CONV64_LANES-1:0] s_conv64_v2_q;
 logic [CONV64_LANES-1:0] s_conv64_v3_q;
 logic [CONV64_LANES-1:0] s_conv64_v4_q;
 logic [CONV64_LANES-1:0] s_conv64_v5_q;
+logic [CONV64_LANES-1:0] s_conv64_v6_q;
 
 logic [127:0] s_conv32_in_bits [CONV32_LANES];
 logic [CONV32_LANES-1:0] s_conv32_in_valid;
@@ -810,11 +816,13 @@ binary128_to_binary32_rne_s0_t s_conv32_s0b_q [CONV32_LANES];
 binary128_to_binary32_rne_s1a_t s_conv32_s1a_q [CONV32_LANES];
 binary128_to_binary32_rne_s1_t s_conv32_s1b_q [CONV32_LANES];
 binary128_to_binary32_rne_s2_t s_conv32_s2_q [CONV32_LANES];
+binary128_to_binary32_rne_s3_t s_conv32_s3_q [CONV32_LANES];
 binary128_to_binary32_rne_s0a_t s_conv32_s0a_d [CONV32_LANES];
 binary128_to_binary32_rne_s0_t s_conv32_s0b_d [CONV32_LANES];
 binary128_to_binary32_rne_s1a_t s_conv32_s1a_d [CONV32_LANES];
 binary128_to_binary32_rne_s1_t s_conv32_s1b_d [CONV32_LANES];
 binary128_to_binary32_rne_s2_t s_conv32_s2_d [CONV32_LANES];
+binary128_to_binary32_rne_s3_t s_conv32_s3_d [CONV32_LANES];
 binary32_t s_conv32_out_d [CONV32_LANES];
 binary32_t s_conv32_out_q [CONV32_LANES];
 logic [CONV32_LANES-1:0] s_conv32_v0_q;
@@ -823,6 +831,7 @@ logic [CONV32_LANES-1:0] s_conv32_v2_q;
 logic [CONV32_LANES-1:0] s_conv32_v3_q;
 logic [CONV32_LANES-1:0] s_conv32_v4_q;
 logic [CONV32_LANES-1:0] s_conv32_v5_q;
+logic [CONV32_LANES-1:0] s_conv32_v6_q;
 
 binary32_t s_conv32_ab_align_q [2];
 logic [1:0] s_conv32_ab_align_valid_q;
@@ -871,7 +880,8 @@ always_comb begin : conversion_pipeline_comb
     s_conv64_s1a_d[lane] = binary128_to_binary64_rne_s1a(s_conv64_s0b_q[lane]);
     s_conv64_s1b_d[lane] = binary128_to_binary64_rne_s1b(s_conv64_s1a_q[lane]);
     s_conv64_s2_d[lane] = binary128_to_binary64_rne_s2(s_conv64_s1b_q[lane]);
-    s_conv64_out_d[lane] = binary128_to_binary64_rne_s3(s_conv64_s2_q[lane]);
+    s_conv64_s3_d[lane] = binary128_to_binary64_rne_s3a(s_conv64_s2_q[lane]);
+    s_conv64_out_d[lane] = binary128_to_binary64_rne_s4(s_conv64_s3_q[lane]);
   end
 
   for (int lane = 0; lane < CONV32_LANES; lane++) begin
@@ -880,7 +890,8 @@ always_comb begin : conversion_pipeline_comb
     s_conv32_s1a_d[lane] = binary128_to_binary32_rne_s1a(s_conv32_s0b_q[lane]);
     s_conv32_s1b_d[lane] = binary128_to_binary32_rne_s1b(s_conv32_s1a_q[lane]);
     s_conv32_s2_d[lane] = binary128_to_binary32_rne_s2(s_conv32_s1b_q[lane]);
-    s_conv32_out_d[lane] = binary128_to_binary32_rne_s3(s_conv32_s2_q[lane]);
+    s_conv32_s3_d[lane] = binary128_to_binary32_rne_s3a(s_conv32_s2_q[lane]);
+    s_conv32_out_d[lane] = binary128_to_binary32_rne_s4(s_conv32_s3_q[lane]);
   end
 end
 
@@ -892,6 +903,7 @@ always_ff @( posedge i_clk ) begin : conversion_pipeline_regs
       s_conv64_s1a_q[lane] <= '0;
       s_conv64_s1b_q[lane] <= '0;
       s_conv64_s2_q[lane] <= '0;
+      s_conv64_s3_q[lane] <= '0;
       s_conv64_out_q[lane] <= '0;
     end
     s_conv64_v0_q <= '0;
@@ -900,6 +912,7 @@ always_ff @( posedge i_clk ) begin : conversion_pipeline_regs
     s_conv64_v3_q <= '0;
     s_conv64_v4_q <= '0;
     s_conv64_v5_q <= '0;
+    s_conv64_v6_q <= '0;
 
     for (int lane = 0; lane < CONV32_LANES; lane++) begin
       s_conv32_s0a_q[lane] <= '0;
@@ -907,6 +920,7 @@ always_ff @( posedge i_clk ) begin : conversion_pipeline_regs
       s_conv32_s1a_q[lane] <= '0;
       s_conv32_s1b_q[lane] <= '0;
       s_conv32_s2_q[lane] <= '0;
+      s_conv32_s3_q[lane] <= '0;
       s_conv32_out_q[lane] <= '0;
     end
     s_conv32_v0_q <= '0;
@@ -915,6 +929,7 @@ always_ff @( posedge i_clk ) begin : conversion_pipeline_regs
     s_conv32_v3_q <= '0;
     s_conv32_v4_q <= '0;
     s_conv32_v5_q <= '0;
+    s_conv32_v6_q <= '0;
     s_conv32_ab_align_q[0] <= '0;
     s_conv32_ab_align_q[1] <= '0;
     s_conv32_ab_align_valid_q <= '0;
@@ -926,6 +941,7 @@ always_ff @( posedge i_clk ) begin : conversion_pipeline_regs
       s_conv64_s1a_q[lane] <= s_conv64_s1a_d[lane];
       s_conv64_s1b_q[lane] <= s_conv64_s1b_d[lane];
       s_conv64_s2_q[lane] <= s_conv64_s2_d[lane];
+      s_conv64_s3_q[lane] <= s_conv64_s3_d[lane];
       s_conv64_out_q[lane] <= s_conv64_out_d[lane];
     end
     s_conv64_v0_q <= s_conv64_in_valid;
@@ -934,6 +950,7 @@ always_ff @( posedge i_clk ) begin : conversion_pipeline_regs
     s_conv64_v3_q <= s_conv64_v2_q;
     s_conv64_v4_q <= s_conv64_v3_q;
     s_conv64_v5_q <= s_conv64_v4_q;
+    s_conv64_v6_q <= s_conv64_v5_q;
 
     for (int lane = 0; lane < CONV32_LANES; lane++) begin
       s_conv32_s0a_q[lane] <= s_conv32_s0a_d[lane];
@@ -941,6 +958,7 @@ always_ff @( posedge i_clk ) begin : conversion_pipeline_regs
       s_conv32_s1a_q[lane] <= s_conv32_s1a_d[lane];
       s_conv32_s1b_q[lane] <= s_conv32_s1b_d[lane];
       s_conv32_s2_q[lane] <= s_conv32_s2_d[lane];
+      s_conv32_s3_q[lane] <= s_conv32_s3_d[lane];
       s_conv32_out_q[lane] <= s_conv32_out_d[lane];
     end
     s_conv32_v0_q <= s_conv32_in_valid;
@@ -949,12 +967,13 @@ always_ff @( posedge i_clk ) begin : conversion_pipeline_regs
     s_conv32_v3_q <= s_conv32_v2_q;
     s_conv32_v4_q <= s_conv32_v3_q;
     s_conv32_v5_q <= s_conv32_v4_q;
+    s_conv32_v6_q <= s_conv32_v5_q;
 
     // Legacy FOUR_SP launches c/d one cycle later, so delay a/b once to match.
     s_conv32_ab_align_q[0] <= s_conv32_out_q[0];
     s_conv32_ab_align_q[1] <= s_conv32_out_q[1];
-    s_conv32_ab_align_valid_q[0] <= s_conv32_v5_q[0];
-    s_conv32_ab_align_valid_q[1] <= s_conv32_v5_q[1];
+    s_conv32_ab_align_valid_q[0] <= s_conv32_v6_q[0];
+    s_conv32_ab_align_valid_q[1] <= s_conv32_v6_q[1];
   end
 end
 
@@ -979,56 +998,19 @@ always_ff @( posedge i_clk ) begin : hybrid_cd_alignment
       s_hybrid32_cd_valid32d_q[0] <= '0;
     end
 
-    if (USE_HYBRID_32_CD && s_S4_en) begin
-      s_hybrid32_cd_exp_32c_q[1] <= s_hybrid32_cd_exp_32c_q[0];
-      s_hybrid32_cd_exp_32d_q[1] <= s_hybrid32_cd_exp_32d_q[0];
-      s_hybrid32_cd_valid32c_q[1] <= s_hybrid32_cd_valid32c_q[0];
-      s_hybrid32_cd_valid32d_q[1] <= s_hybrid32_cd_valid32d_q[0];
-    end
-    else begin
-      s_hybrid32_cd_exp_32c_q[1] <= '0;
-      s_hybrid32_cd_exp_32d_q[1] <= '0;
-      s_hybrid32_cd_valid32c_q[1] <= '0;
-      s_hybrid32_cd_valid32d_q[1] <= '0;
-    end
-
-    if (USE_HYBRID_32_CD && s_S5_en) begin
-      s_hybrid32_cd_exp_32c_q[2] <= s_hybrid32_cd_exp_32c_q[1];
-      s_hybrid32_cd_exp_32d_q[2] <= s_hybrid32_cd_exp_32d_q[1];
-      s_hybrid32_cd_valid32c_q[2] <= s_hybrid32_cd_valid32c_q[1];
-      s_hybrid32_cd_valid32d_q[2] <= s_hybrid32_cd_valid32d_q[1];
-    end
-    else begin
-      s_hybrid32_cd_exp_32c_q[2] <= '0;
-      s_hybrid32_cd_exp_32d_q[2] <= '0;
-      s_hybrid32_cd_valid32c_q[2] <= '0;
-      s_hybrid32_cd_valid32d_q[2] <= '0;
-    end
-
-    if (USE_HYBRID_32_CD && s_S6_en) begin
-      s_hybrid32_cd_exp_32c_q[3] <= s_hybrid32_cd_exp_32c_q[2];
-      s_hybrid32_cd_exp_32d_q[3] <= s_hybrid32_cd_exp_32d_q[2];
-      s_hybrid32_cd_valid32c_q[3] <= s_hybrid32_cd_valid32c_q[2];
-      s_hybrid32_cd_valid32d_q[3] <= s_hybrid32_cd_valid32d_q[2];
-    end
-    else begin
-      s_hybrid32_cd_exp_32c_q[3] <= '0;
-      s_hybrid32_cd_exp_32d_q[3] <= '0;
-      s_hybrid32_cd_valid32c_q[3] <= '0;
-      s_hybrid32_cd_valid32d_q[3] <= '0;
-    end
-
-    if (USE_HYBRID_32_CD && s_S7_en) begin
-      s_hybrid32_cd_exp_32c_q[4] <= s_hybrid32_cd_exp_32c_q[3];
-      s_hybrid32_cd_exp_32d_q[4] <= s_hybrid32_cd_exp_32d_q[3];
-      s_hybrid32_cd_valid32c_q[4] <= s_hybrid32_cd_valid32c_q[3];
-      s_hybrid32_cd_valid32d_q[4] <= s_hybrid32_cd_valid32d_q[3];
-    end
-    else begin
-      s_hybrid32_cd_exp_32c_q[4] <= '0;
-      s_hybrid32_cd_exp_32d_q[4] <= '0;
-      s_hybrid32_cd_valid32c_q[4] <= '0;
-      s_hybrid32_cd_valid32d_q[4] <= '0;
+    for (int align_stage = 1; align_stage < HYBRID_32_CD_ALIGN_REGS; align_stage++) begin
+      if (USE_HYBRID_32_CD && s_pipe_valid[S3_OFFSET + align_stage]) begin
+        s_hybrid32_cd_exp_32c_q[align_stage] <= s_hybrid32_cd_exp_32c_q[align_stage-1];
+        s_hybrid32_cd_exp_32d_q[align_stage] <= s_hybrid32_cd_exp_32d_q[align_stage-1];
+        s_hybrid32_cd_valid32c_q[align_stage] <= s_hybrid32_cd_valid32c_q[align_stage-1];
+        s_hybrid32_cd_valid32d_q[align_stage] <= s_hybrid32_cd_valid32d_q[align_stage-1];
+      end
+      else begin
+        s_hybrid32_cd_exp_32c_q[align_stage] <= '0;
+        s_hybrid32_cd_exp_32d_q[align_stage] <= '0;
+        s_hybrid32_cd_valid32c_q[align_stage] <= '0;
+        s_hybrid32_cd_valid32d_q[align_stage] <= '0;
+      end
     end
   end
 end
@@ -1219,12 +1201,13 @@ always_ff @( posedge i_clk ) begin : stage5_lane_alignment
 end
 
 //=====================================================================================
-// Stage 6/7/8:
-// - metadata alignment for 6-cycle 128->64/32 conversion paths
+// Stage 6/7/8/9:
+// - metadata alignment for 7-cycle 128->64/32 conversion paths
 //=====================================================================================
 float_metadata_t  s_S6_metadata;
 float_metadata_t  s_S7_metadata;
 float_metadata_t  s_S8_metadata;
+float_metadata_t  s_S9_metadata;
 always_ff @( posedge i_clk ) begin : stage6_metadata_alignment
   if (!i_rst_n) begin
     s_S6_metadata <= '0;
@@ -1267,6 +1250,20 @@ always_ff @( posedge i_clk ) begin : stage8_metadata_alignment
   end
 end
 
+always_ff @( posedge i_clk ) begin : stage9_metadata_alignment
+  if (!i_rst_n) begin
+    s_S9_metadata <= '0;
+  end
+  else begin
+    if (s_S9_en) begin
+      s_S9_metadata <= s_S8_metadata;
+    end
+    else begin
+      s_S9_metadata <= '0;
+    end
+  end
+end
+
 
 //=====================================================================================
 // Final assignment
@@ -1275,16 +1272,16 @@ always_comb begin : output_metadata_select
   logic valid64_now;
   logic valid32_now;
 
-  valid64_now = USE_128_FOR_64 ? (s_conv64_v5_q[0] | s_conv64_v5_q[1])
+  valid64_now = USE_128_FOR_64 ? (s_conv64_v6_q[0] | s_conv64_v6_q[1])
                                : (s_S2c_valid64a | s_S2c_valid64b);
-  valid32_now = USE_128_FOR_32 ? (USE_HYBRID_32_CD ? (s_conv32_v5_q[0] |
-                                                      s_conv32_v5_q[1] |
+  valid32_now = USE_128_FOR_32 ? (USE_HYBRID_32_CD ? (s_conv32_v6_q[0] |
+                                                      s_conv32_v6_q[1] |
                                                       s_hybrid32_cd_valid32c_q[HYBRID_32_CD_ALIGN_REGS-1] |
                                                       s_hybrid32_cd_valid32d_q[HYBRID_32_CD_ALIGN_REGS-1]) :
                                                       (s_conv32_ab_align_valid_q[0] |
                                                        s_conv32_ab_align_valid_q[1] |
-                                                       s_conv32_v5_q[2] |
-                                                       s_conv32_v5_q[3]))
+                                                       s_conv32_v6_q[2] |
+                                                       s_conv32_v6_q[3]))
                                : (s_S3_valid32a |
                                   s_S3_valid32b |
                                   s_S3_valid32c |
@@ -1294,13 +1291,13 @@ always_comb begin : output_metadata_select
     o_metadata = s_S2c_metadata;
   end
   else if (ENABLE_64 && valid64_now) begin
-    o_metadata = USE_128_FOR_64 ? s_S7_metadata : s_S2c_metadata;
+    o_metadata = USE_128_FOR_64 ? s_S8_metadata : s_S2c_metadata;
   end
   else if (ENABLE_32 && valid32_now) begin
-    o_metadata = USE_128_FOR_32 ? (USE_HYBRID_32_CD ? s_S7_metadata : s_S8_metadata) : s_S3_metadata;
+    o_metadata = USE_128_FOR_32 ? (USE_HYBRID_32_CD ? s_S8_metadata : s_S9_metadata) : s_S3_metadata;
   end
   else begin
-    o_metadata = USE_128_FOR_32 ? (USE_HYBRID_32_CD ? s_S7_metadata : s_S8_metadata) : s_S3_metadata;
+    o_metadata = USE_128_FOR_32 ? (USE_HYBRID_32_CD ? s_S8_metadata : s_S9_metadata) : s_S3_metadata;
   end
 end
 
@@ -1313,12 +1310,12 @@ assign o_exp_32c = ENABLE_32 ? (USE_128_FOR_32 ? (USE_HYBRID_32_CD ? s_hybrid32_
 assign o_exp_32d = ENABLE_32 ? (USE_128_FOR_32 ? (USE_HYBRID_32_CD ? s_hybrid32_cd_exp_32d_q[HYBRID_32_CD_ALIGN_REGS-1] : s_conv32_out_q[3]) : s_S3_exp_32d)  : '0;
 
 assign o_valid128 = s_S2c_valid128;
-assign o_valid64a = ENABLE_64 ? (USE_128_FOR_64 ? s_conv64_v5_q[0]              : s_S2c_valid64a) : 1'b0;
-assign o_valid64b = ENABLE_64 ? (USE_128_FOR_64 ? s_conv64_v5_q[1]              : s_S2c_valid64b) : 1'b0;
-assign o_valid32a = ENABLE_32 ? (USE_128_FOR_32 ? (USE_HYBRID_32_CD ? s_conv32_v5_q[0] : s_conv32_ab_align_valid_q[0]) : s_S3_valid32a)  : 1'b0;
-assign o_valid32b = ENABLE_32 ? (USE_128_FOR_32 ? (USE_HYBRID_32_CD ? s_conv32_v5_q[1] : s_conv32_ab_align_valid_q[1]) : s_S3_valid32b)  : 1'b0;
-assign o_valid32c = ENABLE_32 ? (USE_128_FOR_32 ? (USE_HYBRID_32_CD ? s_hybrid32_cd_valid32c_q[HYBRID_32_CD_ALIGN_REGS-1] : s_conv32_v5_q[2]) : s_S3_valid32c)  : 1'b0;
-assign o_valid32d = ENABLE_32 ? (USE_128_FOR_32 ? (USE_HYBRID_32_CD ? s_hybrid32_cd_valid32d_q[HYBRID_32_CD_ALIGN_REGS-1] : s_conv32_v5_q[3]) : s_S3_valid32d)  : 1'b0;
+assign o_valid64a = ENABLE_64 ? (USE_128_FOR_64 ? s_conv64_v6_q[0]              : s_S2c_valid64a) : 1'b0;
+assign o_valid64b = ENABLE_64 ? (USE_128_FOR_64 ? s_conv64_v6_q[1]              : s_S2c_valid64b) : 1'b0;
+assign o_valid32a = ENABLE_32 ? (USE_128_FOR_32 ? (USE_HYBRID_32_CD ? s_conv32_v6_q[0] : s_conv32_ab_align_valid_q[0]) : s_S3_valid32a)  : 1'b0;
+assign o_valid32b = ENABLE_32 ? (USE_128_FOR_32 ? (USE_HYBRID_32_CD ? s_conv32_v6_q[1] : s_conv32_ab_align_valid_q[1]) : s_S3_valid32b)  : 1'b0;
+assign o_valid32c = ENABLE_32 ? (USE_128_FOR_32 ? (USE_HYBRID_32_CD ? s_hybrid32_cd_valid32c_q[HYBRID_32_CD_ALIGN_REGS-1] : s_conv32_v6_q[2]) : s_S3_valid32c)  : 1'b0;
+assign o_valid32d = ENABLE_32 ? (USE_128_FOR_32 ? (USE_HYBRID_32_CD ? s_hybrid32_cd_valid32d_q[HYBRID_32_CD_ALIGN_REGS-1] : s_conv32_v6_q[3]) : s_S3_valid32d)  : 1'b0;
 
 assign o_sanity_identifier = MODULE_IDENTIFIER;
 assign o_error = s_o_error;

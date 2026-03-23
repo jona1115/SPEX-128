@@ -17,6 +17,7 @@
  *       1.00  |  Jonathan  |  01/11/2026  |  Birth of this file
  *       1.01  |  Jonathan  |  03/07/2026  |  Made it 4 stage pipeline (was 3)
  *       1.02  |  Jonathan  |  03/09/2026  |  Made it 6 stage pipeline (split s0/s1)
+ *       1.03  |  Jonathan  |  03/23/2026  |  Split final round/pack stage for timing
  * 
  *******************************************************************/
 
@@ -26,7 +27,7 @@ package binary128_convert_pkg;
   import binary64_pkg::*;
   import binary32_pkg::*;
 
-  const int CONVERSION_LATENCY = 6; // Must be the same as fixed_partition_sp.CONVERSION_LATENCY
+  localparam int CONVERSION_LATENCY = 7; // Must be the same as fixed_partition_sp.CONVERSION_LATENCY
 
   localparam logic signed [17:0] BIAS_128 = 18'sd16383;
   localparam logic signed [17:0] BIAS_64  = 18'sd1023;
@@ -99,6 +100,21 @@ package binary128_convert_pkg;
     logic               round_inc;
   } binary128_to_binary64_rne_s2_t;
 
+  // Stage-3 payload for binary128 -> binary64 conversion.
+  // This stage performs the rounding increment add only.
+  typedef struct packed {
+    logic               sign;
+    logic               is_nan;
+    logic               is_inf;
+    logic               is_zero;
+    logic               is_overflow;
+    logic               is_subnormal;
+    logic [51:0]        nan_payload;
+    logic signed [17:0] exp_norm;
+
+    logic [53:0]        rounded;
+  } binary128_to_binary64_rne_s3_t;
+
   // Stage-0a payload for binary128 -> binary32 conversion.
   // This stage only unpacks raw fields.
   typedef struct packed {
@@ -165,6 +181,21 @@ package binary128_convert_pkg;
     logic [23:0]        keep;
     logic               round_inc;
   } binary128_to_binary32_rne_s2_t;
+
+  // Stage-3 payload for binary128 -> binary32 conversion.
+  // This stage performs the rounding increment add only.
+  typedef struct packed {
+    logic               sign;
+    logic               is_nan;
+    logic               is_inf;
+    logic               is_zero;
+    logic               is_overflow;
+    logic               is_subnormal;
+    logic [22:0]        nan_payload;
+    logic signed [17:0] exp_norm;
+
+    logic [24:0]        rounded;
+  } binary128_to_binary32_rne_s3_t;
 
   // Leading-zero count in one byte (MSB-first).
   function automatic int unsigned lzc_8(input logic [7:0] in);
@@ -447,13 +478,37 @@ package binary128_convert_pkg;
     return out;
   endfunction
 
-  function automatic binary64_t binary128_to_binary64_rne_s3(
+  function automatic binary128_to_binary64_rne_s3_t binary128_to_binary64_rne_s3a(
     input binary128_to_binary64_rne_s2_t in
+  );
+    binary128_to_binary64_rne_s3_t out;
+
+    out = '0;
+
+    out.sign         = in.sign;
+    out.is_nan       = in.is_nan;
+    out.is_inf       = in.is_inf;
+    out.is_zero      = in.is_zero;
+    out.is_overflow  = in.is_overflow;
+    out.is_subnormal = in.is_subnormal;
+    out.nan_payload  = in.nan_payload;
+    out.exp_norm     = in.exp_norm;
+
+    if (in.is_nan || in.is_inf || in.is_zero || in.is_overflow) begin
+      return out;
+    end
+
+    out.rounded = {1'b0, in.keep} + {{53{1'b0}}, in.round_inc};
+
+    return out;
+  endfunction
+
+  function automatic binary64_t binary128_to_binary64_rne_s4(
+    input binary128_to_binary64_rne_s3_t in
   );
     localparam logic signed [17:0] E_MAX_64_S = 18'sd1023;
 
     binary64_t out;
-    logic [53:0] rounded;
     logic carry;
     logic signed [17:0] exp_out_s;
     logic signed [17:0] exp_biased_s;
@@ -478,9 +533,7 @@ package binary128_convert_pkg;
       return out;
     end
 
-    // rounding add
-    rounded = {1'b0, in.keep} + {{53{1'b0}}, in.round_inc};
-    carry = rounded[53];
+    carry = in.rounded[53];
 
     // pack
     if (!in.is_subnormal) begin
@@ -493,22 +546,29 @@ package binary128_convert_pkg;
       else begin
         exp_biased_s = exp_out_s + BIAS_64;
         out.exp = exp_biased_s[10:0];
-        out.mantissa = carry ? rounded[52:1] : rounded[51:0];
+        out.mantissa = carry ? in.rounded[52:1] : in.rounded[51:0];
       end
     end
     else begin
       // subnormal pack + bump
-      if (rounded[53] || rounded[52]) begin
+      if (in.rounded[53] || in.rounded[52]) begin
         out.exp = 11'd1;
         out.mantissa = '0;
       end
       else begin
         out.exp = '0;
-        out.mantissa = rounded[51:0];
+        out.mantissa = in.rounded[51:0];
       end
     end
 
     return out;
+  endfunction
+
+  // Compatibility wrapper for legacy call sites.
+  function automatic binary64_t binary128_to_binary64_rne_s3(
+    input binary128_to_binary64_rne_s2_t in
+  );
+    return binary128_to_binary64_rne_s4(binary128_to_binary64_rne_s3a(in));
   endfunction
 
   function automatic binary128_to_binary32_rne_s0a_t binary128_to_binary32_rne_s0a(
@@ -707,13 +767,37 @@ package binary128_convert_pkg;
     return out;
   endfunction
 
-  function automatic binary32_t binary128_to_binary32_rne_s3(
+  function automatic binary128_to_binary32_rne_s3_t binary128_to_binary32_rne_s3a(
     input binary128_to_binary32_rne_s2_t in
+  );
+    binary128_to_binary32_rne_s3_t out;
+
+    out = '0;
+
+    out.sign         = in.sign;
+    out.is_nan       = in.is_nan;
+    out.is_inf       = in.is_inf;
+    out.is_zero      = in.is_zero;
+    out.is_overflow  = in.is_overflow;
+    out.is_subnormal = in.is_subnormal;
+    out.nan_payload  = in.nan_payload;
+    out.exp_norm     = in.exp_norm;
+
+    if (in.is_nan || in.is_inf || in.is_zero || in.is_overflow) begin
+      return out;
+    end
+
+    out.rounded = {1'b0, in.keep} + {{24{1'b0}}, in.round_inc};
+
+    return out;
+  endfunction
+
+  function automatic binary32_t binary128_to_binary32_rne_s4(
+    input binary128_to_binary32_rne_s3_t in
   );
     localparam logic signed [17:0] E_MAX_32_S = 18'sd127;
 
     binary32_t out;
-    logic [24:0] rounded;
     logic carry;
     logic signed [17:0] exp_out_s;
     logic signed [17:0] exp_biased_s;
@@ -738,9 +822,7 @@ package binary128_convert_pkg;
       return out;
     end
 
-    // rounding add
-    rounded = {1'b0, in.keep} + {{24{1'b0}}, in.round_inc};
-    carry = rounded[24];
+    carry = in.rounded[24];
 
     // pack
     if (!in.is_subnormal) begin
@@ -753,31 +835,40 @@ package binary128_convert_pkg;
       else begin
         exp_biased_s = exp_out_s + BIAS_32;
         out.exp = exp_biased_s[7:0];
-        out.mantissa = carry ? rounded[23:1] : rounded[22:0];
+        out.mantissa = carry ? in.rounded[23:1] : in.rounded[22:0];
       end
     end
     else begin
       // subnormal pack + bump
-      if (rounded[24] || rounded[23]) begin
+      if (in.rounded[24] || in.rounded[23]) begin
         out.exp = 8'd1;
         out.mantissa = '0;
       end
       else begin
         out.exp = '0;
-        out.mantissa = rounded[22:0];
+        out.mantissa = in.rounded[22:0];
       end
     end
 
     return out;
   endfunction
 
+  // Compatibility wrapper for legacy call sites.
+  function automatic binary32_t binary128_to_binary32_rne_s3(
+    input binary128_to_binary32_rne_s2_t in
+  );
+    return binary128_to_binary32_rne_s4(binary128_to_binary32_rne_s3a(in));
+  endfunction
+
   function automatic binary64_t binary128_to_binary64_rne(input logic [127:0] in_bits);
-    return binary128_to_binary64_rne_s3(
-             binary128_to_binary64_rne_s2(
-               binary128_to_binary64_rne_s1b(
-                 binary128_to_binary64_rne_s1a(
-                   binary128_to_binary64_rne_s0b(
-                     binary128_to_binary64_rne_s0a(in_bits)
+    return binary128_to_binary64_rne_s4(
+             binary128_to_binary64_rne_s3a(
+               binary128_to_binary64_rne_s2(
+                 binary128_to_binary64_rne_s1b(
+                   binary128_to_binary64_rne_s1a(
+                     binary128_to_binary64_rne_s0b(
+                       binary128_to_binary64_rne_s0a(in_bits)
+                     )
                    )
                  )
                )
@@ -791,12 +882,14 @@ package binary128_convert_pkg;
   endfunction
 
   function automatic binary32_t binary128_to_binary32_rne(input logic [127:0] in_bits);
-    return binary128_to_binary32_rne_s3(
-             binary128_to_binary32_rne_s2(
-               binary128_to_binary32_rne_s1b(
-                 binary128_to_binary32_rne_s1a(
-                   binary128_to_binary32_rne_s0b(
-                     binary128_to_binary32_rne_s0a(in_bits)
+    return binary128_to_binary32_rne_s4(
+             binary128_to_binary32_rne_s3a(
+               binary128_to_binary32_rne_s2(
+                 binary128_to_binary32_rne_s1b(
+                   binary128_to_binary32_rne_s1a(
+                     binary128_to_binary32_rne_s0b(
+                       binary128_to_binary32_rne_s0a(in_bits)
+                     )
                    )
                  )
                )
