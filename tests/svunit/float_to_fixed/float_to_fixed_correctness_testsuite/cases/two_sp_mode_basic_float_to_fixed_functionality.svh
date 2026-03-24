@@ -68,7 +68,7 @@
     // s_i_ctrl:
     4'b0001,
     // expected:
-    {1'b1, 127'b0}
+    '0
   )
 `SVTEST_END
 

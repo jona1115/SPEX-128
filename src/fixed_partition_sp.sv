@@ -166,7 +166,11 @@ endfunction
 function automatic logic [ADDR_BITS_128-1:0] addr128_from_32(
   input logic [ADDR_BITS_32-1:0] addr32
 );
-  addr128_from_32 = addr32;
+  addr128_from_32 = '0;
+  addr128_from_32[ADDR_BITS_32-1:0] = addr32;
+  if (ADDR_BITS_128 > ADDR_BITS_32) begin
+    addr128_from_32 = addr128_from_32 << (ADDR_BITS_128 - ADDR_BITS_32);
+  end
 endfunction
 
 //=====================================================================================

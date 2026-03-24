@@ -424,8 +424,8 @@ module SPEX128_top_unit_test;
     $display("%x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x", ds_my_float_to_fixed_o_valid, ds_my_fixed_partition_sp_par_a_o_valid128, ds_my_fixed_partition_sp_par_a_o_valid64a, ds_my_fixed_partition_sp_par_a_o_valid64b, ds_my_fixed_partition_sp_par_a_o_valid32a, ds_my_fixed_partition_sp_par_a_o_valid32b, ds_my_fixed_partition_sp_par_a_o_valid32c, ds_my_fixed_partition_sp_par_a_o_valid32d, ds_my_fixed_partition_sp_par_b_o_valid128, ds_my_fixed_partition_sp_par_b_o_valid64a, ds_my_fixed_partition_sp_par_b_o_valid64b, ds_my_fixed_partition_sp_par_b_o_valid32a, ds_my_fixed_partition_sp_par_b_o_valid32b, ds_my_fixed_partition_sp_par_b_o_valid32c, ds_my_fixed_partition_sp_par_b_o_valid32d, ds_my_fixed_partition_sp_par_c_o_valid128, ds_my_fixed_partition_sp_par_c_o_valid64a, ds_my_fixed_partition_sp_par_c_o_valid64b, ds_my_fixed_partition_sp_par_c_o_valid32a, ds_my_fixed_partition_sp_par_c_o_valid32b, ds_my_fixed_partition_sp_par_c_o_valid32c, ds_my_fixed_partition_sp_par_c_o_valid32d, ds_my_fixed_partition_sp_par_d_o_valid128, ds_my_fixed_partition_sp_par_e_o_valid128, ds_my_fixed128_partitionf_ts_o_valid, ds_my_fixed64_partitionf_ts_a_o_valid, ds_my_fixed64_partitionf_ts_b_o_valid, ds_my_sp_fpmultiplier_0_valid128_jedi, ds_my_sp_fpmultiplier_0_valid64a_jedi, ds_my_sp_fpmultiplier_0_valid64b_jedi, ds_my_sp_fpmultiplier_0_valid32a_jedi, ds_my_sp_fpmultiplier_0_valid32b_jedi, ds_my_sp_fpmultiplier_0_valid32c_jedi, ds_my_sp_fpmultiplier_0_valid32d_jedi, ds_my_sp_fpmultiplier_1_valid128_jedi, ds_my_sp_fpmultiplier_1_valid64a_jedi, ds_my_sp_fpmultiplier_1_valid64b_jedi, ds_my_sp_fpmultiplier_2_valid128_jedi, ds_my_sp_fpmultiplier_3_valid128_jedi, ds_my_sp_fpmultiplier_3_valid64a_jedi, ds_my_sp_fpmultiplier_3_valid64b_jedi, ds_my_sp_fpmultiplier_3_valid32a_jedi, ds_my_sp_fpmultiplier_3_valid32b_jedi, ds_my_sp_fpmultiplier_3_valid32c_jedi, ds_my_sp_fpmultiplier_3_valid32d_jedi, ds_my_sp_fpmultiplier_4_valid128_jedi);
 
   task automatic wait_n_ticks(int n);
-    // repeat (n) @(posedge s_i_clk) @(negedge s_i_clk);
-    repeat (n) @(posedge s_i_clk) @(negedge s_i_clk) `PRINT_INTERMEDIATE_VALID_BITS_ONELINE;
+    repeat (n) @(posedge s_i_clk) @(negedge s_i_clk);
+    // repeat (n) @(posedge s_i_clk) @(negedge s_i_clk) `PRINT_INTERMEDIATE_VALID_BITS_ONELINE;
   endtask
 
   // -------- Tunables --------------------------------------------------------
@@ -625,6 +625,7 @@ module SPEX128_top_unit_test;
     `include "cases/handwritten_correctness_TWO_SP.svh"
     `include "cases/handwritten_correctness_FOUR_SP.svh"
     `include "cases/vibed_correctness.svh"
+    `include "cases/negative_tests.svh"
 `else
     `include "cases/isolate.svh"
 `endif

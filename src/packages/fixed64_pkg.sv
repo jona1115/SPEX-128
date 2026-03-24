@@ -6,7 +6,7 @@
  ********************************************************************
  * 
  * Description:
- * Contains struct for 64bit Qs10.52 fixed point format
+ * Contains struct for the internal 64-bit Level-2 partition encoding
  * 
  ********************************************************************
  * 

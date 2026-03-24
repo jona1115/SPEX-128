@@ -6,7 +6,7 @@
  ********************************************************************
  * 
  * Description:
- * Contains struct for 128bit Qs10.117 fixed point format
+ * Contains struct for the internal 128-bit Level-2 partition encoding
  * 
  ********************************************************************
  * 

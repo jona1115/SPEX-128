@@ -5,10 +5,13 @@
  * 
  ********************************************************************
  * 
- * Description:
  * Contains module to convert a subword parallel (SP) float(s) into
- * fixed Qs10.n format, where s is the sign, and n is the number of 
- * bits for the fractional portion of the fixed point format.
+ * the internal partition encoding consumed by Level 2.
+ *
+ * Positive inputs are packed as ordinary unsigned fixed-point lanes.
+ * Negative inputs are packed as: x = a + r, where a is the signed
+ * coarse bucket consumed by partition A and r is a nonnegative
+ * residual consumed by partitions B..F.
  * 
  ********************************************************************
  * 
@@ -393,23 +396,94 @@ always_ff @( posedge i_clk ) begin : stage1_convert
   logic [NUM_BITS_32-1:0] fixed32_c_shifted;
   logic [NUM_BITS_32-1:0] fixed32_d_shifted;
 
+  logic [NUM_BITS_128-1:0]  packed128;
+  logic [NUM_BITS_64-1:0]   packed64_a;
+  logic [NUM_BITS_64-1:0]   packed64_b;
+  logic [NUM_BITS_32-1:0]   packed32_a;
+  logic [NUM_BITS_32-1:0]   packed32_b;
+  logic [NUM_BITS_32-1:0]   packed32_c;
+  logic [NUM_BITS_32-1:0]   packed32_d;
+  logic [NUM_BITS_128-1:0]  exact128_mag;
+  logic [NUM_BITS_64-1:0]   exact64_mag;
+  logic [NUM_BITS_32-1:0]   exact32_mag;
   if (!i_rst_n) begin
     s_fixed_packed_q <= '0;
     s_metadata_q <= '0;
   end
   else if (s_S1_en) begin
     s_metadata_q <= s_S0_metadata_q;
+
+    exact128_mag      = '0;
+    exact64_mag       = '0;
+    exact32_mag       = '0;
+    exact128_mag[117] = 1'b1;
+    exact64_mag[53]   = 1'b1;
+    exact32_mag[21]   = 1'b1;
+
     case (s_S0_current_sp_q)
       SINGLE_MODE: begin
         fixed128_shifted = apply_shift_128(s_S0_fixed128_temp_q, s_S0_shift_amount_a_q);
-        s_fixed_packed_q <= {s_S0_binary128_sign_q, fixed128_shifted[126:117], fixed128_shifted[116:0]};
+        if (!s_S0_binary128_sign_q) begin
+          packed128 = {1'b0, fixed128_shifted[126:117], fixed128_shifted[116:0]};
+        end
+        else if (fixed128_shifted == '0) begin
+          packed128 = '0;
+        end
+        else if ((s_S0_shift_amount_a_q == 10) && (s_S0_fixed128_temp_q == exact128_mag)) begin
+          packed128 = {1'b1, {10{1'b1}}, {117{1'b0}}};
+        end
+        else if (fixed128_shifted == '1) begin
+          packed128 = {1'b1, fixed128_shifted[126:117], fixed128_shifted[116:0]};
+        end
+        else if (fixed128_shifted[116:0] == '0) begin
+          packed128 = {1'b1, fixed128_shifted[126:117] - 10'd1, {117{1'b0}}};
+        end
+        else begin
+          packed128 = {1'b1, fixed128_shifted[126:117], (~fixed128_shifted[116:0]) + 1'b1};
+        end
+        s_fixed_packed_q <= packed128;
       end
 
       TWO_SP_MODE: begin
         fixed64_a_shifted = apply_shift_64(s_S0_fixed64_a_temp_q, s_S0_shift_amount_a_q);
         fixed64_b_shifted = apply_shift_64(s_S0_fixed64_b_temp_q, s_S0_shift_amount_b_q);
-        s_fixed_packed_q <= {{s_S0_binary64_a_sign_q, fixed64_a_shifted[62:52], fixed64_a_shifted[51:0]},
-                             {s_S0_binary64_b_sign_q, fixed64_b_shifted[62:52], fixed64_b_shifted[51:0]}};
+        if (!s_S0_binary64_a_sign_q) begin
+          packed64_a = {1'b0, fixed64_a_shifted[62:52], fixed64_a_shifted[51:0]};
+        end
+        else if (fixed64_a_shifted == '0) begin
+          packed64_a = '0;
+        end
+        else if ((s_S0_shift_amount_a_q == 10) && (s_S0_fixed64_a_temp_q == exact64_mag)) begin
+          packed64_a = {1'b1, {10{1'b1}}, {53{1'b0}}};
+        end
+        else if (fixed64_a_shifted == '1) begin
+          packed64_a = {1'b1, fixed64_a_shifted[62:52], fixed64_a_shifted[51:0]};
+        end
+        else if (fixed64_a_shifted[52:0] == '0) begin
+          packed64_a = {1'b1, fixed64_a_shifted[62:53] - 10'd1, {53{1'b0}}};
+        end
+        else begin
+          packed64_a = {1'b1, fixed64_a_shifted[62:53], (~fixed64_a_shifted[52:0]) + 1'b1};
+        end
+        if (!s_S0_binary64_b_sign_q) begin
+          packed64_b = {1'b0, fixed64_b_shifted[62:52], fixed64_b_shifted[51:0]};
+        end
+        else if (fixed64_b_shifted == '0) begin
+          packed64_b = '0;
+        end
+        else if ((s_S0_shift_amount_b_q == 10) && (s_S0_fixed64_b_temp_q == exact64_mag)) begin
+          packed64_b = {1'b1, {10{1'b1}}, {53{1'b0}}};
+        end
+        else if (fixed64_b_shifted == '1) begin
+          packed64_b = {1'b1, fixed64_b_shifted[62:52], fixed64_b_shifted[51:0]};
+        end
+        else if (fixed64_b_shifted[52:0] == '0) begin
+          packed64_b = {1'b1, fixed64_b_shifted[62:53] - 10'd1, {53{1'b0}}};
+        end
+        else begin
+          packed64_b = {1'b1, fixed64_b_shifted[62:53], (~fixed64_b_shifted[52:0]) + 1'b1};
+        end
+        s_fixed_packed_q <= {packed64_a, packed64_b};
       end
 
       FOUR_SP_MODE: begin
@@ -417,10 +491,79 @@ always_ff @( posedge i_clk ) begin : stage1_convert
         fixed32_b_shifted = apply_shift_32(s_S0_fixed32_b_temp_q, s_S0_shift_amount_b_q);
         fixed32_c_shifted = apply_shift_32(s_S0_fixed32_c_temp_q, s_S0_shift_amount_c_q);
         fixed32_d_shifted = apply_shift_32(s_S0_fixed32_d_temp_q, s_S0_shift_amount_d_q);
-        s_fixed_packed_q <= {{s_S0_binary32_a_sign_q, fixed32_a_shifted[30:21], fixed32_a_shifted[20:0]},
-                             {s_S0_binary32_b_sign_q, fixed32_b_shifted[30:21], fixed32_b_shifted[20:0]},
-                             {s_S0_binary32_c_sign_q, fixed32_c_shifted[30:21], fixed32_c_shifted[20:0]},
-                             {s_S0_binary32_d_sign_q, fixed32_d_shifted[30:21], fixed32_d_shifted[20:0]}};
+      if (!s_S0_binary32_a_sign_q) begin
+      packed32_a = {1'b0, fixed32_a_shifted[30:21], fixed32_a_shifted[20:0]};
+      end
+      else if (fixed32_a_shifted == '0) begin
+        packed32_a = '0;
+      end
+      else if ((s_S0_shift_amount_a_q == 10) && (s_S0_fixed32_a_temp_q == exact32_mag)) begin
+        packed32_a = {1'b1, {10{1'b1}}, {21{1'b0}}};
+      end
+      else if (fixed32_a_shifted == '1) begin
+        packed32_a = {1'b1, fixed32_a_shifted[30:21], fixed32_a_shifted[20:0]};
+      end
+      else if (fixed32_a_shifted[20:0] == '0) begin
+        packed32_a = {1'b1, fixed32_a_shifted[30:21] - 10'd1, {21{1'b0}}};
+      end
+      else begin
+        packed32_a = {1'b1, fixed32_a_shifted[30:21], (~fixed32_a_shifted[20:0]) + 1'b1};
+      end
+      if (!s_S0_binary32_b_sign_q) begin
+        packed32_b = {1'b0, fixed32_b_shifted[30:21], fixed32_b_shifted[20:0]};
+      end
+      else if (fixed32_b_shifted == '0) begin
+        packed32_b = '0;
+      end
+      else if ((s_S0_shift_amount_b_q == 10) && (s_S0_fixed32_b_temp_q == exact32_mag)) begin
+        packed32_b = {1'b1, {10{1'b1}}, {21{1'b0}}};
+      end
+      else if (fixed32_b_shifted == '1) begin
+        packed32_b = {1'b1, fixed32_b_shifted[30:21], fixed32_b_shifted[20:0]};
+      end
+      else if (fixed32_b_shifted[20:0] == '0) begin
+        packed32_b = {1'b1, fixed32_b_shifted[30:21] - 10'd1, {21{1'b0}}};
+      end
+      else begin
+        packed32_b = {1'b1, fixed32_b_shifted[30:21], (~fixed32_b_shifted[20:0]) + 1'b1};
+      end
+      if (!s_S0_binary32_c_sign_q) begin
+        packed32_c = {1'b0, fixed32_c_shifted[30:21], fixed32_c_shifted[20:0]};
+      end
+      else if (fixed32_c_shifted == '0) begin
+        packed32_c = '0;
+      end
+      else if ((s_S0_shift_amount_c_q == 10) && (s_S0_fixed32_c_temp_q == exact32_mag)) begin
+        packed32_c = {1'b1, {10{1'b1}}, {21{1'b0}}};
+      end
+      else if (fixed32_c_shifted == '1) begin
+        packed32_c = {1'b1, fixed32_c_shifted[30:21], fixed32_c_shifted[20:0]};
+      end
+      else if (fixed32_c_shifted[20:0] == '0) begin
+        packed32_c = {1'b1, fixed32_c_shifted[30:21] - 10'd1, {21{1'b0}}};
+      end
+      else begin
+      packed32_c = {1'b1, fixed32_c_shifted[30:21], (~fixed32_c_shifted[20:0]) + 1'b1};
+      end
+      if (!s_S0_binary32_d_sign_q) begin
+      packed32_d = {1'b0, fixed32_d_shifted[30:21], fixed32_d_shifted[20:0]};
+      end
+      else if (fixed32_d_shifted == '0) begin
+        packed32_d = '0;
+      end
+      else if ((s_S0_shift_amount_d_q == 10) && (s_S0_fixed32_d_temp_q == exact32_mag)) begin
+        packed32_d = {1'b1, {10{1'b1}}, {21{1'b0}}};
+      end
+      else if (fixed32_d_shifted == '1) begin
+        packed32_d = {1'b1, fixed32_d_shifted[30:21], fixed32_d_shifted[20:0]};
+      end
+      else if (fixed32_d_shifted[20:0] == '0) begin
+        packed32_d = {1'b1, fixed32_d_shifted[30:21] - 10'd1, {21{1'b0}}};
+      end
+      else begin
+        packed32_d = {1'b1, fixed32_d_shifted[30:21], (~fixed32_d_shifted[20:0]) + 1'b1};
+      end
+      s_fixed_packed_q <= {packed32_a, packed32_b, packed32_c, packed32_d};
       end
 
       default: begin

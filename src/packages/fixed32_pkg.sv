@@ -6,7 +6,7 @@
  ********************************************************************
  * 
  * Description:
- * Contains struct for 32bit Qs10.21 fixed point format
+ * Contains struct for the internal 32-bit Level-2 partition encoding
  * 
  ********************************************************************
  * 
