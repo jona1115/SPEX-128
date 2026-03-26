@@ -320,7 +320,7 @@ module sp_fpmultiplier_unit_test;
 // `define ISOLATE
 
 `ifndef ISOLATE
-    // `include "cases/correctness.svh"
+    `include "cases/correctness.svh"
     `include "cases/handwritten_sanity.svh"
     `include "cases/pipeline_test.svh"
 `else
