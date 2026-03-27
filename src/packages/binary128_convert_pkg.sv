@@ -42,14 +42,14 @@ package binary128_convert_pkg;
   } binary128_to_binary64_rne_s0a_t;
 
   // Stage-0 payload for binary128 -> binary64 conversion.
-  // This stage classifies specials and computes exp_unbiased/full_sig.
+  // This stage classifies specials and computes exp_unbiased/ex_mantissa.
   typedef struct packed {
     logic               sign;
     logic               is_nan;
     logic               is_inf;
     logic               is_zero;
     logic [51:0]        nan_payload;
-    logic [112:0]       full_sig;
+    logic [112:0]       ex_mantissa;
     logic signed [17:0] exp_unbiased;
   } binary128_to_binary64_rne_s0_t;
 
@@ -62,23 +62,23 @@ package binary128_convert_pkg;
     logic               is_zero;
     logic [51:0]        nan_payload;
 
-    logic [112:0]       full_sig;
+    logic [112:0]       ex_mantissa;
     logic signed [17:0] exp_unbiased;
     logic [6:0]         lz;
   } binary128_to_binary64_rne_s1a_t;
 
   // Stage-1 payload for binary128 -> binary64 conversion.
-  // This stage normalizes the exponent and does subnormal bookkeeping.
+  // This stage normalizes the exponent and does denormal bookkeeping.
   typedef struct packed {
     logic               sign;
     logic               is_nan;
     logic               is_inf;
     logic               is_zero;
     logic               is_overflow;
-    logic               is_subnormal;
+    logic               is_denormal;
     logic [51:0]        nan_payload;
 
-    logic [112:0]       full_sig;
+    logic [112:0]       ex_mantissa;
     logic [6:0]         lz;
     logic signed [17:0] exp_norm;
     logic [6:0]         sub_rshift_amt;
@@ -92,7 +92,7 @@ package binary128_convert_pkg;
     logic               is_inf;
     logic               is_zero;
     logic               is_overflow;
-    logic               is_subnormal;
+    logic               is_denormal;
     logic [51:0]        nan_payload;
     logic signed [17:0] exp_norm;
 
@@ -108,7 +108,7 @@ package binary128_convert_pkg;
     logic               is_inf;
     logic               is_zero;
     logic               is_overflow;
-    logic               is_subnormal;
+    logic               is_denormal;
     logic [51:0]        nan_payload;
     logic signed [17:0] exp_norm;
 
@@ -124,14 +124,14 @@ package binary128_convert_pkg;
   } binary128_to_binary32_rne_s0a_t;
 
   // Stage-0 payload for binary128 -> binary32 conversion.
-  // This stage classifies specials and computes exp_unbiased/full_sig.
+  // This stage classifies specials and computes exp_unbiased/ex_mantissa.
   typedef struct packed {
     logic               sign;
     logic               is_nan;
     logic               is_inf;
     logic               is_zero;
     logic [22:0]        nan_payload;
-    logic [112:0]       full_sig;
+    logic [112:0]       ex_mantissa;
     logic signed [17:0] exp_unbiased;
   } binary128_to_binary32_rne_s0_t;
 
@@ -144,23 +144,23 @@ package binary128_convert_pkg;
     logic               is_zero;
     logic [22:0]        nan_payload;
 
-    logic [112:0]       full_sig;
+    logic [112:0]       ex_mantissa;
     logic signed [17:0] exp_unbiased;
     logic [6:0]         lz;
   } binary128_to_binary32_rne_s1a_t;
 
   // Stage-1 payload for binary128 -> binary32 conversion.
-  // This stage normalizes the exponent and does subnormal bookkeeping.
+  // This stage normalizes the exponent and does denormal bookkeeping.
   typedef struct packed {
     logic               sign;
     logic               is_nan;
     logic               is_inf;
     logic               is_zero;
     logic               is_overflow;
-    logic               is_subnormal;
+    logic               is_denormal;
     logic [22:0]        nan_payload;
 
-    logic [112:0]       full_sig;
+    logic [112:0]       ex_mantissa;
     logic [6:0]         lz;
     logic signed [17:0] exp_norm;
     logic [6:0]         sub_rshift_amt;
@@ -174,7 +174,7 @@ package binary128_convert_pkg;
     logic               is_inf;
     logic               is_zero;
     logic               is_overflow;
-    logic               is_subnormal;
+    logic               is_denormal;
     logic [22:0]        nan_payload;
     logic signed [17:0] exp_norm;
 
@@ -190,7 +190,7 @@ package binary128_convert_pkg;
     logic               is_inf;
     logic               is_zero;
     logic               is_overflow;
-    logic               is_subnormal;
+    logic               is_denormal;
     logic [22:0]        nan_payload;
     logic signed [17:0] exp_norm;
 
@@ -327,7 +327,7 @@ package binary128_convert_pkg;
 
     out.exp_unbiased = (in.exp == 15'd0) ? (18'sd1 - BIAS_128)
                                           : ($signed({3'b0, in.exp}) - BIAS_128);
-    out.full_sig = {(in.exp == 15'd0) ? 1'b0 : 1'b1, in.mantissa};
+    out.ex_mantissa = {(in.exp == 15'd0) ? 1'b0 : 1'b1, in.mantissa};
 
     return out;
   endfunction
@@ -353,7 +353,7 @@ package binary128_convert_pkg;
     out.is_inf       = in.is_inf;
     out.is_zero      = in.is_zero;
     out.nan_payload  = in.nan_payload;
-    out.full_sig     = in.full_sig;
+    out.ex_mantissa     = in.ex_mantissa;
     out.exp_unbiased = in.exp_unbiased;
 
     // Specials/zero: bypass heavy math
@@ -362,7 +362,7 @@ package binary128_convert_pkg;
     end
 
     // LZC on 113-bit significand
-    lz_u = lzc_113(in.full_sig);
+    lz_u = lzc_113(in.ex_mantissa);
     if (lz_u > 113) begin
       out.lz = 7'd113;
     end
@@ -391,7 +391,7 @@ package binary128_convert_pkg;
     out.is_inf       = in.is_inf;
     out.is_zero      = in.is_zero;
     out.nan_payload  = in.nan_payload;
-    out.full_sig     = in.full_sig;
+    out.ex_mantissa  = in.ex_mantissa;
     out.lz           = in.lz;
 
     if (in.is_nan || in.is_inf || in.is_zero) begin
@@ -406,12 +406,12 @@ package binary128_convert_pkg;
       return out;
     end
 
-    // Subnormal classification (binary64)
-    out.is_subnormal = (exp_norm_s < E_MIN_64_S);
+    // denormal classification (binary64)
+    out.is_denormal = (exp_norm_s < E_MIN_64_S);
 
-    // For subnormals, avoid double-barrel shift:
-    // sig_shifted = full_sig >> (E_MIN - exp_unbiased)
-    if (out.is_subnormal) begin
+    // For denormals, avoid double-barrel shift:
+    // sig_shifted = ex_mantissa >> (E_MIN - exp_unbiased)
+    if (out.is_denormal) begin
       sub_rshift_signed = E_MIN_64 - int'(in.exp_unbiased);
       if (sub_rshift_signed < 0) begin
         out.sub_rshift_amt = 7'd0;
@@ -453,7 +453,7 @@ package binary128_convert_pkg;
     out.is_inf       = in.is_inf;
     out.is_zero      = in.is_zero;
     out.is_overflow  = in.is_overflow;
-    out.is_subnormal = in.is_subnormal;
+    out.is_denormal = in.is_denormal;
     out.nan_payload  = in.nan_payload;
     out.exp_norm     = in.exp_norm;
 
@@ -461,11 +461,11 @@ package binary128_convert_pkg;
       return out;
     end
 
-    if (in.is_subnormal) begin
-      sig_shifted = in.full_sig >> in.sub_rshift_amt;
+    if (in.is_denormal) begin
+      sig_shifted = in.ex_mantissa >> in.sub_rshift_amt;
     end
     else begin
-      sig_shifted = in.full_sig << in.lz;
+      sig_shifted = in.ex_mantissa << in.lz;
     end
 
     out.keep = sig_shifted[112 -: 53];
@@ -490,7 +490,7 @@ package binary128_convert_pkg;
     out.is_inf       = in.is_inf;
     out.is_zero      = in.is_zero;
     out.is_overflow  = in.is_overflow;
-    out.is_subnormal = in.is_subnormal;
+    out.is_denormal  = in.is_denormal;
     out.nan_payload  = in.nan_payload;
     out.exp_norm     = in.exp_norm;
 
@@ -536,7 +536,7 @@ package binary128_convert_pkg;
     carry = in.rounded[53];
 
     // pack
-    if (!in.is_subnormal) begin
+    if (!in.is_denormal) begin
       exp_out_s = in.exp_norm + $signed({17'b0, carry});
 
       if (exp_out_s > E_MAX_64_S) begin
@@ -550,7 +550,7 @@ package binary128_convert_pkg;
       end
     end
     else begin
-      // subnormal pack + bump
+      // denormal pack + bump
       if (in.rounded[53] || in.rounded[52]) begin
         out.exp = 11'd1;
         out.mantissa = '0;
@@ -616,7 +616,7 @@ package binary128_convert_pkg;
 
     out.exp_unbiased = (in.exp == 15'd0) ? (18'sd1 - BIAS_128)
                                           : ($signed({3'b0, in.exp}) - BIAS_128);
-    out.full_sig = {(in.exp == 15'd0) ? 1'b0 : 1'b1, in.mantissa};
+    out.ex_mantissa = {(in.exp == 15'd0) ? 1'b0 : 1'b1, in.mantissa};
 
     return out;
   endfunction
@@ -642,7 +642,7 @@ package binary128_convert_pkg;
     out.is_inf       = in.is_inf;
     out.is_zero      = in.is_zero;
     out.nan_payload  = in.nan_payload;
-    out.full_sig     = in.full_sig;
+    out.ex_mantissa     = in.ex_mantissa;
     out.exp_unbiased = in.exp_unbiased;
 
     // Specials/zero: bypass heavy math
@@ -651,7 +651,7 @@ package binary128_convert_pkg;
     end
 
     // LZC on 113-bit significand
-    lz_u = lzc_113(in.full_sig);
+    lz_u = lzc_113(in.ex_mantissa);
     if (lz_u > 113) begin
       out.lz = 7'd113;
     end
@@ -680,7 +680,7 @@ package binary128_convert_pkg;
     out.is_inf       = in.is_inf;
     out.is_zero      = in.is_zero;
     out.nan_payload  = in.nan_payload;
-    out.full_sig     = in.full_sig;
+    out.ex_mantissa     = in.ex_mantissa;
     out.lz           = in.lz;
 
     if (in.is_nan || in.is_inf || in.is_zero) begin
@@ -695,12 +695,12 @@ package binary128_convert_pkg;
       return out;
     end
 
-    // Subnormal classification (binary32)
-    out.is_subnormal = (exp_norm_s < E_MIN_32_S);
+    // denormal classification (binary32)
+    out.is_denormal = (exp_norm_s < E_MIN_32_S);
 
-    // For subnormals, avoid double-barrel shift:
-    // sig_shifted = full_sig >> (E_MIN - exp_unbiased)
-    if (out.is_subnormal) begin
+    // For denormals, avoid double-barrel shift:
+    // sig_shifted = ex_mantissa >> (E_MIN - exp_unbiased)
+    if (out.is_denormal) begin
       sub_rshift_signed = E_MIN_32 - int'(in.exp_unbiased);
       if (sub_rshift_signed < 0) begin
         out.sub_rshift_amt = 7'd0;
@@ -742,7 +742,7 @@ package binary128_convert_pkg;
     out.is_inf       = in.is_inf;
     out.is_zero      = in.is_zero;
     out.is_overflow  = in.is_overflow;
-    out.is_subnormal = in.is_subnormal;
+    out.is_denormal = in.is_denormal;
     out.nan_payload  = in.nan_payload;
     out.exp_norm     = in.exp_norm;
 
@@ -750,11 +750,11 @@ package binary128_convert_pkg;
       return out;
     end
 
-    if (in.is_subnormal) begin
-      sig_shifted = in.full_sig >> in.sub_rshift_amt;
+    if (in.is_denormal) begin
+      sig_shifted = in.ex_mantissa >> in.sub_rshift_amt;
     end
     else begin
-      sig_shifted = in.full_sig << in.lz;
+      sig_shifted = in.ex_mantissa << in.lz;
     end
 
     out.keep = sig_shifted[112 -: 24];
@@ -779,7 +779,7 @@ package binary128_convert_pkg;
     out.is_inf       = in.is_inf;
     out.is_zero      = in.is_zero;
     out.is_overflow  = in.is_overflow;
-    out.is_subnormal = in.is_subnormal;
+    out.is_denormal = in.is_denormal;
     out.nan_payload  = in.nan_payload;
     out.exp_norm     = in.exp_norm;
 
@@ -825,7 +825,7 @@ package binary128_convert_pkg;
     carry = in.rounded[24];
 
     // pack
-    if (!in.is_subnormal) begin
+    if (!in.is_denormal) begin
       exp_out_s = in.exp_norm + $signed({17'b0, carry});
 
       if (exp_out_s > E_MAX_32_S) begin
@@ -839,7 +839,7 @@ package binary128_convert_pkg;
       end
     end
     else begin
-      // subnormal pack + bump
+      // denormal pack + bump
       if (in.rounded[24] || in.rounded[23]) begin
         out.exp = 8'd1;
         out.mantissa = '0;

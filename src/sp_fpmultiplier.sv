@@ -36,17 +36,18 @@ import fixed32_pkg::*;
 import unbiasing_pkg::*;
 
 module sp_fpmultiplier #(
-  parameter int NUM_BITS_128  = 128,
-  parameter int NUM_BITS_64   = 64,
-  parameter int NUM_BITS_32   = 32,
+  parameter int NUM_BITS_128      = 128,
+  parameter int NUM_BITS_64       = 64,
+  parameter int NUM_BITS_32       = 32,
 
   // Multiplier pipeline latency (cycles from mul start to valid product)
 `ifdef USE_DSP
-  parameter int INTMUL_LATENCY = 9, // DSP intmult path latency (3 mult stages + 6 tree stages)
+  parameter int INTMUL_LATENCY    = 9, // DSP intmult path latency (3 mult stages + 6 tree stages)
 `else
-  parameter int INTMUL_LATENCY = 3, // non-DSP intmult path latency
+  parameter int INTMUL_LATENCY    = 3, // non-DSP intmult path latency
 `endif
-  parameter int MODULE_LATENCY = INTMUL_LATENCY + 4,
+  parameter int SURROUNDING_LOGIC = 5,
+  parameter int MODULE_LATENCY    = INTMUL_LATENCY + SURROUNDING_LOGIC,
 
   // Error and debug parameters
   parameter int ERROR_SIGNAL_NUM_BITS = 32,
@@ -284,17 +285,19 @@ float_classifier #() my_float_classifier_force (
  *   - S0_*: combinational input decode, validation, and classification
  *   - S1_*: first registered stage before the integer multiplier
  *   - sink_*: unnumbered alignment path through the integer multiplier latency
- *   - S2_*: first registered stage after the multiplier (round + carry fixup)
- *   - S3_*: second registered stage after the multiplier (renormalize)
+ *   - S2a_*: first registered stage after the multiplier (round predecode + exp carry fixup)
+ *   - S2_*: second registered stage after the multiplier (round increment add)
+ *   - S3_*: third registered stage after the multiplier (renormalize)
  *   - S4_*: final registered output stage (pack + valid/metadata passthrough)
  *
  * The integer multiplier latency is intentionally not counted as a numbered stage.
  */
-logic s_S1_en, s_S2_en, s_S3_en, s_S4_en;
+logic s_S1_en, s_S2a_en, s_S2b_en, s_S3_en, s_S4_en;
 logic s_fire;
 localparam int MUL_LAUNCH_OFFSET = 0;
 localparam int S2_OFFSET = MUL_LAUNCH_OFFSET + INTMUL_LATENCY;
-localparam int S3_OFFSET = S2_OFFSET + 1;
+localparam int S2B_OFFSET = S2_OFFSET + 1;
+localparam int S3_OFFSET = S2B_OFFSET + 1;
 localparam int S4_OFFSET = S3_OFFSET + 1;
 localparam int PIPE_DEPTH = S4_OFFSET + 1;
 logic [PIPE_DEPTH-1:0] s_pipe_valid;
@@ -336,7 +339,8 @@ assign s_pipe_valid_next = {s_pipe_valid[PIPE_DEPTH-2:0], s_fire};
 
 assign s_mul_launch = s_pipe_valid[MUL_LAUNCH_OFFSET];
 assign s_S1_en = s_fire;
-assign s_S2_en = s_pipe_valid[S2_OFFSET];
+assign s_S2a_en = s_pipe_valid[S2_OFFSET];
+assign s_S2b_en = s_pipe_valid[S2B_OFFSET];
 assign s_S3_en = s_pipe_valid[S3_OFFSET];
 assign s_S4_en = s_pipe_valid[S4_OFFSET];
 
@@ -692,85 +696,228 @@ assign s_sink_metadata_force  = s_db_metadata_force[INTMUL_LATENCY-1];
 
 
 /**
- * Round-to-nearest-even helpers used by stage 2.
+ * Round-to-nearest-even helpers used by stage 2a.
 */
 `define CARRY_IS_A_ONE(cb) ((cb) === 1'b1) // Checks if the top carry bit from n*n multiply is a 1.
-function automatic logic [113:0] fn_round_postmul_128(input logic [225:0] i_full);
-  logic hs_carry, hs_guard, hs_round, hs_sticky, hs_lsb, hs_round_up;
-  logic [112:0] hs_kept;
+typedef struct packed {
+  logic [112:0] keep;
+  logic         round_up;
+} round_postmul_128_t;
+
+typedef struct packed {
+  logic [52:0] keep;
+  logic        round_up;
+} round_postmul_64_t;
+
+typedef struct packed {
+  logic [23:0] keep;
+  logic        round_up;
+} round_postmul_32_t;
+
+function automatic round_postmul_128_t fn_round_postmul_prep_128(input logic [225:0] i_full);
+  round_postmul_128_t out;
+  logic hs_carry, hs_guard, hs_round, hs_sticky;
   begin
+    out = '0;
     hs_carry = `CARRY_IS_A_ONE(i_full[225]);
-    hs_kept  = hs_carry ? i_full[225:113] : i_full[224:112];
+    out.keep = hs_carry ? i_full[225:113] : i_full[224:112];
     hs_guard = hs_carry ? i_full[112] : i_full[111];
     hs_round = hs_carry ? i_full[111] : i_full[110];
     hs_sticky = hs_carry ? |i_full[110:0] : |i_full[109:0];
-    hs_lsb = hs_carry ? i_full[113] : i_full[112];
-    hs_round_up = (hs_guard === 1'b1) &&
-                  ((hs_round === 1'b1) || (hs_sticky === 1'b1) || (hs_lsb === 1'b1));
-    fn_round_postmul_128 = {1'b0, hs_kept} + hs_round_up;
+    out.round_up = (hs_guard === 1'b1) &&
+                   ((hs_round === 1'b1) || (hs_sticky === 1'b1) || (out.keep[0] === 1'b1));
+    return out;
   end
 endfunction
 
-function automatic logic [53:0] fn_round_postmul_64(input logic [105:0] i_full);
-  logic hs_carry, hs_guard, hs_round, hs_sticky, hs_lsb, hs_round_up;
-  logic [52:0] hs_kept;
+function automatic round_postmul_64_t fn_round_postmul_prep_64(input logic [105:0] i_full);
+  round_postmul_64_t out;
+  logic hs_carry, hs_guard, hs_round, hs_sticky;
   begin
+    out = '0;
     hs_carry = `CARRY_IS_A_ONE(i_full[105]);
-    hs_kept  = hs_carry ? i_full[105:53] : i_full[104:52];
+    out.keep = hs_carry ? i_full[105:53] : i_full[104:52];
     hs_guard = hs_carry ? i_full[52] : i_full[51];
     hs_round = hs_carry ? i_full[51] : i_full[50];
     hs_sticky = hs_carry ? |i_full[50:0] : |i_full[49:0];
-    hs_lsb = hs_carry ? i_full[53] : i_full[52];
-    hs_round_up = (hs_guard === 1'b1) &&
-                  ((hs_round === 1'b1) || (hs_sticky === 1'b1) || (hs_lsb === 1'b1));
-    fn_round_postmul_64 = {1'b0, hs_kept} + hs_round_up;
+    out.round_up = (hs_guard === 1'b1) &&
+                   ((hs_round === 1'b1) || (hs_sticky === 1'b1) || (out.keep[0] === 1'b1));
+    return out;
   end
 endfunction
 
-function automatic logic [24:0] fn_round_postmul_32(input logic [47:0] i_full);
-  logic hs_carry, hs_guard, hs_round, hs_sticky, hs_lsb, hs_round_up;
-  logic [23:0] hs_kept;
+function automatic round_postmul_32_t fn_round_postmul_prep_32(input logic [47:0] i_full);
+  round_postmul_32_t out;
+  logic hs_carry, hs_guard, hs_round, hs_sticky;
   begin
+    out = '0;
     hs_carry = `CARRY_IS_A_ONE(i_full[47]);
-    hs_kept  = hs_carry ? i_full[47:24] : i_full[46:23];
+    out.keep = hs_carry ? i_full[47:24] : i_full[46:23];
     hs_guard = hs_carry ? i_full[23] : i_full[22];
     hs_round = hs_carry ? i_full[22] : i_full[21];
     hs_sticky = hs_carry ? |i_full[21:0] : |i_full[20:0];
-    hs_lsb = hs_carry ? i_full[24] : i_full[23];
-    hs_round_up = (hs_guard === 1'b1) &&
-                  ((hs_round === 1'b1) || (hs_sticky === 1'b1) || (hs_lsb === 1'b1));
-    fn_round_postmul_32 = {1'b0, hs_kept} + hs_round_up;
+    out.round_up = (hs_guard === 1'b1) &&
+                   ((hs_round === 1'b1) || (hs_sticky === 1'b1) || (out.keep[0] === 1'b1));
+    return out;
   end
 endfunction
 
 //=====================================================================================
-// Stage 2: rounding and carry-based exponent adjustment
+// Stage 2a: round predecode and carry-based exponent adjustment
 //=====================================================================================
 /**
- * After multiplication, we have the product (using binary128 as example):
- *              P_full = 1.b_1b_2b_3...b_112b_113b_114b_115...
- * To round it, or "normalize" it to 113 bits (including implicit 1), we need not only
- * the 113 bits (1.b_1b_2b_3...b_112), but also:
- *                              guard bit G = b_113
- *                              round bit R = b_114
- *                              sticky bit S = OR(b_115, b_116, ...)
- * 
- * So, rounding rule is:
- * 1. if G == 0: 1.b_1b_2b_3...b_112 is the rounded product P_norm
- * 2. if G == 1:
- *        if R == 1 or S == 1, P_norm = 1.b_1b_2b_3...b_112 + 1
- *        if R == 0 and S == 0,
- *            if b_112 == 1, P_norm = 1.b_1b_2b_3...b_112 + 1
- *            if b_112 == 0, P_norm = 1.b_1b_2b_3...b_112
- * 
- * Stage 2 will be:
- * After rounding, we need to check that the rounding didn't cause overflow (ie we 
- * get a 10.0000.... after we increment by 1)
- * if that is the case (overflow), we increment the exponent by 1 again and shift
- * P_norm right by 1 so that it goes back to being 1.000000....
- * 
- * This is called RN-even: Round to nearest, ties to even
+ * Stage 2a computes keep+round_up for RN-even and applies the pre-round
+ * exponent bump from the raw multiplier carry bit.
  */
+logic [112:0] s_S2a_128_keep;
+logic [52:0]  s_S2a_64a_keep;
+logic [52:0]  s_S2a_64b_keep;
+logic [23:0]  s_S2a_32a_keep;
+logic [23:0]  s_S2a_32b_keep;
+logic [23:0]  s_S2a_32c_keep;
+logic [23:0]  s_S2a_32d_keep;
+logic         s_S2a_128_round_up;
+logic         s_S2a_64a_round_up;
+logic         s_S2a_64b_round_up;
+logic         s_S2a_32a_round_up;
+logic         s_S2a_32b_round_up;
+logic         s_S2a_32c_round_up;
+logic         s_S2a_32d_round_up;
+binary128_t   s_S2a_128_jedi;
+binary64_t    s_S2a_64a_jedi, s_S2a_64b_jedi;
+binary32_t    s_S2a_32a_jedi, s_S2a_32b_jedi, s_S2a_32c_jedi, s_S2a_32d_jedi;
+logic         s_S2a_valid128_jedi;
+logic         s_S2a_valid64a_jedi, s_S2a_valid64b_jedi;
+logic         s_S2a_valid32a_jedi, s_S2a_valid32b_jedi, s_S2a_valid32c_jedi, s_S2a_valid32d_jedi;
+float_metadata_t s_S2a_metadata_anikin, s_S2a_metadata_force;
+always_ff @( posedge i_clk ) begin : stage2a_round_prep
+  round_postmul_128_t hs_S2a_128_round;
+  round_postmul_64_t  hs_S2a_64a_round, hs_S2a_64b_round;
+  round_postmul_32_t  hs_S2a_32a_round, hs_S2a_32b_round, hs_S2a_32c_round, hs_S2a_32d_round;
+  binary128_t         hs_S2a_128_jedi;
+  binary64_t          hs_S2a_64a_jedi, hs_S2a_64b_jedi;
+  binary32_t          hs_S2a_32a_jedi, hs_S2a_32b_jedi, hs_S2a_32c_jedi, hs_S2a_32d_jedi;
+
+  if (!i_rst_n) begin
+    s_S2a_128_keep         <= '0;
+    s_S2a_64a_keep         <= '0;
+    s_S2a_64b_keep         <= '0;
+    s_S2a_32a_keep         <= '0;
+    s_S2a_32b_keep         <= '0;
+    s_S2a_32c_keep         <= '0;
+    s_S2a_32d_keep         <= '0;
+    s_S2a_128_round_up     <= '0;
+    s_S2a_64a_round_up     <= '0;
+    s_S2a_64b_round_up     <= '0;
+    s_S2a_32a_round_up     <= '0;
+    s_S2a_32b_round_up     <= '0;
+    s_S2a_32c_round_up     <= '0;
+    s_S2a_32d_round_up     <= '0;
+    s_S2a_128_jedi         <= '0;
+    s_S2a_64a_jedi         <= '0;
+    s_S2a_64b_jedi         <= '0;
+    s_S2a_32a_jedi         <= '0;
+    s_S2a_32b_jedi         <= '0;
+    s_S2a_32c_jedi         <= '0;
+    s_S2a_32d_jedi         <= '0;
+    s_S2a_valid128_jedi    <= '0;
+    s_S2a_valid64a_jedi    <= '0;
+    s_S2a_valid64b_jedi    <= '0;
+    s_S2a_valid32a_jedi    <= '0;
+    s_S2a_valid32b_jedi    <= '0;
+    s_S2a_valid32c_jedi    <= '0;
+    s_S2a_valid32d_jedi    <= '0;
+    s_S2a_metadata_anikin  <= '0;
+    s_S2a_metadata_force   <= '0;
+
+    s_o_error[7]           <= 1'b0;
+    s_o_error[8]           <= 1'b0;
+    s_o_error[9]           <= 1'b0;
+  end
+  else begin
+    if (s_S2a_en) begin
+      hs_S2a_128_round = fn_round_postmul_prep_128(s_sink_128_mult_out_full);
+      hs_S2a_64a_round = fn_round_postmul_prep_64(s_sink_64a_mult_out_full);
+      hs_S2a_64b_round = fn_round_postmul_prep_64(s_sink_64b_mult_out_full);
+      hs_S2a_32a_round = fn_round_postmul_prep_32(s_sink_32a_mult_out_full);
+      hs_S2a_32b_round = fn_round_postmul_prep_32(s_sink_32b_mult_out_full);
+      hs_S2a_32c_round = fn_round_postmul_prep_32(s_sink_32c_mult_out_full);
+      hs_S2a_32d_round = fn_round_postmul_prep_32(s_sink_32d_mult_out_full);
+
+      hs_S2a_128_jedi = s_sink_128_jedi;
+      hs_S2a_64a_jedi = s_sink_64a_jedi;
+      hs_S2a_64b_jedi = s_sink_64b_jedi;
+      hs_S2a_32a_jedi = s_sink_32a_jedi;
+      hs_S2a_32b_jedi = s_sink_32b_jedi;
+      hs_S2a_32c_jedi = s_sink_32c_jedi;
+      hs_S2a_32d_jedi = s_sink_32d_jedi;
+
+      hs_S2a_128_jedi.exp = `CARRY_IS_A_ONE(s_sink_128_mult_out_full[225]) ? (s_sink_128_jedi.exp + 1'b1) : s_sink_128_jedi.exp;
+      hs_S2a_64a_jedi.exp = `CARRY_IS_A_ONE(s_sink_64a_mult_out_full[105]) ? (s_sink_64a_jedi.exp + 1'b1) : s_sink_64a_jedi.exp;
+      hs_S2a_64b_jedi.exp = `CARRY_IS_A_ONE(s_sink_64b_mult_out_full[105]) ? (s_sink_64b_jedi.exp + 1'b1) : s_sink_64b_jedi.exp;
+      hs_S2a_32a_jedi.exp = `CARRY_IS_A_ONE(s_sink_32a_mult_out_full[47])  ? (s_sink_32a_jedi.exp + 1'b1) : s_sink_32a_jedi.exp;
+      hs_S2a_32b_jedi.exp = `CARRY_IS_A_ONE(s_sink_32b_mult_out_full[47])  ? (s_sink_32b_jedi.exp + 1'b1) : s_sink_32b_jedi.exp;
+      hs_S2a_32c_jedi.exp = `CARRY_IS_A_ONE(s_sink_32c_mult_out_full[47])  ? (s_sink_32c_jedi.exp + 1'b1) : s_sink_32c_jedi.exp;
+      hs_S2a_32d_jedi.exp = `CARRY_IS_A_ONE(s_sink_32d_mult_out_full[47])  ? (s_sink_32d_jedi.exp + 1'b1) : s_sink_32d_jedi.exp;
+
+      assert (s_sink_metadata_anikin.sp_mode === s_sink_metadata_force.sp_mode) else begin
+        s_o_error[7] <= 1'b1;
+        s_o_error[8] <= 1'b1;
+        s_o_error[9] <= 1'b1;
+      end
+
+      case (s_sink_metadata_anikin.sp_mode)
+        SINGLE_MODE: begin
+          s_S2a_128_jedi     <= hs_S2a_128_jedi;
+          s_S2a_128_keep     <= hs_S2a_128_round.keep;
+          s_S2a_128_round_up <= hs_S2a_128_round.round_up;
+        end
+
+        TWO_SP_MODE: begin
+          s_S2a_64a_jedi     <= hs_S2a_64a_jedi;
+          s_S2a_64a_keep     <= hs_S2a_64a_round.keep;
+          s_S2a_64a_round_up <= hs_S2a_64a_round.round_up;
+          s_S2a_64b_jedi     <= hs_S2a_64b_jedi;
+          s_S2a_64b_keep     <= hs_S2a_64b_round.keep;
+          s_S2a_64b_round_up <= hs_S2a_64b_round.round_up;
+        end
+
+        FOUR_SP_MODE: begin
+          s_S2a_32a_jedi     <= hs_S2a_32a_jedi;
+          s_S2a_32a_keep     <= hs_S2a_32a_round.keep;
+          s_S2a_32a_round_up <= hs_S2a_32a_round.round_up;
+          s_S2a_32b_jedi     <= hs_S2a_32b_jedi;
+          s_S2a_32b_keep     <= hs_S2a_32b_round.keep;
+          s_S2a_32b_round_up <= hs_S2a_32b_round.round_up;
+          s_S2a_32c_jedi     <= hs_S2a_32c_jedi;
+          s_S2a_32c_keep     <= hs_S2a_32c_round.keep;
+          s_S2a_32c_round_up <= hs_S2a_32c_round.round_up;
+          s_S2a_32d_jedi     <= hs_S2a_32d_jedi;
+          s_S2a_32d_keep     <= hs_S2a_32d_round.keep;
+          s_S2a_32d_round_up <= hs_S2a_32d_round.round_up;
+        end
+
+        default: begin
+          // Keep previous contents on invalid mode.
+        end
+      endcase
+
+      s_S2a_valid128_jedi   <= s_sink_valid128_jedi;
+      s_S2a_valid64a_jedi   <= s_sink_valid64a_jedi;
+      s_S2a_valid64b_jedi   <= s_sink_valid64b_jedi;
+      s_S2a_valid32a_jedi   <= s_sink_valid32a_jedi;
+      s_S2a_valid32b_jedi   <= s_sink_valid32b_jedi;
+      s_S2a_valid32c_jedi   <= s_sink_valid32c_jedi;
+      s_S2a_valid32d_jedi   <= s_sink_valid32d_jedi;
+      s_S2a_metadata_anikin <= s_sink_metadata_anikin;
+      s_S2a_metadata_force  <= s_sink_metadata_force;
+    end
+  end
+end
+
+//=====================================================================================
+// Stage 2b: rounding increment add only
+//=====================================================================================
 logic [113:0] s_S2_128_potential_result;
 logic [53:0]  s_S2_64a_potential_result;
 logic [53:0]  s_S2_64b_potential_result;
@@ -785,18 +932,7 @@ logic         s_S2_valid128_jedi;
 logic         s_S2_valid64a_jedi, s_S2_valid64b_jedi;
 logic         s_S2_valid32a_jedi, s_S2_valid32b_jedi, s_S2_valid32c_jedi, s_S2_valid32d_jedi;
 float_metadata_t s_S2_metadata_anikin, s_S2_metadata_force;
-always_ff @( posedge i_clk ) begin : stage2_round
-  logic [113:0] hs_S2_128_potential_result;
-  logic [53:0]  hs_S2_64a_potential_result;
-  logic [53:0]  hs_S2_64b_potential_result;
-  logic [24:0]  hs_S2_32a_potential_result;
-  logic [24:0]  hs_S2_32b_potential_result;
-  logic [24:0]  hs_S2_32c_potential_result;
-  logic [24:0]  hs_S2_32d_potential_result;
-  binary128_t   hs_S2_128_jedi;
-  binary64_t    hs_S2_64a_jedi, hs_S2_64b_jedi;
-  binary32_t    hs_S2_32a_jedi, hs_S2_32b_jedi, hs_S2_32c_jedi, hs_S2_32d_jedi;
-
+always_ff @( posedge i_clk ) begin : stage2b_round_add
   if (!i_rst_n) begin
     s_S2_128_jedi             <= '0;
     s_S2_64a_jedi             <= '0;
@@ -824,64 +960,32 @@ always_ff @( posedge i_clk ) begin : stage2_round
 
     s_o_error[3]              <= 1'b0;
     s_o_error[4]              <= 1'b0;
-    s_o_error[7]              <= 1'b0;
-    s_o_error[8]              <= 1'b0;
-    s_o_error[9]              <= 1'b0;
     s_o_error[10]             <= 1'b0;
   end
   else begin
-    if (s_S2_en) begin
-      hs_S2_128_potential_result = fn_round_postmul_128(s_sink_128_mult_out_full);
-      hs_S2_64a_potential_result = fn_round_postmul_64(s_sink_64a_mult_out_full);
-      hs_S2_64b_potential_result = fn_round_postmul_64(s_sink_64b_mult_out_full);
-      hs_S2_32a_potential_result = fn_round_postmul_32(s_sink_32a_mult_out_full);
-      hs_S2_32b_potential_result = fn_round_postmul_32(s_sink_32b_mult_out_full);
-      hs_S2_32c_potential_result = fn_round_postmul_32(s_sink_32c_mult_out_full);
-      hs_S2_32d_potential_result = fn_round_postmul_32(s_sink_32d_mult_out_full);
-
-      hs_S2_128_jedi = s_sink_128_jedi;
-      hs_S2_64a_jedi = s_sink_64a_jedi;
-      hs_S2_64b_jedi = s_sink_64b_jedi;
-      hs_S2_32a_jedi = s_sink_32a_jedi;
-      hs_S2_32b_jedi = s_sink_32b_jedi;
-      hs_S2_32c_jedi = s_sink_32c_jedi;
-      hs_S2_32d_jedi = s_sink_32d_jedi;
-      hs_S2_128_jedi.exp = `CARRY_IS_A_ONE(s_sink_128_mult_out_full[225]) ? (s_sink_128_jedi.exp + 1'b1) : s_sink_128_jedi.exp;
-      hs_S2_64a_jedi.exp = `CARRY_IS_A_ONE(s_sink_64a_mult_out_full[105]) ? (s_sink_64a_jedi.exp + 1'b1) : s_sink_64a_jedi.exp;
-      hs_S2_64b_jedi.exp = `CARRY_IS_A_ONE(s_sink_64b_mult_out_full[105]) ? (s_sink_64b_jedi.exp + 1'b1) : s_sink_64b_jedi.exp;
-      hs_S2_32a_jedi.exp = `CARRY_IS_A_ONE(s_sink_32a_mult_out_full[47])  ? (s_sink_32a_jedi.exp + 1'b1) : s_sink_32a_jedi.exp;
-      hs_S2_32b_jedi.exp = `CARRY_IS_A_ONE(s_sink_32b_mult_out_full[47])  ? (s_sink_32b_jedi.exp + 1'b1) : s_sink_32b_jedi.exp;
-      hs_S2_32c_jedi.exp = `CARRY_IS_A_ONE(s_sink_32c_mult_out_full[47])  ? (s_sink_32c_jedi.exp + 1'b1) : s_sink_32c_jedi.exp;
-      hs_S2_32d_jedi.exp = `CARRY_IS_A_ONE(s_sink_32d_mult_out_full[47])  ? (s_sink_32d_jedi.exp + 1'b1) : s_sink_32d_jedi.exp;
-
-      assert (s_sink_metadata_anikin.sp_mode === s_sink_metadata_force.sp_mode) else begin
-        s_o_error[7] <= 1'b1;
-        s_o_error[8] <= 1'b1;
-        s_o_error[9] <= 1'b1;
-      end
-
-      case (s_sink_metadata_anikin.sp_mode)
+    if (s_S2b_en) begin
+      case (s_S2a_metadata_anikin.sp_mode)
         SINGLE_MODE: begin
-          s_S2_128_jedi             <= hs_S2_128_jedi;
-          s_S2_128_potential_result <= hs_S2_128_potential_result;
+          s_S2_128_jedi             <= s_S2a_128_jedi;
+          s_S2_128_potential_result <= {1'b0, s_S2a_128_keep} + s_S2a_128_round_up;
         end
 
         TWO_SP_MODE: begin
-          s_S2_64a_jedi             <= hs_S2_64a_jedi;
-          s_S2_64a_potential_result <= hs_S2_64a_potential_result;
-          s_S2_64b_jedi             <= hs_S2_64b_jedi;
-          s_S2_64b_potential_result <= hs_S2_64b_potential_result;
+          s_S2_64a_jedi             <= s_S2a_64a_jedi;
+          s_S2_64a_potential_result <= {1'b0, s_S2a_64a_keep} + s_S2a_64a_round_up;
+          s_S2_64b_jedi             <= s_S2a_64b_jedi;
+          s_S2_64b_potential_result <= {1'b0, s_S2a_64b_keep} + s_S2a_64b_round_up;
         end
 
         FOUR_SP_MODE: begin
-          s_S2_32a_jedi             <= hs_S2_32a_jedi;
-          s_S2_32a_potential_result <= hs_S2_32a_potential_result;
-          s_S2_32b_jedi             <= hs_S2_32b_jedi;
-          s_S2_32b_potential_result <= hs_S2_32b_potential_result;
-          s_S2_32c_jedi             <= hs_S2_32c_jedi;
-          s_S2_32c_potential_result <= hs_S2_32c_potential_result;
-          s_S2_32d_jedi             <= hs_S2_32d_jedi;
-          s_S2_32d_potential_result <= hs_S2_32d_potential_result;
+          s_S2_32a_jedi             <= s_S2a_32a_jedi;
+          s_S2_32a_potential_result <= {1'b0, s_S2a_32a_keep} + s_S2a_32a_round_up;
+          s_S2_32b_jedi             <= s_S2a_32b_jedi;
+          s_S2_32b_potential_result <= {1'b0, s_S2a_32b_keep} + s_S2a_32b_round_up;
+          s_S2_32c_jedi             <= s_S2a_32c_jedi;
+          s_S2_32c_potential_result <= {1'b0, s_S2a_32c_keep} + s_S2a_32c_round_up;
+          s_S2_32d_jedi             <= s_S2a_32d_jedi;
+          s_S2_32d_potential_result <= {1'b0, s_S2a_32d_keep} + s_S2a_32d_round_up;
         end
 
         default: begin
@@ -893,21 +997,21 @@ always_ff @( posedge i_clk ) begin : stage2_round
         end
       endcase
 
-      s_S2_valid128_jedi   <= s_sink_valid128_jedi;
-      s_S2_valid64a_jedi   <= s_sink_valid64a_jedi;
-      s_S2_valid64b_jedi   <= s_sink_valid64b_jedi;
-      s_S2_valid32a_jedi   <= s_sink_valid32a_jedi;
-      s_S2_valid32b_jedi   <= s_sink_valid32b_jedi;
-      s_S2_valid32c_jedi   <= s_sink_valid32c_jedi;
-      s_S2_valid32d_jedi   <= s_sink_valid32d_jedi;
-      s_S2_metadata_anikin <= s_sink_metadata_anikin;
-      s_S2_metadata_force  <= s_sink_metadata_force;
+      s_S2_valid128_jedi   <= s_S2a_valid128_jedi;
+      s_S2_valid64a_jedi   <= s_S2a_valid64a_jedi;
+      s_S2_valid64b_jedi   <= s_S2a_valid64b_jedi;
+      s_S2_valid32a_jedi   <= s_S2a_valid32a_jedi;
+      s_S2_valid32b_jedi   <= s_S2a_valid32b_jedi;
+      s_S2_valid32c_jedi   <= s_S2a_valid32c_jedi;
+      s_S2_valid32d_jedi   <= s_S2a_valid32d_jedi;
+      s_S2_metadata_anikin <= s_S2a_metadata_anikin;
+      s_S2_metadata_force  <= s_S2a_metadata_force;
     end
   end
 end
 
 //=====================================================================================
-// Stage 3: Renormalize the rounded result if the stage-2 increment overflowed
+// Stage 3: Renormalize the rounded result if the stage-2b increment overflowed
 //=====================================================================================
 logic [113:0] s_S3_128_potential_result;
 logic [53:0]  s_S3_64a_potential_result;
