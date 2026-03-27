@@ -166,6 +166,15 @@ logic s_GND;
 // Module body
 //=====================================================================================
 // Signal naming convention: s_<module-name>_<signal-name>
+`ifdef USE_DSP
+localparam int SP_FPMULTIPLIER_INTMUL_LATENCY = 9;
+`else
+localparam int SP_FPMULTIPLIER_INTMUL_LATENCY = 3;
+`endif
+localparam int SP_FPMULTIPLIER_SURROUNDING_LOGIC = 5;
+localparam int SP_FPMULTIPLIER_MODULE_LATENCY = SP_FPMULTIPLIER_INTMUL_LATENCY +
+                                                SP_FPMULTIPLIER_SURROUNDING_LOGIC;
+
 /******************************************************************
  * 
  * Level 1
@@ -785,7 +794,11 @@ logic s_my_sp_fpmultiplier_0_valid32d_jedi;
 logic [3:0] s_my_sp_fpmultiplier_0_identifier;
 logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_0_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_0_debug;
-sp_fpmultiplier #() my_sp_fpmultiplier_0 (
+sp_fpmultiplier #(
+  .INTMUL_LATENCY(SP_FPMULTIPLIER_INTMUL_LATENCY),
+  .SURROUNDING_LOGIC(SP_FPMULTIPLIER_SURROUNDING_LOGIC),
+  .MODULE_LATENCY(SP_FPMULTIPLIER_MODULE_LATENCY)
+) my_sp_fpmultiplier_0 (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
   .i_metadata(s_level2_metadata),
@@ -833,7 +846,11 @@ logic [3:0] s_my_sp_fpmultiplier_1_identifier;
 logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_1_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_1_debug;
 logic unused_mul1_1, unused_mul1_2, unused_mul1_3, unused_mul1_4;
-sp_fpmultiplier #() my_sp_fpmultiplier_1 (
+sp_fpmultiplier #(
+  .INTMUL_LATENCY(SP_FPMULTIPLIER_INTMUL_LATENCY),
+  .SURROUNDING_LOGIC(SP_FPMULTIPLIER_SURROUNDING_LOGIC),
+  .MODULE_LATENCY(SP_FPMULTIPLIER_MODULE_LATENCY)
+) my_sp_fpmultiplier_1 (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
   .i_metadata(s_level2_metadata),
@@ -881,7 +898,11 @@ logic [3:0] s_my_sp_fpmultiplier_2_identifier;
 logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_2_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_2_debug;
 logic unused_mul2_1, unused_mul2_2, unused_mul2_3, unused_mul2_4, unused_mul2_5, unused_mul2_6;
-sp_fpmultiplier #() my_sp_fpmultiplier_2 (
+sp_fpmultiplier #(
+  .INTMUL_LATENCY(SP_FPMULTIPLIER_INTMUL_LATENCY),
+  .SURROUNDING_LOGIC(SP_FPMULTIPLIER_SURROUNDING_LOGIC),
+  .MODULE_LATENCY(SP_FPMULTIPLIER_MODULE_LATENCY)
+) my_sp_fpmultiplier_2 (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
   .i_metadata(s_level2_metadata),
@@ -919,8 +940,8 @@ logic [127:0] s_mux_4;
 logic         s_mux_4_valid;
 logic [127:0] s_mux_4_foursp_raw;
 logic         s_mux_4_foursp_valid_raw;
-logic [127:0] s_mux_4_foursp_pipe [my_sp_fpmultiplier_0.MODULE_LATENCY-1:0];
-logic         s_mux_4_foursp_valid_pipe [my_sp_fpmultiplier_0.MODULE_LATENCY-1:0];
+logic [127:0] s_mux_4_foursp_pipe [SP_FPMULTIPLIER_MODULE_LATENCY-1:0];
+logic         s_mux_4_foursp_valid_pipe [SP_FPMULTIPLIER_MODULE_LATENCY-1:0];
 logic [127:0] s_mux_4_foursp_aligned;
 logic         s_mux_4_foursp_valid_aligned;
 
@@ -944,15 +965,15 @@ always_ff @(posedge i_clk) begin : mux_4_foursp_align
     s_mux_4_foursp_pipe[0] <= s_mux_4_foursp_raw;
     s_mux_4_foursp_valid_pipe[0] <= s_mux_4_foursp_valid_raw;
 
-    for (i = 1; i < my_sp_fpmultiplier_0.MODULE_LATENCY; i++) begin
+    for (i = 1; i < SP_FPMULTIPLIER_MODULE_LATENCY; i++) begin
       s_mux_4_foursp_pipe[i] <= s_mux_4_foursp_pipe[i-1];
       s_mux_4_foursp_valid_pipe[i] <= s_mux_4_foursp_valid_pipe[i-1];
     end
   end
 end
 
-assign s_mux_4_foursp_aligned = s_mux_4_foursp_pipe[my_sp_fpmultiplier_0.MODULE_LATENCY-1];
-assign s_mux_4_foursp_valid_aligned = s_mux_4_foursp_valid_pipe[my_sp_fpmultiplier_0.MODULE_LATENCY-1];
+assign s_mux_4_foursp_aligned = s_mux_4_foursp_pipe[SP_FPMULTIPLIER_MODULE_LATENCY-1];
+assign s_mux_4_foursp_valid_aligned = s_mux_4_foursp_valid_pipe[SP_FPMULTIPLIER_MODULE_LATENCY-1];
 
 always_comb begin : mux_4
   case (`S)
@@ -994,6 +1015,9 @@ logic [3:0] s_my_sp_fpmultiplier_3_identifier;
 logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_3_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_3_debug;
 sp_fpmultiplier #(
+  .INTMUL_LATENCY(SP_FPMULTIPLIER_INTMUL_LATENCY),
+  .SURROUNDING_LOGIC(SP_FPMULTIPLIER_SURROUNDING_LOGIC),
+  .MODULE_LATENCY(SP_FPMULTIPLIER_MODULE_LATENCY),
   .DEBUG_PRINT_EN(0)
 ) my_sp_fpmultiplier_3 (
   .i_clk(i_clk),
@@ -1044,6 +1068,9 @@ logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_4_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_4_debug;
 logic unused_mul4_1, unused_mul4_2, unused_mul4_3, unused_mul4_4, unused_mul4_5, unused_mul4_6;
 sp_fpmultiplier #(
+  .INTMUL_LATENCY(SP_FPMULTIPLIER_INTMUL_LATENCY),
+  .SURROUNDING_LOGIC(SP_FPMULTIPLIER_SURROUNDING_LOGIC),
+  .MODULE_LATENCY(SP_FPMULTIPLIER_MODULE_LATENCY),
   .DEBUG_PRINT_EN(0)
 ) my_sp_fpmultiplier_4 (
   .i_clk(i_clk),
