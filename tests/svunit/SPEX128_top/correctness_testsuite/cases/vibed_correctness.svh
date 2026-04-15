@@ -205,32 +205,32 @@
 // ---------------------------------------------------------
 // Spec 1: SINGLE_MODE numeric accuracy via vector files
 // ---------------------------------------------------------
-// `SVTEST(single_mode_accuracy_from_vectors)
-//   int n, i, err;
-//   logic [127:0] xin, xexp;
+`SVTEST(single_mode_accuracy_from_vectors)
+  int n, i, err;
+  logic [127:0] xin, xexp;
 
-//   load_vec128_from_files(n);
-//   `FAIL_UNLESS(n > 0)
+  load_vec128_from_files(n);
+  `FAIL_UNLESS(n > 0)
 
-//   for (i = 0; i < n; i++) begin
-//     xin  = vec128_in[i];
-//     xexp = vec128_gd[i];
+  for (i = 0; i < n; i++) begin
+    xin  = vec128_in[i];
+    xexp = vec128_gd[i];
 
-//     send_txn(xin, CTRL_SINGLE);
-//     await_and_check_no_error();
+    send_txn(xin, CTRL_SINGLE);
+    await_and_check_no_error();
 
-//     if (is_zero128(xin) || is_denorm128(xin) || (xin == Q_NINF)) begin
-//       `FAIL_UNLESS_EQUAL(Q_ONE, s_o_exp_x)
-//     end else if (is_inf128(xin) && xin[127]==1'b0) begin
-//       `FAIL_UNLESS(is_inf128(s_o_exp_x) && (s_o_exp_x[127]==1'b0))
-//     end else if (is_nan128(xin)) begin
-//       `FAIL_UNLESS(is_nan128(s_o_exp_x) && (s_o_exp_x[127]==xin[127]))
-//     end else begin
-//       err = lsb_error(xexp, s_o_exp_x, `LSB_WINDOW);
-//       `FAIL_UNLESS(err <= `ERR_TOL_LSB_128)
-//     end
-//   end
-// `SVTEST_END
+    if (is_zero128(xin) || is_denorm128(xin) || (xin == Q_NINF)) begin
+      `FAIL_UNLESS_EQUAL(Q_ONE, s_o_exp_x)
+    end else if (is_inf128(xin) && xin[127]==1'b0) begin
+      `FAIL_UNLESS(is_inf128(s_o_exp_x) && (s_o_exp_x[127]==1'b0))
+    end else if (is_nan128(xin)) begin
+      `FAIL_UNLESS(is_nan128(s_o_exp_x) && (s_o_exp_x[127]==xin[127]))
+    end else begin
+      err = lsb_error(xexp, s_o_exp_x, `LSB_WINDOW);
+      `FAIL_UNLESS(err <= `ERR_TOL_LSB_128)
+    end
+  end
+`SVTEST_END
 
 // ---------------------------------------------------------
 // Spec 8: Fixed latency & in-order completion with back-to-back traffic
