@@ -936,6 +936,33 @@ sp_fpmultiplier #(
   .o_debug(s_my_sp_fpmultiplier_2_debug)
 );
 
+logic [127:0] s_mul2_for_mul4_pipe [SP_FPMULTIPLIER_MODULE_LATENCY-1:0];
+logic         s_mul2_for_mul4_valid_pipe [SP_FPMULTIPLIER_MODULE_LATENCY-1:0];
+logic [127:0] s_mul2_for_mul4_aligned;
+logic         s_mul2_for_mul4_valid_aligned;
+
+// SINGLE_MODE reaches mul4 through mul0/mul1 -> mul3 on one side and only mul2 on the
+// other, so delay mul2 by one multiplier latency before feeding the final multiply.
+always_ff @(posedge i_clk) begin : mul2_for_mul4_align
+  int i;
+  if (!i_rst_n) begin
+    s_mul2_for_mul4_pipe <= '{default:'0};
+    s_mul2_for_mul4_valid_pipe <= '{default:'0};
+  end
+  else begin
+    s_mul2_for_mul4_pipe[0] <= s_my_sp_fpmultiplier_2_jedi;
+    s_mul2_for_mul4_valid_pipe[0] <= s_my_sp_fpmultiplier_2_valid128_jedi;
+
+    for (i = 1; i < SP_FPMULTIPLIER_MODULE_LATENCY; i++) begin
+      s_mul2_for_mul4_pipe[i] <= s_mul2_for_mul4_pipe[i-1];
+      s_mul2_for_mul4_valid_pipe[i] <= s_mul2_for_mul4_valid_pipe[i-1];
+    end
+  end
+end
+
+assign s_mul2_for_mul4_aligned = s_mul2_for_mul4_pipe[SP_FPMULTIPLIER_MODULE_LATENCY-1];
+assign s_mul2_for_mul4_valid_aligned = s_mul2_for_mul4_valid_pipe[SP_FPMULTIPLIER_MODULE_LATENCY-1];
+
 logic [127:0] s_mux_4;
 logic         s_mux_4_valid;
 logic [127:0] s_mux_4_foursp_raw;
@@ -1078,10 +1105,10 @@ sp_fpmultiplier #(
   .i_metadata(s_level2_metadata),
   .o_metadata(unused_metadata_4/*not like it is useful anyway*/),
   .i_in_anikin(s_my_sp_fpmultiplier_3_jedi),
-  .i_in_force(s_my_sp_fpmultiplier_2_jedi),
+  .i_in_force(s_mul2_for_mul4_aligned),
   .o_out_jedi(s_my_sp_fpmultiplier_4_jedi),
   .i_valid128_anikin(s_my_sp_fpmultiplier_3_valid128_jedi),
-  .i_valid128_force(s_my_sp_fpmultiplier_2_valid128_jedi),
+  .i_valid128_force(s_mul2_for_mul4_valid_aligned),
   .i_valid64a_anikin('0),
   .i_valid64a_force('0),
   .i_valid64b_anikin('0),
