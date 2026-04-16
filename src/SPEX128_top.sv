@@ -89,7 +89,7 @@ module SPEX128_top #(
   binary128_t       ds_my_fixed_partition_sp_par_e_exp_a128,
   binary128_t       ds_my_fixed128_partitionm_ts_exp,
   binary64_t        ds_my_fixed64_partitionm_ts_a_exp_f64a,
-  binary64_t        ds_my_fixed64_partitionf_ts_b_exp_f64b,
+  binary64_t        ds_my_fixed64_partitionm_ts_b_exp_f64b,
   logic [127:0]     ds_mux_0,
   logic [127:0]     ds_mux_1,
   logic [127:0]     ds_mux_2,
@@ -132,7 +132,7 @@ module SPEX128_top #(
   logic             ds_my_fixed_partition_sp_par_e_o_valid128,
   logic             ds_my_fixed128_partitionm_ts_o_valid,
   logic             ds_my_fixed64_partitionm_ts_a_o_valid,
-  logic             ds_my_fixed64_partitionf_ts_b_o_valid,
+  logic             ds_my_fixed64_partitionm_ts_b_o_valid,
   logic             ds_my_sp_fpmultiplier_0_valid128_jedi,
   logic             ds_my_sp_fpmultiplier_0_valid64a_jedi,
   logic             ds_my_sp_fpmultiplier_0_valid64b_jedi,
@@ -669,7 +669,7 @@ logic       s_my_fixed128_partitionm_ts_o_valid;
 logic [3:0] s_my_fixed128_partitionm_ts_identifier;
 logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed128_partitionm_ts_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed128_partitionm_ts_debug;
-fixed128_partitionf_ts #() my_fixed128_partitionm_ts (
+fixed128_partitionm_ts #() my_fixed128_partitionm_ts (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
   .i_metadata(s_my_float_to_fixed_metadata),
@@ -688,7 +688,7 @@ logic       s_my_fixed64_partitionm_ts_a_o_valid;
 logic [3:0] s_my_fixed64_partitionm_ts_a_identifier;
 logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed64_partitionm_ts_a_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed64_partitionm_ts_a_debug;
-fixed64_partitionf_ts #() my_fixed64_partitionm_ts_a (
+fixed64_partitionm_ts #() my_fixed64_partitionm_ts_a (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
   .i_metadata(s_my_float_to_fixed_metadata),
@@ -701,23 +701,23 @@ fixed64_partitionf_ts #() my_fixed64_partitionm_ts_a (
   .o_debug(s_my_fixed64_partitionm_ts_a_debug)
 );
 
-binary64_t  s_my_fixed64_partitionf_ts_b_exp_f64b;
-logic       s_my_fixed64_partitionf_ts_b_o_valid;
+binary64_t  s_my_fixed64_partitionm_ts_b_exp_f64b;
+logic       s_my_fixed64_partitionm_ts_b_o_valid;
 // Metadata
-logic [3:0] s_my_fixed64_partitionf_ts_b_identifier;
-logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed64_partitionf_ts_b_error;
-logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed64_partitionf_ts_b_debug;
-fixed64_partitionf_ts #() my_fixed64_partitionf_ts_b (
+logic [3:0] s_my_fixed64_partitionm_ts_b_identifier;
+logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed64_partitionm_ts_b_error;
+logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed64_partitionm_ts_b_debug;
+fixed64_partitionm_ts #() my_fixed64_partitionm_ts_b (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
   .i_metadata(s_my_float_to_fixed_metadata),
   .i_m(s_my_float_to_fixed_fixed[19:0]),
-  .o_exp_m(s_my_fixed64_partitionf_ts_b_exp_f64b),
+  .o_exp_m(s_my_fixed64_partitionm_ts_b_exp_f64b),
   .i_valid(s_my_float_to_fixed_o_valid),
-  .o_valid(s_my_fixed64_partitionf_ts_b_o_valid),
-  .o_sanity_identifier(s_my_fixed64_partitionf_ts_b_identifier),
-  .o_error(s_my_fixed64_partitionf_ts_b_error),
-  .o_debug(s_my_fixed64_partitionf_ts_b_debug)
+  .o_valid(s_my_fixed64_partitionm_ts_b_o_valid),
+  .o_sanity_identifier(s_my_fixed64_partitionm_ts_b_identifier),
+  .o_error(s_my_fixed64_partitionm_ts_b_error),
+  .o_debug(s_my_fixed64_partitionm_ts_b_debug)
 );
 
 
@@ -1195,9 +1195,9 @@ always_ff @(posedge i_clk) begin : par64_m_align
   end
   else begin
     s_64_par_m_lane_a_delay_pipe[0]       <= s_my_fixed64_partitionm_ts_a_exp_f64a;
-    s_64_par_m_lane_b_delay_pipe[0]       <= s_my_fixed64_partitionf_ts_b_exp_f64b;
+    s_64_par_m_lane_b_delay_pipe[0]       <= s_my_fixed64_partitionm_ts_b_exp_f64b;
     s_64_par_m_lane_a_delay_valid_pipe[0] <= s_my_fixed64_partitionm_ts_a_o_valid;
-    s_64_par_m_lane_b_delay_valid_pipe[0] <= s_my_fixed64_partitionf_ts_b_o_valid;
+    s_64_par_m_lane_b_delay_valid_pipe[0] <= s_my_fixed64_partitionm_ts_b_o_valid;
     for (i = 1; i < TWO_SP_M_ALIGN_DEPTH; i++) begin
       s_64_par_m_lane_a_delay_pipe[i]       <= s_64_par_m_lane_a_delay_pipe[i-1];
       s_64_par_m_lane_b_delay_pipe[i]       <= s_64_par_m_lane_b_delay_pipe[i-1];
@@ -1425,7 +1425,7 @@ assign o_error              = s_my_float_to_fixed_error &
                               s_my_fixed_partition_sp_par_e_error &
                               s_my_fixed128_partitionm_ts_error &
                               s_my_fixed64_partitionm_ts_a_error &
-                              s_my_fixed64_partitionf_ts_b_error &
+                              s_my_fixed64_partitionm_ts_b_error &
                               s_my_sp_fpmultiplier_0_error &
                               s_my_sp_fpmultiplier_1_error &
                               s_my_sp_fpmultiplier_2_error &
@@ -1461,7 +1461,7 @@ assign ds_my_fixed_partition_sp_par_d_exp_a128 = s_my_fixed_partition_sp_par_d_e
 assign ds_my_fixed_partition_sp_par_e_exp_a128 = s_my_fixed_partition_sp_par_e_exp_a128;
 assign ds_my_fixed128_partitionm_ts_exp = s_my_fixed128_partitionm_ts_exp;
 assign ds_my_fixed64_partitionm_ts_a_exp_f64a = s_my_fixed64_partitionm_ts_a_exp_f64a;
-assign ds_my_fixed64_partitionf_ts_b_exp_f64b = s_my_fixed64_partitionf_ts_b_exp_f64b;
+assign ds_my_fixed64_partitionm_ts_b_exp_f64b = s_my_fixed64_partitionm_ts_b_exp_f64b;
 assign ds_mux_0 = s_mux_0;
 assign ds_mux_1 = s_mux_1;
 assign ds_mux_2 = s_mux_2;
@@ -1504,7 +1504,7 @@ assign ds_my_fixed_partition_sp_par_d_o_valid128 = s_my_fixed_partition_sp_par_d
 assign ds_my_fixed_partition_sp_par_e_o_valid128 = s_my_fixed_partition_sp_par_e_o_valid128;
 assign ds_my_fixed128_partitionm_ts_o_valid = s_my_fixed128_partitionm_ts_o_valid;
 assign ds_my_fixed64_partitionm_ts_a_o_valid = s_my_fixed64_partitionm_ts_a_o_valid;
-assign ds_my_fixed64_partitionf_ts_b_o_valid = s_my_fixed64_partitionf_ts_b_o_valid;
+assign ds_my_fixed64_partitionm_ts_b_o_valid = s_my_fixed64_partitionm_ts_b_o_valid;
 assign ds_my_sp_fpmultiplier_0_valid128_jedi = s_my_sp_fpmultiplier_0_valid128_jedi;
 assign ds_my_sp_fpmultiplier_0_valid64a_jedi = s_my_sp_fpmultiplier_0_valid64a_jedi;
 assign ds_my_sp_fpmultiplier_0_valid64b_jedi = s_my_sp_fpmultiplier_0_valid64b_jedi;

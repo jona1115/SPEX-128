@@ -1,20 +1,20 @@
 /********************************************************************
  * 
  * Originator   : Jonathan Tan
- * Date         : 11/7/2025
+ * Date         : 4/16/2026
  * 
  ********************************************************************
  * 
  * Description:
- * See fixed128_partitionf_ts.sv. This module is the same but
- * different bit index.
+ * Remaps the 64-bit Taylor-series m partition into a binary64 value
+ * with sign forced to 0 and exponent forced to 1023.
  * 
  ********************************************************************
  * 
  * Modification history:
- *       Ver   |  Who       |  Date	       |  Changes
+ *       Ver   |  Who       |  Date         |  Changes
  *     ------- + ---------- + ------------ + -----------------------
- *       1.00  |  Jonathan  |  11/7/2025   |  Birth of this file
+ *       1.00  |  Codex     |  4/16/2026    |  Birth of this file
  * 
  *******************************************************************/
 
@@ -30,7 +30,7 @@ import fixed128_pkg::*;
 import fixed64_pkg::*;
 import fixed32_pkg::*;
 
-module fixed64_partitionf_ts #(
+module fixed64_partitionm_ts #(
   parameter int MODULE_LATENCY        = 9, // This should match MODULE_LATENCY_64 in fixed_partition_sp.sv
   parameter int DELAY_BUFFER_LATENCY  = MODULE_LATENCY - 1,
   
@@ -47,7 +47,6 @@ module fixed64_partitionf_ts #(
 
   // Metadata stuff
   input   var float_metadata_t                    i_metadata,
-  // output  float_metadata_t                        o_metadata,
 
   // Data
   input   logic [19:0]                            i_m,
@@ -66,10 +65,6 @@ module fixed64_partitionf_ts #(
 );
 
 //=====================================================================================
-// Signal definitions
-//=====================================================================================
-
-//=====================================================================================
 // Module Body
 //=====================================================================================
 binary64_t s_o_exp_m;
@@ -80,13 +75,10 @@ always_ff @( posedge i_clk ) begin : blockhaha
   else begin
     if (i_valid) begin
       s_o_exp_m <= binary64_t'({1'b0, 11'h3FF/*1023*/, 33'b0, i_m[19:1]});
-    end // if (i_valid) begin
-  end // else begin
-end // always_ff
+    end
+  end
+end
 
-/**
- * Register for the valid bit
- */
 logic s_o_valid;
 always_ff @( posedge i_clk ) begin : valid_cit_register
   if (!i_rst_n) begin
@@ -100,12 +92,8 @@ always_ff @( posedge i_clk ) begin : valid_cit_register
       s_o_valid <= '0;
     end
   end
-end // always_ff
+end
 
-/**
- * db = delay buffer
- * We are delaying things to match the latency from fixed_partition_sp.sv
- */
 binary64_t  s_db_o_exp_m;
 logic       s_db_o_valid;
 
@@ -134,8 +122,8 @@ generate
           s_db_o_exp_m_pipe[i] <= s_db_o_exp_m_pipe[i-1];
           s_db_o_valid_pipe[i] <= s_db_o_valid_pipe[i-1];
         end
-      end // !i_rst_n else begin
-    end // delayyyyy
+      end
+    end
 
     always_comb begin
       s_db_o_exp_m = s_db_o_exp_m_pipe[DELAY_BUFFER_LATENCY-1];
@@ -144,14 +132,10 @@ generate
   end
 endgenerate
 
-//=====================================================================================
-// Final assignment
-//=====================================================================================
-// assign o_metadata = i_metadata;
 assign o_exp_m = s_db_o_exp_m;
 assign o_valid = s_db_o_valid;
 assign o_sanity_identifier = 4'b0000;
 assign o_error = '0;
 assign o_debug = '0;
 
-endmodule // module fixed64_partitionf_ts #()
+endmodule // module fixed64_partitionm_ts #()

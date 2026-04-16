@@ -60,7 +60,7 @@ module SPEX128_top_unit_test;
   binary128_t       ds_my_fixed_partition_sp_par_e_exp_a128;
   binary128_t       ds_my_fixed128_partitionm_ts_exp;
   binary64_t        ds_my_fixed64_partitionm_ts_a_exp_f64a;
-  binary64_t        ds_my_fixed64_partitionf_ts_b_exp_f64b;
+  binary64_t        ds_my_fixed64_partitionm_ts_b_exp_f64b;
   logic [127:0]     ds_mux_0;
   logic [127:0]     ds_mux_1;
   logic [127:0]     ds_mux_2;
@@ -103,7 +103,7 @@ module SPEX128_top_unit_test;
   logic ds_my_fixed_partition_sp_par_e_o_valid128;
   logic ds_my_fixed128_partitionm_ts_o_valid;
   logic ds_my_fixed64_partitionm_ts_a_o_valid;
-  logic ds_my_fixed64_partitionf_ts_b_o_valid;
+  logic ds_my_fixed64_partitionm_ts_b_o_valid;
   logic ds_my_sp_fpmultiplier_0_valid128_jedi;
   logic ds_my_sp_fpmultiplier_0_valid64a_jedi;
   logic ds_my_sp_fpmultiplier_0_valid64b_jedi;
@@ -173,7 +173,7 @@ module SPEX128_top_unit_test;
     .ds_my_fixed_partition_sp_par_e_exp_a128(ds_my_fixed_partition_sp_par_e_exp_a128),
     .ds_my_fixed128_partitionm_ts_exp(ds_my_fixed128_partitionm_ts_exp),
     .ds_my_fixed64_partitionm_ts_a_exp_f64a(ds_my_fixed64_partitionm_ts_a_exp_f64a),
-    .ds_my_fixed64_partitionf_ts_b_exp_f64b(ds_my_fixed64_partitionf_ts_b_exp_f64b),
+    .ds_my_fixed64_partitionm_ts_b_exp_f64b(ds_my_fixed64_partitionm_ts_b_exp_f64b),
     .ds_mux_0(ds_mux_0),
     .ds_mux_1(ds_mux_1),
     .ds_mux_2(ds_mux_2),
@@ -216,7 +216,7 @@ module SPEX128_top_unit_test;
     .ds_my_fixed_partition_sp_par_e_o_valid128(ds_my_fixed_partition_sp_par_e_o_valid128),
     .ds_my_fixed128_partitionm_ts_o_valid(ds_my_fixed128_partitionm_ts_o_valid),
     .ds_my_fixed64_partitionm_ts_a_o_valid(ds_my_fixed64_partitionm_ts_a_o_valid),
-    .ds_my_fixed64_partitionf_ts_b_o_valid(ds_my_fixed64_partitionf_ts_b_o_valid),
+    .ds_my_fixed64_partitionm_ts_b_o_valid(ds_my_fixed64_partitionm_ts_b_o_valid),
     .ds_my_sp_fpmultiplier_0_valid128_jedi(ds_my_sp_fpmultiplier_0_valid128_jedi),
     .ds_my_sp_fpmultiplier_0_valid64a_jedi(ds_my_sp_fpmultiplier_0_valid64a_jedi),
     .ds_my_sp_fpmultiplier_0_valid64b_jedi(ds_my_sp_fpmultiplier_0_valid64b_jedi),
@@ -358,7 +358,7 @@ module SPEX128_top_unit_test;
     $display("<<<<< s_my_fixed_partition_sp_par_e_exp_a128 = 0x%x", ds_my_fixed_partition_sp_par_e_exp_a128);   \
     $display("<<<<< s_my_fixed128_partitionm_ts_exp = 0x%x", ds_my_fixed128_partitionm_ts_exp);       \
     $display("<<<<< s_my_fixed64_partitionm_ts_a_exp_f64a = 0x%x", ds_my_fixed64_partitionm_ts_a_exp_f64a);     \
-    $display("<<<<< s_my_fixed64_partitionf_ts_b_exp_f64b = 0x%x", ds_my_fixed64_partitionf_ts_b_exp_f64b);     \
+    $display("<<<<< s_my_fixed64_partitionm_ts_b_exp_f64b = 0x%x", ds_my_fixed64_partitionm_ts_b_exp_f64b);     \
     $display("<<<<< ------------------------ Level 3 ------------------------");                                \
     $display("<<<<< s_mux_0 = 0x%x", ds_mux_0);                                                                 \
     $display("<<<<< s_mux_1 = 0x%x", ds_mux_1);                                                                 \
@@ -404,7 +404,7 @@ module SPEX128_top_unit_test;
     $display("<<<<< s_my_fixed_partition_sp_par_e_o_valid128 = %x", ds_my_fixed_partition_sp_par_e_o_valid128); \
     $display("<<<<< s_my_fixed128_partitionm_ts_o_valid = %x", ds_my_fixed128_partitionm_ts_o_valid); \
     $display("<<<<< s_my_fixed64_partitionm_ts_a_o_valid = %x", ds_my_fixed64_partitionm_ts_a_o_valid); \
-    $display("<<<<< s_my_fixed64_partitionf_ts_b_o_valid = %x", ds_my_fixed64_partitionf_ts_b_o_valid); \
+    $display("<<<<< s_my_fixed64_partitionm_ts_b_o_valid = %x", ds_my_fixed64_partitionm_ts_b_o_valid); \
     $display("<<<<< s_my_sp_fpmultiplier_0_valid128_jedi = %x", ds_my_sp_fpmultiplier_0_valid128_jedi); \
     $display("<<<<< s_my_sp_fpmultiplier_0_valid64a_jedi = %x", ds_my_sp_fpmultiplier_0_valid64a_jedi); \
     $display("<<<<< s_my_sp_fpmultiplier_0_valid64b_jedi = %x", ds_my_sp_fpmultiplier_0_valid64b_jedi); \
@@ -427,7 +427,7 @@ module SPEX128_top_unit_test;
     $display("<<<<< =================== End Intermediate valid bits ===================");
 
   `define PRINT_INTERMEDIATE_VALID_BITS_ONELINE \
-    $display("%x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x", ds_my_float_to_fixed_o_valid, ds_my_fixed_partition_sp_par_a_o_valid128, ds_my_fixed_partition_sp_par_a_o_valid64a, ds_my_fixed_partition_sp_par_a_o_valid64b, ds_my_fixed_partition_sp_par_a_o_valid32a, ds_my_fixed_partition_sp_par_a_o_valid32b, ds_my_fixed_partition_sp_par_a_o_valid32c, ds_my_fixed_partition_sp_par_a_o_valid32d, ds_my_fixed_partition_sp_par_b_o_valid128, ds_my_fixed_partition_sp_par_b_o_valid64a, ds_my_fixed_partition_sp_par_b_o_valid64b, ds_my_fixed_partition_sp_par_b_o_valid32a, ds_my_fixed_partition_sp_par_b_o_valid32b, ds_my_fixed_partition_sp_par_b_o_valid32c, ds_my_fixed_partition_sp_par_b_o_valid32d, ds_my_fixed_partition_sp_par_c_o_valid128, ds_my_fixed_partition_sp_par_c_o_valid64a, ds_my_fixed_partition_sp_par_c_o_valid64b, ds_my_fixed_partition_sp_par_c_o_valid32a, ds_my_fixed_partition_sp_par_c_o_valid32b, ds_my_fixed_partition_sp_par_c_o_valid32c, ds_my_fixed_partition_sp_par_c_o_valid32d, ds_my_fixed_partition_sp_par_d_o_valid128, ds_my_fixed_partition_sp_par_e_o_valid128, ds_my_fixed128_partitionf_ts_o_valid, ds_my_fixed64_partitionf_ts_a_o_valid, ds_my_fixed64_partitionf_ts_b_o_valid, ds_my_sp_fpmultiplier_0_valid128_jedi, ds_my_sp_fpmultiplier_0_valid64a_jedi, ds_my_sp_fpmultiplier_0_valid64b_jedi, ds_my_sp_fpmultiplier_0_valid32a_jedi, ds_my_sp_fpmultiplier_0_valid32b_jedi, ds_my_sp_fpmultiplier_0_valid32c_jedi, ds_my_sp_fpmultiplier_0_valid32d_jedi, ds_my_sp_fpmultiplier_1_valid128_jedi, ds_my_sp_fpmultiplier_1_valid64a_jedi, ds_my_sp_fpmultiplier_1_valid64b_jedi, ds_my_sp_fpmultiplier_2_valid128_jedi, ds_my_sp_fpmultiplier_3_valid128_jedi, ds_my_sp_fpmultiplier_3_valid64a_jedi, ds_my_sp_fpmultiplier_3_valid64b_jedi, ds_my_sp_fpmultiplier_3_valid32a_jedi, ds_my_sp_fpmultiplier_3_valid32b_jedi, ds_my_sp_fpmultiplier_3_valid32c_jedi, ds_my_sp_fpmultiplier_3_valid32d_jedi, ds_my_sp_fpmultiplier_4_valid128_jedi);
+    $display("%x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x", ds_my_float_to_fixed_o_valid, ds_my_fixed_partition_sp_par_a_o_valid128, ds_my_fixed_partition_sp_par_a_o_valid64a, ds_my_fixed_partition_sp_par_a_o_valid64b, ds_my_fixed_partition_sp_par_a_o_valid32a, ds_my_fixed_partition_sp_par_a_o_valid32b, ds_my_fixed_partition_sp_par_a_o_valid32c, ds_my_fixed_partition_sp_par_a_o_valid32d, ds_my_fixed_partition_sp_par_b_o_valid128, ds_my_fixed_partition_sp_par_b_o_valid64a, ds_my_fixed_partition_sp_par_b_o_valid64b, ds_my_fixed_partition_sp_par_b_o_valid32a, ds_my_fixed_partition_sp_par_b_o_valid32b, ds_my_fixed_partition_sp_par_b_o_valid32c, ds_my_fixed_partition_sp_par_b_o_valid32d, ds_my_fixed_partition_sp_par_c_o_valid128, ds_my_fixed_partition_sp_par_c_o_valid64a, ds_my_fixed_partition_sp_par_c_o_valid64b, ds_my_fixed_partition_sp_par_c_o_valid32a, ds_my_fixed_partition_sp_par_c_o_valid32b, ds_my_fixed_partition_sp_par_c_o_valid32c, ds_my_fixed_partition_sp_par_c_o_valid32d, ds_my_fixed_partition_sp_par_d_o_valid128, ds_my_fixed_partition_sp_par_e_o_valid128, ds_my_fixed128_partitionm_ts_o_valid, ds_my_fixed64_partitionm_ts_a_o_valid, ds_my_fixed64_partitionm_ts_b_o_valid, ds_my_sp_fpmultiplier_0_valid128_jedi, ds_my_sp_fpmultiplier_0_valid64a_jedi, ds_my_sp_fpmultiplier_0_valid64b_jedi, ds_my_sp_fpmultiplier_0_valid32a_jedi, ds_my_sp_fpmultiplier_0_valid32b_jedi, ds_my_sp_fpmultiplier_0_valid32c_jedi, ds_my_sp_fpmultiplier_0_valid32d_jedi, ds_my_sp_fpmultiplier_1_valid128_jedi, ds_my_sp_fpmultiplier_1_valid64a_jedi, ds_my_sp_fpmultiplier_1_valid64b_jedi, ds_my_sp_fpmultiplier_2_valid128_jedi, ds_my_sp_fpmultiplier_3_valid128_jedi, ds_my_sp_fpmultiplier_3_valid64a_jedi, ds_my_sp_fpmultiplier_3_valid64b_jedi, ds_my_sp_fpmultiplier_3_valid32a_jedi, ds_my_sp_fpmultiplier_3_valid32b_jedi, ds_my_sp_fpmultiplier_3_valid32c_jedi, ds_my_sp_fpmultiplier_3_valid32d_jedi, ds_my_sp_fpmultiplier_4_valid128_jedi);
 
   task automatic wait_n_ticks(int n);
     repeat (n) @(posedge s_i_clk) @(negedge s_i_clk);
