@@ -31,7 +31,7 @@
   $display(">>>>> expected  = 0x%x", expected);
   $display(">>>>> error = %d\t(error=expected-actual)", expected[12:0]-s_o_exp_x[12:0]);
 
-  `FAIL_UNLESS(lsb_error(expected, s_o_exp_x, `LSB_WINDOW) <= `ERR_TOL_LSB_128)
+  `FAIL_UNLESS(lsb_error(expected, s_o_exp_x, `LSB_WINDOW) <= `ULP_ERR_TOL_LSB_128)
   // `FAIL_UNLESS(s_o_exp_x === expected)
 `SVTEST_END
 

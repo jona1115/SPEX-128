@@ -446,9 +446,9 @@ module SPEX128_top_unit_test;
                                 3 * my_SPEX128_top.my_sp_fpmultiplier_0.MODULE_LATENCY;
   localparam int LATENCY     =  LATENCY_64;
   // LSB error tolerances (difference in integer value of the LSB slice)
-  `define ERR_TOL_LSB_128 100
-  `define ERR_TOL_LSB_64  200000 // 200,000 is for latency_and_ordering to pass
-  `define ERR_TOL_LSB_32  200
+  `define ULP_ERR_TOL_LSB_128 3
+  `define ULP_ERR_TOL_LSB_64  2
+  `define ULP_ERR_TOL_LSB_32  2
   // Width of the LSB window to compare
   `define LSB_WINDOW 16
   // --------------------------------------------------------------------------

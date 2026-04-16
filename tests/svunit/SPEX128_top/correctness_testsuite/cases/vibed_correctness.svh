@@ -118,13 +118,13 @@
       // $display(">>>>> a_vals[i] = %d", a_vals[i]);
       `FAIL_UNLESS(is_inf64(outA) && (outA[63] == 1'b0))
     end else begin
-      `FAIL_UNLESS(lsb_error_64_lane(a_exp, outA, `LSB_WINDOW) <= `ERR_TOL_LSB_64)
+      `FAIL_UNLESS(lsb_error_64_lane(a_exp, outA, `LSB_WINDOW) <= `ULP_ERR_TOL_LSB_64)
     end
 
     if (b_vals[i] > 709.78) begin
       `FAIL_UNLESS(is_inf64(outB) && (outB[63] == 1'b0))
     end else begin
-      `FAIL_UNLESS(lsb_error_64_lane(b_exp, outB, `LSB_WINDOW) <= `ERR_TOL_LSB_64)
+      `FAIL_UNLESS(lsb_error_64_lane(b_exp, outB, `LSB_WINDOW) <= `ULP_ERR_TOL_LSB_64)
     end
   end
 `SVTEST_END
@@ -189,16 +189,16 @@
 //     outD = s_o_exp_x[31:0];
 
 //     if (a_vals[i] > 88.8) `FAIL_UNLESS(is_inf32(outA) && (outA[31] == 1'b0))
-//     else `FAIL_UNLESS(lsb_error_32_lane(a_exp, outA, `LSB_WINDOW) <= `ERR_TOL_LSB_32)
+//     else `FAIL_UNLESS(lsb_error_32_lane(a_exp, outA, `LSB_WINDOW) <= `ULP_ERR_TOL_LSB_32)
 
 //     if (b_vals[i] > 88.8) `FAIL_UNLESS(is_inf32(outB) && (outB[31] == 1'b0))
-//     else `FAIL_UNLESS(lsb_error_32_lane(b_exp, outB, `LSB_WINDOW) <= `ERR_TOL_LSB_32)
+//     else `FAIL_UNLESS(lsb_error_32_lane(b_exp, outB, `LSB_WINDOW) <= `ULP_ERR_TOL_LSB_32)
 
 //     if (c_vals[i] > 88.8) `FAIL_UNLESS(is_inf32(outC) && (outC[31] == 1'b0))
-//     else `FAIL_UNLESS(lsb_error_32_lane(c_exp, outC, `LSB_WINDOW) <= `ERR_TOL_LSB_32)
+//     else `FAIL_UNLESS(lsb_error_32_lane(c_exp, outC, `LSB_WINDOW) <= `ULP_ERR_TOL_LSB_32)
 
 //     if (d_vals[i] > 88.8) `FAIL_UNLESS(is_inf32(outD) && (outD[31] == 1'b0))
-//     else `FAIL_UNLESS(lsb_error_32_lane(d_exp, outD, `LSB_WINDOW) <= `ERR_TOL_LSB_32)
+//     else `FAIL_UNLESS(lsb_error_32_lane(d_exp, outD, `LSB_WINDOW) <= `ULP_ERR_TOL_LSB_32)
 //   end
 // `SVTEST_END
 
@@ -227,7 +227,7 @@
       `FAIL_UNLESS(is_nan128(s_o_exp_x) && (s_o_exp_x[127]==xin[127]))
     end else begin
       err = lsb_error(xexp, s_o_exp_x, `LSB_WINDOW);
-      `FAIL_UNLESS(err <= `ERR_TOL_LSB_128)
+      `FAIL_UNLESS(err <= `ULP_ERR_TOL_LSB_128)
     end
   end
 `SVTEST_END
@@ -251,24 +251,51 @@
   gd2A = D_PINF; // +inf -> +inf
   gd2B = D_ONE;  // +0   -> 1.0
 
-  send_txn(xin0, CTRL_TWO_SP);
-  send_txn(xin1, CTRL_TWO_SP);
-  send_txn(xin2, CTRL_TWO_SP);
+  // send_txn() asserts i_valid after a posedge, so the DUT only samples it on the
+  // following cycle. For this test we need truly back-to-back accepts, so drive the
+  // three requests on consecutive cycles directly.
+  @(negedge s_i_clk);
+  s_i_x     <= xin0;
+  s_i_ctrl  <= CTRL_TWO_SP;
+  s_i_valid <= 1'b1;
+  @(posedge s_i_clk);
 
-  wait_n_ticks(LATENCY);
+  @(negedge s_i_clk);
+  s_i_x     <= xin1;
+  s_i_ctrl  <= CTRL_TWO_SP;
+  s_i_valid <= 1'b1;
+  @(posedge s_i_clk);
+
+  @(negedge s_i_clk);
+  s_i_x     <= xin2;
+  s_i_ctrl  <= CTRL_TWO_SP;
+  s_i_valid <= 1'b1;
+  @(posedge s_i_clk);
+
+  @(negedge s_i_clk);
+  s_i_x     <= '0;
+  s_i_ctrl  <= '0;
+  s_i_valid <= 1'b0;
+
+  // With requests accepted on three consecutive cycles, the first visible result
+  // arrives two cycles earlier than the scalar LATENCY helper used by send_txn().
+  wait_n_ticks(LATENCY - 4);
   `FAIL_UNLESS(s_o_error == '0)
+  `FAIL_UNLESS_EQUAL(1'b1, s_o_valid)
   outA = s_o_exp_x[127:64]; outB = s_o_exp_x[63:0];
-  `FAIL_UNLESS(lsb_error_64_lane(gd0A, outA, `LSB_WINDOW) <= `ERR_TOL_LSB_64)
-  `FAIL_UNLESS(lsb_error_64_lane(gd0B, outB, `LSB_WINDOW) <= `ERR_TOL_LSB_64)
+  `FAIL_UNLESS(lsb_error_64_lane(gd0A, outA, `LSB_WINDOW) <= `ULP_ERR_TOL_LSB_64)
+  `FAIL_UNLESS(lsb_error_64_lane(gd0B, outB, `LSB_WINDOW) <= `ULP_ERR_TOL_LSB_64)
 
   wait_n_ticks(1);
   `FAIL_UNLESS(s_o_error == '0)
+  `FAIL_UNLESS_EQUAL(1'b1, s_o_valid)
   outA = s_o_exp_x[127:64]; outB = s_o_exp_x[63:0];
-  `FAIL_UNLESS(lsb_error_64_lane(gd1A, outA, `LSB_WINDOW) <= `ERR_TOL_LSB_64)
-  `FAIL_UNLESS(lsb_error_64_lane(gd1B, outB, `LSB_WINDOW) <= `ERR_TOL_LSB_64)
+  `FAIL_UNLESS(lsb_error_64_lane(gd1A, outA, `LSB_WINDOW) <= `ULP_ERR_TOL_LSB_64)
+  `FAIL_UNLESS(lsb_error_64_lane(gd1B, outB, `LSB_WINDOW) <= `ULP_ERR_TOL_LSB_64)
 
   wait_n_ticks(1);
   `FAIL_UNLESS(s_o_error == '0)
+  `FAIL_UNLESS_EQUAL(1'b1, s_o_valid)
   outA = s_o_exp_x[127:64]; outB = s_o_exp_x[63:0];
   `FAIL_UNLESS(is_inf64(outA) && (outA[63] == 1'b0))
   `FAIL_UNLESS_EQUAL(gd2B, outB)

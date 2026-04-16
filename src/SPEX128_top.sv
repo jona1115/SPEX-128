@@ -1176,7 +1176,10 @@ sp_fpmultiplier #(
   .o_debug(s_my_sp_fpmultiplier_5_debug)
 );
 
-localparam int TWO_SP_M_ALIGN_DEPTH = 2 * SP_FPMULTIPLIER_MODULE_LATENCY;
+// fixed64_partitionm_ts produces its valid/data one registered stage later than the
+// shared fixed_partition_sp path reaches mul0/mul1, so the final TWO_SP m-alignment
+// only needs two multiplier latencies minus one extra register stage.
+localparam int TWO_SP_M_ALIGN_DEPTH = (2 * SP_FPMULTIPLIER_MODULE_LATENCY) - 1;
 binary64_t     s_64_par_m_lane_a_delay_pipe [TWO_SP_M_ALIGN_DEPTH-1:0];
 binary64_t     s_64_par_m_lane_b_delay_pipe [TWO_SP_M_ALIGN_DEPTH-1:0];
 logic          s_64_par_m_lane_a_delay_valid_pipe [TWO_SP_M_ALIGN_DEPTH-1:0];
@@ -1292,6 +1295,37 @@ sp_fpmultiplier #(
 `define LANEB_FLOATTYPE (s_level2_metadata.float_type_b)
 `define LANEC_FLOATTYPE (s_level2_metadata.float_type_c)
 `define LANED_FLOATTYPE (s_level2_metadata.float_type_d)
+localparam int TWO_SP_OUTPUT_METADATA_DELAY = my_fixed_partition_sp_par_a.MODULE_LATENCY_64 +
+                                              (3 * my_sp_fpmultiplier_0.MODULE_LATENCY);
+float_metadata_t s_two_sp_output_metadata_pipe [TWO_SP_OUTPUT_METADATA_DELAY-1:0];
+logic            s_two_sp_output_metadata_valid_pipe [TWO_SP_OUTPUT_METADATA_DELAY-1:0];
+float_metadata_t s_two_sp_output_metadata;
+always_ff @(posedge i_clk) begin : two_sp_output_metadata_align
+  int i;
+  if (!i_rst_n) begin
+    s_two_sp_output_metadata_pipe <= '{default:'0};
+    s_two_sp_output_metadata_valid_pipe <= '{default:'0};
+    s_two_sp_output_metadata <= '0;
+  end
+  else begin
+    s_two_sp_output_metadata_pipe[0] <= (s_my_float_to_fixed_o_valid &&
+                                         s_my_float_to_fixed_metadata.sp_mode == TWO_SP_MODE) ?
+                                        s_my_float_to_fixed_metadata : '0;
+    s_two_sp_output_metadata_valid_pipe[0] <= s_my_float_to_fixed_o_valid &&
+                                              (s_my_float_to_fixed_metadata.sp_mode == TWO_SP_MODE);
+
+    for (i = 1; i < TWO_SP_OUTPUT_METADATA_DELAY; i++) begin
+      s_two_sp_output_metadata_pipe[i] <= s_two_sp_output_metadata_pipe[i-1];
+      s_two_sp_output_metadata_valid_pipe[i] <= s_two_sp_output_metadata_valid_pipe[i-1];
+    end
+
+    if (s_two_sp_output_metadata_valid_pipe[TWO_SP_OUTPUT_METADATA_DELAY-1]) begin
+      s_two_sp_output_metadata <= s_two_sp_output_metadata_pipe[TWO_SP_OUTPUT_METADATA_DELAY-1];
+    end
+  end
+end
+`define TWO_SP_LANEA_FLOATTYPE (s_two_sp_output_metadata.float_type_a)
+`define TWO_SP_LANEB_FLOATTYPE (s_two_sp_output_metadata.float_type_b)
 `define BINARY128_POSZERO   (128'h0000_0000_0000_0000_0000_0000_0000_0000)
 `define BINARY128_ONE       (128'h3FFF_0000_0000_0000_0000_0000_0000_0000)
 `define BINARY128_POSINF    (128'h7FFF_0000_0000_0000_0000_0000_0000_0000)
@@ -1368,19 +1402,19 @@ logic [127:0] s_mul4_final_out;
 always_comb begin : finish_line_subnormal_type_processing_mul4
   case (`THESPMODE)
     TWO_SP_MODE: begin
-      s_mul4_final_out[127:64] =  (`LANEA_FLOATTYPE === ZERO)          ? `BINARY64_ONE     :
-                                  (`LANEA_FLOATTYPE === POS_INF)       ? `BINARY64_POSINF  :
-                                  (`LANEA_FLOATTYPE === NEG_INF)       ? `BINARY64_POSZERO :
-                                  (`LANEA_FLOATTYPE === NAN)           ? `BINARY64_NAN_POS :
-                                  (`LANEA_FLOATTYPE === POS_DENORMAL)  ? `BINARY64_ONE     :
-                                  (`LANEA_FLOATTYPE === NEG_DENORMAL)  ? `BINARY64_ONE     :
+      s_mul4_final_out[127:64] =  (`TWO_SP_LANEA_FLOATTYPE === ZERO)          ? `BINARY64_ONE     :
+                                  (`TWO_SP_LANEA_FLOATTYPE === POS_INF)       ? `BINARY64_POSINF  :
+                                  (`TWO_SP_LANEA_FLOATTYPE === NEG_INF)       ? `BINARY64_POSZERO :
+                                  (`TWO_SP_LANEA_FLOATTYPE === NAN)           ? `BINARY64_NAN_POS :
+                                  (`TWO_SP_LANEA_FLOATTYPE === POS_DENORMAL)  ? `BINARY64_ONE     :
+                                  (`TWO_SP_LANEA_FLOATTYPE === NEG_DENORMAL)  ? `BINARY64_ONE     :
                                   s_my_sp_fpmultiplier_4_jedi[127:64];
-      s_mul4_final_out[63:0]   =  (`LANEB_FLOATTYPE === ZERO)          ? `BINARY64_ONE     :
-                                  (`LANEB_FLOATTYPE === POS_INF)       ? `BINARY64_POSINF  :
-                                  (`LANEB_FLOATTYPE === NEG_INF)       ? `BINARY64_POSZERO :
-                                  (`LANEB_FLOATTYPE === NAN)           ? `BINARY64_NAN_POS :
-                                  (`LANEB_FLOATTYPE === POS_DENORMAL)  ? `BINARY64_ONE     :
-                                  (`LANEB_FLOATTYPE === NEG_DENORMAL)  ? `BINARY64_ONE     :
+      s_mul4_final_out[63:0]   =  (`TWO_SP_LANEB_FLOATTYPE === ZERO)          ? `BINARY64_ONE     :
+                                  (`TWO_SP_LANEB_FLOATTYPE === POS_INF)       ? `BINARY64_POSINF  :
+                                  (`TWO_SP_LANEB_FLOATTYPE === NEG_INF)       ? `BINARY64_POSZERO :
+                                  (`TWO_SP_LANEB_FLOATTYPE === NAN)           ? `BINARY64_NAN_POS :
+                                  (`TWO_SP_LANEB_FLOATTYPE === POS_DENORMAL)  ? `BINARY64_ONE     :
+                                  (`TWO_SP_LANEB_FLOATTYPE === NEG_DENORMAL)  ? `BINARY64_ONE     :
                                   s_my_sp_fpmultiplier_4_jedi[63:0];
     end
   
