@@ -58,8 +58,8 @@ module fixed128_partitionf_ts #(
   // output  float_metadata_t                        o_metadata,
 
   // Data
-  input   logic [64:0]                            i_f,
-  output  binary128_t                             o_exp_f,
+  input   logic [59:0]                            i_m,
+  output  binary128_t                             o_exp_m,
 
   // Handshake
   input   logic                                   i_valid,
@@ -80,14 +80,14 @@ module fixed128_partitionf_ts #(
 //=====================================================================================
 // Module Body
 //=====================================================================================
-binary128_t s_o_exp_f;
+binary128_t s_o_exp_m;
 always_ff @( posedge i_clk ) begin : blockhaha
   if (!i_rst_n) begin
-    s_o_exp_f <= '0;
+    s_o_exp_m <= '0;
   end
   else begin
     if (i_valid) begin
-      s_o_exp_f <= binary128_t'({1'b0, 15'h3FFF/*16383*/, 52'b0, i_f[64:5]});
+      s_o_exp_m <= binary128_t'({1'b0, 15'h3FFF/*16383*/, 57'b0, i_m[59:5]});
     end // if (i_valid) begin
   end // else begin
 end // always_ff
@@ -114,39 +114,39 @@ end // always_ff
  * db = delay buffer
  * We are delaying things to match the latency from fixed_partition_sp.sv
  */
-binary128_t s_db_o_exp_f;
+binary128_t s_db_o_exp_m;
 logic       s_db_o_valid;
 
 generate
   if (DELAY_BUFFER_LATENCY == 0) begin : db_bypass
     always_comb begin
-      s_db_o_exp_f = s_o_exp_f;
+      s_db_o_exp_m = s_o_exp_m;
       s_db_o_valid = s_o_valid;
     end
   end
   else begin : db_shift
-    binary128_t s_db_o_exp_f_pipe [DELAY_BUFFER_LATENCY-1 : 0];
+    binary128_t s_db_o_exp_m_pipe [DELAY_BUFFER_LATENCY-1 : 0];
     logic       s_db_o_valid_pipe [DELAY_BUFFER_LATENCY-1 : 0];
     int i;
 
     always_ff @( posedge i_clk ) begin : delayyyyy
       if (!i_rst_n) begin
-        s_db_o_exp_f_pipe <= '{default:'0};
+        s_db_o_exp_m_pipe <= '{default:'0};
         s_db_o_valid_pipe <= '{default:'0};
       end
       else begin
-        s_db_o_exp_f_pipe[0] <= s_o_exp_f;
+        s_db_o_exp_m_pipe[0] <= s_o_exp_m;
         s_db_o_valid_pipe[0] <= s_o_valid;
 
         for (i = 1; i < DELAY_BUFFER_LATENCY; i++) begin
-          s_db_o_exp_f_pipe[i] <= s_db_o_exp_f_pipe[i-1];
+          s_db_o_exp_m_pipe[i] <= s_db_o_exp_m_pipe[i-1];
           s_db_o_valid_pipe[i] <= s_db_o_valid_pipe[i-1];
         end
       end // !i_rst_n else begin
     end // delayyyyy
 
     always_comb begin
-      s_db_o_exp_f = s_db_o_exp_f_pipe[DELAY_BUFFER_LATENCY-1];
+      s_db_o_exp_m = s_db_o_exp_m_pipe[DELAY_BUFFER_LATENCY-1];
       s_db_o_valid = s_db_o_valid_pipe[DELAY_BUFFER_LATENCY-1];
     end
   end
@@ -156,7 +156,7 @@ endgenerate
 // Final assignment
 //=====================================================================================
 // assign o_metadata = i_metadata;
-assign o_exp_f = s_db_o_exp_f;
+assign o_exp_m = s_db_o_exp_m;
 assign o_valid = s_db_o_valid;
 assign o_sanity_identifier = 4'b0000;
 assign o_error = '0;

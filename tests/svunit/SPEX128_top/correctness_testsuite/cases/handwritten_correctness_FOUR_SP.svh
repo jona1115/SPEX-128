@@ -6,7 +6,7 @@
 
   s_i_valid = '1;
 
-  wait_n_ticks(LATENCY_3264);
+  wait_n_ticks(LATENCY_32);
 
   `PRINT_INTERMEDIATE_RESULTS
   `PRINT_INTERMEDIATE_VALID_BITS
@@ -26,7 +26,7 @@
 
 //   s_i_valid = '1;
 
-//   wait_n_ticks(LATENCY_3264);
+//   wait_n_ticks(LATENCY_32);
 
 //   // `PRINT_INTERMEDIATE_RESULTS
 //   // `PRINT_INTERMEDIATE_VALID_BITS

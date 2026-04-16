@@ -58,8 +58,8 @@ module SPEX128_top_unit_test;
   binary32_t        ds_my_fixed_partition_sp_par_c_exp_32d;
   binary128_t       ds_my_fixed_partition_sp_par_d_exp_a128;
   binary128_t       ds_my_fixed_partition_sp_par_e_exp_a128;
-  binary128_t       ds_my_fixed128_partitionf_ts_exp_f128;
-  binary64_t        ds_my_fixed64_partitionf_ts_a_exp_f64a;
+  binary128_t       ds_my_fixed128_partitionm_ts_exp;
+  binary64_t        ds_my_fixed64_partitionm_ts_a_exp_f64a;
   binary64_t        ds_my_fixed64_partitionf_ts_b_exp_f64b;
   logic [127:0]     ds_mux_0;
   logic [127:0]     ds_mux_1;
@@ -69,8 +69,10 @@ module SPEX128_top_unit_test;
   logic [127:0]     ds_my_sp_fpmultiplier_1_jedi;
   logic [127:0]     ds_my_sp_fpmultiplier_2_jedi;
   logic [127:0]     ds_mux_4;
+  logic [127:0]     ds_mux_5;
   logic [127:0]     ds_my_sp_fpmultiplier_3_jedi;
   logic [127:0]     ds_my_sp_fpmultiplier_4_jedi;
+  logic [127:0]     ds_my_sp_fpmultiplier_5_jedi;
   logic [127:0]     ds_mul3_final_out;
   logic [127:0]     ds_mul4_final_out;
   float_metadata_t  ds_my_float_to_fixed_metadata;
@@ -99,8 +101,8 @@ module SPEX128_top_unit_test;
   logic ds_my_fixed_partition_sp_par_c_o_valid32d;
   logic ds_my_fixed_partition_sp_par_d_o_valid128;
   logic ds_my_fixed_partition_sp_par_e_o_valid128;
-  logic ds_my_fixed128_partitionf_ts_o_valid;
-  logic ds_my_fixed64_partitionf_ts_a_o_valid;
+  logic ds_my_fixed128_partitionm_ts_o_valid;
+  logic ds_my_fixed64_partitionm_ts_a_o_valid;
   logic ds_my_fixed64_partitionf_ts_b_o_valid;
   logic ds_my_sp_fpmultiplier_0_valid128_jedi;
   logic ds_my_sp_fpmultiplier_0_valid64a_jedi;
@@ -169,8 +171,8 @@ module SPEX128_top_unit_test;
     .ds_my_fixed_partition_sp_par_c_exp_32d(ds_my_fixed_partition_sp_par_c_exp_32d),
     .ds_my_fixed_partition_sp_par_d_exp_a128(ds_my_fixed_partition_sp_par_d_exp_a128),
     .ds_my_fixed_partition_sp_par_e_exp_a128(ds_my_fixed_partition_sp_par_e_exp_a128),
-    .ds_my_fixed128_partitionf_ts_exp_f128(ds_my_fixed128_partitionf_ts_exp_f128),
-    .ds_my_fixed64_partitionf_ts_a_exp_f64a(ds_my_fixed64_partitionf_ts_a_exp_f64a),
+    .ds_my_fixed128_partitionm_ts_exp(ds_my_fixed128_partitionm_ts_exp),
+    .ds_my_fixed64_partitionm_ts_a_exp_f64a(ds_my_fixed64_partitionm_ts_a_exp_f64a),
     .ds_my_fixed64_partitionf_ts_b_exp_f64b(ds_my_fixed64_partitionf_ts_b_exp_f64b),
     .ds_mux_0(ds_mux_0),
     .ds_mux_1(ds_mux_1),
@@ -180,8 +182,10 @@ module SPEX128_top_unit_test;
     .ds_my_sp_fpmultiplier_1_jedi(ds_my_sp_fpmultiplier_1_jedi),
     .ds_my_sp_fpmultiplier_2_jedi(ds_my_sp_fpmultiplier_2_jedi),
     .ds_mux_4(ds_mux_4),
+    .ds_mux_5(ds_mux_5),
     .ds_my_sp_fpmultiplier_3_jedi(ds_my_sp_fpmultiplier_3_jedi),
     .ds_my_sp_fpmultiplier_4_jedi(ds_my_sp_fpmultiplier_4_jedi),
+    .ds_my_sp_fpmultiplier_5_jedi(ds_my_sp_fpmultiplier_5_jedi),
     .ds_mul3_final_out(ds_mul3_final_out),
     .ds_mul4_final_out(ds_mul4_final_out),
     .ds_my_float_to_fixed_metadata(ds_my_float_to_fixed_metadata),
@@ -210,8 +214,8 @@ module SPEX128_top_unit_test;
     .ds_my_fixed_partition_sp_par_c_o_valid32d(ds_my_fixed_partition_sp_par_c_o_valid32d),
     .ds_my_fixed_partition_sp_par_d_o_valid128(ds_my_fixed_partition_sp_par_d_o_valid128),
     .ds_my_fixed_partition_sp_par_e_o_valid128(ds_my_fixed_partition_sp_par_e_o_valid128),
-    .ds_my_fixed128_partitionf_ts_o_valid(ds_my_fixed128_partitionf_ts_o_valid),
-    .ds_my_fixed64_partitionf_ts_a_o_valid(ds_my_fixed64_partitionf_ts_a_o_valid),
+    .ds_my_fixed128_partitionm_ts_o_valid(ds_my_fixed128_partitionm_ts_o_valid),
+    .ds_my_fixed64_partitionm_ts_a_o_valid(ds_my_fixed64_partitionm_ts_a_o_valid),
     .ds_my_fixed64_partitionf_ts_b_o_valid(ds_my_fixed64_partitionf_ts_b_o_valid),
     .ds_my_sp_fpmultiplier_0_valid128_jedi(ds_my_sp_fpmultiplier_0_valid128_jedi),
     .ds_my_sp_fpmultiplier_0_valid64a_jedi(ds_my_sp_fpmultiplier_0_valid64a_jedi),
@@ -352,8 +356,8 @@ module SPEX128_top_unit_test;
     $display("<<<<< s_my_fixed_partition_sp_par_c_exp_32d = 0x%x", ds_my_fixed_partition_sp_par_c_exp_32d);   \
     $display("<<<<< s_my_fixed_partition_sp_par_d_exp_a128 = 0x%x", ds_my_fixed_partition_sp_par_d_exp_a128);   \
     $display("<<<<< s_my_fixed_partition_sp_par_e_exp_a128 = 0x%x", ds_my_fixed_partition_sp_par_e_exp_a128);   \
-    $display("<<<<< s_my_fixed128_partitionf_ts_exp_f128 = 0x%x", ds_my_fixed128_partitionf_ts_exp_f128);       \
-    $display("<<<<< s_my_fixed64_partitionf_ts_a_exp_f64a = 0x%x", ds_my_fixed64_partitionf_ts_a_exp_f64a);     \
+    $display("<<<<< s_my_fixed128_partitionm_ts_exp = 0x%x", ds_my_fixed128_partitionm_ts_exp);       \
+    $display("<<<<< s_my_fixed64_partitionm_ts_a_exp_f64a = 0x%x", ds_my_fixed64_partitionm_ts_a_exp_f64a);     \
     $display("<<<<< s_my_fixed64_partitionf_ts_b_exp_f64b = 0x%x", ds_my_fixed64_partitionf_ts_b_exp_f64b);     \
     $display("<<<<< ------------------------ Level 3 ------------------------");                                \
     $display("<<<<< s_mux_0 = 0x%x", ds_mux_0);                                                                 \
@@ -364,8 +368,10 @@ module SPEX128_top_unit_test;
     $display("<<<<< s_my_sp_fpmultiplier_1_jedi = 0x%x", ds_my_sp_fpmultiplier_1_jedi);                             \
     $display("<<<<< s_my_sp_fpmultiplier_2_jedi = 0x%x", ds_my_sp_fpmultiplier_2_jedi);                             \
     $display("<<<<< s_mux_4 = 0x%x", ds_mux_4);                                                                 \
+    $display("<<<<< s_mux_5 = 0x%x", ds_mux_5);                                                                 \
     $display("<<<<< s_my_sp_fpmultiplier_3_jedi = 0x%x", ds_my_sp_fpmultiplier_3_jedi);                             \
     $display("<<<<< s_my_sp_fpmultiplier_4_jedi = 0x%x", ds_my_sp_fpmultiplier_4_jedi);                             \
+    $display("<<<<< s_my_sp_fpmultiplier_5_jedi = 0x%x", ds_my_sp_fpmultiplier_5_jedi);                             \
     $display("<<<<< s_mul3_final_out = 0x%x", ds_mul3_final_out);                                               \
     $display("<<<<< s_mul4_final_out = 0x%x", ds_mul4_final_out);                                               \
     $display("<<<<< =================== End Intermediate Results ===================");
@@ -396,8 +402,8 @@ module SPEX128_top_unit_test;
     $display("<<<<< s_my_fixed_partition_sp_par_c_o_valid32d = %x", ds_my_fixed_partition_sp_par_c_o_valid32d); \
     $display("<<<<< s_my_fixed_partition_sp_par_d_o_valid128 = %x", ds_my_fixed_partition_sp_par_d_o_valid128); \
     $display("<<<<< s_my_fixed_partition_sp_par_e_o_valid128 = %x", ds_my_fixed_partition_sp_par_e_o_valid128); \
-    $display("<<<<< s_my_fixed128_partitionf_ts_o_valid = %x", ds_my_fixed128_partitionf_ts_o_valid); \
-    $display("<<<<< s_my_fixed64_partitionf_ts_a_o_valid = %x", ds_my_fixed64_partitionf_ts_a_o_valid); \
+    $display("<<<<< s_my_fixed128_partitionm_ts_o_valid = %x", ds_my_fixed128_partitionm_ts_o_valid); \
+    $display("<<<<< s_my_fixed64_partitionm_ts_a_o_valid = %x", ds_my_fixed64_partitionm_ts_a_o_valid); \
     $display("<<<<< s_my_fixed64_partitionf_ts_b_o_valid = %x", ds_my_fixed64_partitionf_ts_b_o_valid); \
     $display("<<<<< s_my_sp_fpmultiplier_0_valid128_jedi = %x", ds_my_sp_fpmultiplier_0_valid128_jedi); \
     $display("<<<<< s_my_sp_fpmultiplier_0_valid64a_jedi = %x", ds_my_sp_fpmultiplier_0_valid64a_jedi); \
@@ -429,14 +435,18 @@ module SPEX128_top_unit_test;
   endtask
 
   // -------- Tunables --------------------------------------------------------
-  localparam int LATENCY_3264 = my_SPEX128_top.my_float_to_fixed.MODULE_LATENCY +
+  localparam int LATENCY_32 = my_SPEX128_top.my_float_to_fixed.MODULE_LATENCY +
                                 my_SPEX128_top.my_fixed_partition_sp_par_a.MODULE_LATENCY_32 +
                                 2 * my_SPEX128_top.my_sp_fpmultiplier_0.MODULE_LATENCY;
-  localparam int LATENCY_128 =  LATENCY_3264 +
-                                my_SPEX128_top.my_sp_fpmultiplier_0.MODULE_LATENCY;
-  localparam int LATENCY     =  LATENCY_128;
+  localparam int LATENCY_64 =   my_SPEX128_top.my_float_to_fixed.MODULE_LATENCY +
+                                my_SPEX128_top.my_fixed_partition_sp_par_a.MODULE_LATENCY_64 +
+                                3 * my_SPEX128_top.my_sp_fpmultiplier_0.MODULE_LATENCY;
+  localparam int LATENCY_128 =  my_SPEX128_top.my_float_to_fixed.MODULE_LATENCY +
+                                my_SPEX128_top.my_fixed_partition_sp_par_a.MODULE_LATENCY_128 +
+                                3 * my_SPEX128_top.my_sp_fpmultiplier_0.MODULE_LATENCY;
+  localparam int LATENCY     =  LATENCY_64;
   // LSB error tolerances (difference in integer value of the LSB slice)
-  `define ERR_TOL_LSB_128 200
+  `define ERR_TOL_LSB_128 100
   `define ERR_TOL_LSB_64  200000 // 200,000 is for latency_and_ordering to pass
   `define ERR_TOL_LSB_32  200
   // Width of the LSB window to compare
@@ -468,6 +478,8 @@ module SPEX128_top_unit_test;
     e = int'($unsigned(expct[31:0])) & mask;
     a = int'($unsigned(act[31:0])) & mask;
     $display(">>>>> abs error:%d", abs_int(e - a));
+
+    return 0;
   endfunction
 
   function automatic int lsb_error_64_lane(logic [63:0] expct, logic [63:0] act, int w);
@@ -543,7 +555,12 @@ module SPEX128_top_unit_test;
 
   // Wait latency cycles and check o_error==0
   task automatic await_and_check_no_error();
-    wait_n_ticks(LATENCY);
+    case (s_i_ctrl)
+      CTRL_SINGLE:  wait_n_ticks(LATENCY_128);
+      CTRL_TWO_SP:  wait_n_ticks(LATENCY_64);
+      CTRL_FOUR_SP: wait_n_ticks(LATENCY_32);
+      default:      wait_n_ticks(LATENCY);
+    endcase
     `FAIL_UNLESS(s_o_error == '0)
   endtask
 

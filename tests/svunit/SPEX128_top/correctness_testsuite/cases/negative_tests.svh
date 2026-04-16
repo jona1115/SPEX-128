@@ -39,11 +39,11 @@
   logic [127:0] expected = {64'h3fe368b2fc6f960a, 64'h3fe368b2fc6f960a}; // 0.606531
 
   s_i_x     = {64'hbfe0000000000000, 64'hbfe0000000000000}; // -0.5, 
-  s_i_ctrl  = 4'b0001; // single mode
+  s_i_ctrl  = 4'b0001; // TWO SP mode
 
   s_i_valid = '1;
 
-  wait_n_ticks(LATENCY_128);
+  wait_n_ticks(LATENCY_64);
 
   // $display(">>>>> s_o_exp_x = 0x%X", s_o_exp_x);
   // $display(">>>>> expected  = 0x%x", expected);
