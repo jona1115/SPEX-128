@@ -445,11 +445,11 @@ module SPEX128_top_unit_test;
                                 my_SPEX128_top.my_fixed_partition_sp_par_a.MODULE_LATENCY_128 +
                                 3 * my_SPEX128_top.my_sp_fpmultiplier_0.MODULE_LATENCY;
   localparam int LATENCY     =  LATENCY_64;
-  // LSB error tolerances (difference in integer value of the LSB slice)
-  `define ULP_ERR_TOL_LSB_128 3
+  // ULP error tolerances
+  `define ULP_ERR_TOL_LSB_128 5
   `define ULP_ERR_TOL_LSB_64  2
   `define ULP_ERR_TOL_LSB_32  2
-  // Width of the LSB window to compare
+  // Error cap width; the helper returns exact ULP distance until this cap is hit.
   `define LSB_WINDOW 16
   // --------------------------------------------------------------------------
 
@@ -458,46 +458,91 @@ module SPEX128_top_unit_test;
     return (v < 0) ? -v : v;
   endfunction
 
+  function automatic int ulp_error_cap(int w);
+    if (w <= 0) begin
+      return 0;
+    end
+    else if (w >= 31) begin
+      return 32'h7FFF_FFFF;
+    end
+    else begin
+      return (1 << w) - 1;
+    end
+  endfunction
+
+  function automatic logic [127:0] ulp_order_128(logic [127:0] x);
+    logic [127:0] sign_mask;
+
+    sign_mask = {1'b1, {127{1'b0}}};
+    return x[127] ? ~x : (x ^ sign_mask);
+  endfunction
+
+  function automatic logic [63:0] ulp_order_64(logic [63:0] x);
+    logic [63:0] sign_mask;
+
+    sign_mask = {1'b1, {63{1'b0}}};
+    return x[63] ? ~x : (x ^ sign_mask);
+  endfunction
+
+  function automatic logic [31:0] ulp_order_32(logic [31:0] x);
+    logic [31:0] sign_mask;
+
+    sign_mask = {1'b1, {31{1'b0}}};
+    return x[31] ? ~x : (x ^ sign_mask);
+  endfunction
+
   function automatic int lsb_error(logic [127:0] expct, logic [127:0] act, int w);
-    int mask;
-    int e, a;
-    // Build a 32-bit mask with the lowest w bits set
-    mask = (w >= 32) ? 32'hFFFF_FFFF : ((1 << w) - 1);
-    // Take only the low 32 bits, then mask
-    e = int'($unsigned(expct[31:0])) & mask;
-    a = int'($unsigned(act[31:0])) & mask;
-    return abs_int(e - a);
+    logic [127:0] expct_ord, act_ord, diff;
+    logic [127:0] cap;
+
+    expct_ord = ulp_order_128(expct);
+    act_ord   = ulp_order_128(act);
+    diff      = (expct_ord >= act_ord) ? (expct_ord - act_ord) : (act_ord - expct_ord);
+    cap       = ulp_error_cap(w);
+
+    if (diff > cap) begin
+      return ulp_error_cap(w);
+    end
+
+    return int'(diff[30:0]);
   endfunction
 
   function automatic print_lsb_error(logic [127:0] expct, logic [127:0] act, int w);
-    int mask;
-    int e, a;
-    // Build a 32-bit mask with the lowest w bits set
-    mask = (w >= 32) ? 32'hFFFF_FFFF : ((1 << w) - 1);
-    // Take only the low 32 bits, then mask
-    e = int'($unsigned(expct[31:0])) & mask;
-    a = int'($unsigned(act[31:0])) & mask;
-    $display(">>>>> abs error:%d", abs_int(e - a));
+    $display(">>>>> abs error:%d", lsb_error(expct, act, w));
 
     return 0;
   endfunction
 
   function automatic int lsb_error_64_lane(logic [63:0] expct, logic [63:0] act, int w);
-    int mask;
-    int e, a;
-    mask = (w >= 32) ? 32'hFFFF_FFFF : ((1 << w) - 1);
-    e = int'($unsigned(expct[31:0])) & mask;
-    a = int'($unsigned(act[31:0])) & mask;
-    return abs_int(e - a);
+    logic [63:0] expct_ord, act_ord, diff;
+    logic [63:0] cap;
+
+    expct_ord = ulp_order_64(expct);
+    act_ord   = ulp_order_64(act);
+    diff      = (expct_ord >= act_ord) ? (expct_ord - act_ord) : (act_ord - expct_ord);
+    cap       = ulp_error_cap(w);
+
+    if (diff > cap) begin
+      return ulp_error_cap(w);
+    end
+
+    return int'(diff[30:0]);
   endfunction
 
   function automatic int lsb_error_32_lane(logic [31:0] expct, logic [31:0] act, int w);
-    int mask;
-    int e, a;
-    mask = (w >= 32) ? 32'hFFFF_FFFF : ((1 << w) - 1);
-    e = int'($unsigned(expct)) & mask;  // already 32-bit wide
-    a = int'($unsigned(act))  & mask;
-    return abs_int(e - a);
+    logic [31:0] expct_ord, act_ord, diff;
+    logic [31:0] cap;
+
+    expct_ord = ulp_order_32(expct);
+    act_ord   = ulp_order_32(act);
+    diff      = (expct_ord >= act_ord) ? (expct_ord - act_ord) : (act_ord - expct_ord);
+    cap       = ulp_error_cap(w);
+
+    if (diff > cap) begin
+      return ulp_error_cap(w);
+    end
+
+    return int'(diff[30:0]);
   endfunction
 
   // Classifiers

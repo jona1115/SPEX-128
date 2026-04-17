@@ -208,16 +208,29 @@
 `SVTEST(single_mode_accuracy_from_vectors)
   int n, i, err;
   logic [127:0] xin, xexp;
+  int total_err;
 
   load_vec128_from_files(n);
   `FAIL_UNLESS(n > 0)
-
+  
   for (i = 0; i < n; i++) begin
     xin  = vec128_in[i];
     xexp = vec128_gd[i];
 
     send_txn(xin, CTRL_SINGLE);
     await_and_check_no_error();
+
+    // $display(">>>>> ------------------------------");
+    // $display(">>>>> i\t\t=%d", i);
+    // $display(">>>>> xin\t\t= 0x%x", xin);
+    // $display(">>>>> xexp\t\t= 0x%x", xexp);
+    // $display(">>>>> s_o_exp_x\t= 0x%x", s_o_exp_x);
+    // $display(">>>>> error\t\t= %d", lsb_error(xexp, s_o_exp_x, `LSB_WINDOW));
+
+    // err = lsb_error(xexp, s_o_exp_x, `LSB_WINDOW);
+    // if (err > `ULP_ERR_TOL_LSB_128) begin
+    //   `PRINT_INTERMEDIATE_RESULTS
+    // end
 
     if (is_zero128(xin) || is_denorm128(xin) || (xin == Q_NINF)) begin
       `FAIL_UNLESS_EQUAL(Q_ONE, s_o_exp_x)
@@ -227,9 +240,13 @@
       `FAIL_UNLESS(is_nan128(s_o_exp_x) && (s_o_exp_x[127]==xin[127]))
     end else begin
       err = lsb_error(xexp, s_o_exp_x, `LSB_WINDOW);
+      total_err += err;
       `FAIL_UNLESS(err <= `ULP_ERR_TOL_LSB_128)
     end
   end
+
+  // We will print the average error at the end of the test
+  $display("total_err=%d, n=%d, average err=%d", total_err, n, total_err/n);
 `SVTEST_END
 
 // ---------------------------------------------------------
