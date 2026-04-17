@@ -1295,8 +1295,7 @@ sp_fpmultiplier #(
 `define LANEB_FLOATTYPE (s_level2_metadata.float_type_b)
 `define LANEC_FLOATTYPE (s_level2_metadata.float_type_c)
 `define LANED_FLOATTYPE (s_level2_metadata.float_type_d)
-localparam int TWO_SP_OUTPUT_METADATA_DELAY = my_fixed_partition_sp_par_a.MODULE_LATENCY_64 +
-                                              (3 * my_sp_fpmultiplier_0.MODULE_LATENCY);
+localparam int TWO_SP_OUTPUT_METADATA_DELAY = 9 + (3 * SP_FPMULTIPLIER_MODULE_LATENCY);
 float_metadata_t s_two_sp_output_metadata_pipe [TWO_SP_OUTPUT_METADATA_DELAY-1:0];
 logic            s_two_sp_output_metadata_valid_pipe [TWO_SP_OUTPUT_METADATA_DELAY-1:0];
 float_metadata_t s_two_sp_output_metadata;
