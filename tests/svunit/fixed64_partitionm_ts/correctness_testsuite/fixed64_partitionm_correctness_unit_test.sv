@@ -6,7 +6,7 @@
 `define ERROR_SIGNAL_NUM_BITS 32
 `define DEBUG_SIGNAL_NUM_BITS 32
 
-module fixed64_partitionf_correctness_unit_test;
+module fixed64_partitionm_correctness_unit_test;
 
   import svunit_pkg::svunit_testcase;
 
@@ -18,14 +18,15 @@ module fixed64_partitionf_correctness_unit_test;
   import binary32_pkg::*;
 
 
-  string name = "fixed64_partitionf_ts_ut";
+  string name = "fixed64_partitionm_ts_ut";
   svunit_testcase svunit_ut;
 
   // DUT IO
+  float_metadata_t                        s_i_metadata;
   logic                                   s_i_clk;
   logic                                   s_i_rst_n;
-  logic [26:0]                            s_i_f;
-  binary64_t                              s_o_exp_f;
+  logic [19:0]                            s_i_m;
+  binary64_t                              s_o_exp_m;
   logic                                   s_i_valid;
   logic                                   s_o_valid;
   logic [3:0]                             s_o_sanity_identifier;
@@ -36,17 +37,18 @@ module fixed64_partitionf_correctness_unit_test;
   // This is the UUT that we're 
   // running the Unit Tests on
   //===================================
-  fixed64_partitionf_ts #(
+  fixed64_partitionm_ts #(
     .NUM_BITS_128(`NUM_BITS_128),
     .NUM_BITS_64(`NUM_BITS_64),
     .NUM_BITS_32(`NUM_BITS_32),
     .ERROR_SIGNAL_NUM_BITS(`ERROR_SIGNAL_NUM_BITS),
     .DEBUG_SIGNAL_NUM_BITS(`DEBUG_SIGNAL_NUM_BITS)
-  ) my_fixed64_partitionf_ts (
+  ) my_fixed64_partitionm_ts (
     .i_clk(s_i_clk),
     .i_rst_n(s_i_rst_n),
-    .i_f(s_i_f),
-    .o_exp_f(s_o_exp_f),
+    .i_metadata(s_i_metadata),
+    .i_m(s_i_m),
+    .o_exp_m(s_o_exp_m),
     .i_valid(s_i_valid),
     .o_valid(s_o_valid),
     .o_sanity_identifier(s_o_sanity_identifier),
@@ -69,7 +71,9 @@ module fixed64_partitionf_correctness_unit_test;
   task setup();
     svunit_ut.setup();
     /* Place Setup Code Here */
-    s_i_f     = '0;
+    s_i_metadata = '0;
+    s_i_metadata.sp_mode = TWO_SP_MODE;
+    s_i_m     = '0;
     s_i_valid = '1; // todo probably not the best of ideas
 
     s_i_rst_n   = 1'b0;                 // assert sync reset

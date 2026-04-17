@@ -58,9 +58,9 @@ module SPEX128_top_unit_test;
   binary32_t        ds_my_fixed_partition_sp_par_c_exp_32d;
   binary128_t       ds_my_fixed_partition_sp_par_d_exp_a128;
   binary128_t       ds_my_fixed_partition_sp_par_e_exp_a128;
-  binary128_t       ds_my_fixed128_partitionf_ts_exp_f128;
-  binary64_t        ds_my_fixed64_partitionf_ts_a_exp_f64a;
-  binary64_t        ds_my_fixed64_partitionf_ts_b_exp_f64b;
+  binary128_t       ds_my_fixed128_partitionm_ts_exp;
+  binary64_t        ds_my_fixed64_partitionm_ts_a_exp_f64a;
+  binary64_t        ds_my_fixed64_partitionm_ts_b_exp_f64b;
   logic [127:0]     ds_mux_0;
   logic [127:0]     ds_mux_1;
   logic [127:0]     ds_mux_2;
@@ -69,8 +69,10 @@ module SPEX128_top_unit_test;
   logic [127:0]     ds_my_sp_fpmultiplier_1_jedi;
   logic [127:0]     ds_my_sp_fpmultiplier_2_jedi;
   logic [127:0]     ds_mux_4;
+  logic [127:0]     ds_mux_5;
   logic [127:0]     ds_my_sp_fpmultiplier_3_jedi;
   logic [127:0]     ds_my_sp_fpmultiplier_4_jedi;
+  logic [127:0]     ds_my_sp_fpmultiplier_5_jedi;
   logic [127:0]     ds_mul3_final_out;
   logic [127:0]     ds_mul4_final_out;
   float_metadata_t  ds_my_float_to_fixed_metadata;
@@ -99,9 +101,9 @@ module SPEX128_top_unit_test;
   logic ds_my_fixed_partition_sp_par_c_o_valid32d;
   logic ds_my_fixed_partition_sp_par_d_o_valid128;
   logic ds_my_fixed_partition_sp_par_e_o_valid128;
-  logic ds_my_fixed128_partitionf_ts_o_valid;
-  logic ds_my_fixed64_partitionf_ts_a_o_valid;
-  logic ds_my_fixed64_partitionf_ts_b_o_valid;
+  logic ds_my_fixed128_partitionm_ts_o_valid;
+  logic ds_my_fixed64_partitionm_ts_a_o_valid;
+  logic ds_my_fixed64_partitionm_ts_b_o_valid;
   logic ds_my_sp_fpmultiplier_0_valid128_jedi;
   logic ds_my_sp_fpmultiplier_0_valid64a_jedi;
   logic ds_my_sp_fpmultiplier_0_valid64b_jedi;
@@ -169,9 +171,9 @@ module SPEX128_top_unit_test;
     .ds_my_fixed_partition_sp_par_c_exp_32d(ds_my_fixed_partition_sp_par_c_exp_32d),
     .ds_my_fixed_partition_sp_par_d_exp_a128(ds_my_fixed_partition_sp_par_d_exp_a128),
     .ds_my_fixed_partition_sp_par_e_exp_a128(ds_my_fixed_partition_sp_par_e_exp_a128),
-    .ds_my_fixed128_partitionf_ts_exp_f128(ds_my_fixed128_partitionf_ts_exp_f128),
-    .ds_my_fixed64_partitionf_ts_a_exp_f64a(ds_my_fixed64_partitionf_ts_a_exp_f64a),
-    .ds_my_fixed64_partitionf_ts_b_exp_f64b(ds_my_fixed64_partitionf_ts_b_exp_f64b),
+    .ds_my_fixed128_partitionm_ts_exp(ds_my_fixed128_partitionm_ts_exp),
+    .ds_my_fixed64_partitionm_ts_a_exp_f64a(ds_my_fixed64_partitionm_ts_a_exp_f64a),
+    .ds_my_fixed64_partitionm_ts_b_exp_f64b(ds_my_fixed64_partitionm_ts_b_exp_f64b),
     .ds_mux_0(ds_mux_0),
     .ds_mux_1(ds_mux_1),
     .ds_mux_2(ds_mux_2),
@@ -180,8 +182,10 @@ module SPEX128_top_unit_test;
     .ds_my_sp_fpmultiplier_1_jedi(ds_my_sp_fpmultiplier_1_jedi),
     .ds_my_sp_fpmultiplier_2_jedi(ds_my_sp_fpmultiplier_2_jedi),
     .ds_mux_4(ds_mux_4),
+    .ds_mux_5(ds_mux_5),
     .ds_my_sp_fpmultiplier_3_jedi(ds_my_sp_fpmultiplier_3_jedi),
     .ds_my_sp_fpmultiplier_4_jedi(ds_my_sp_fpmultiplier_4_jedi),
+    .ds_my_sp_fpmultiplier_5_jedi(ds_my_sp_fpmultiplier_5_jedi),
     .ds_mul3_final_out(ds_mul3_final_out),
     .ds_mul4_final_out(ds_mul4_final_out),
     .ds_my_float_to_fixed_metadata(ds_my_float_to_fixed_metadata),
@@ -210,9 +214,9 @@ module SPEX128_top_unit_test;
     .ds_my_fixed_partition_sp_par_c_o_valid32d(ds_my_fixed_partition_sp_par_c_o_valid32d),
     .ds_my_fixed_partition_sp_par_d_o_valid128(ds_my_fixed_partition_sp_par_d_o_valid128),
     .ds_my_fixed_partition_sp_par_e_o_valid128(ds_my_fixed_partition_sp_par_e_o_valid128),
-    .ds_my_fixed128_partitionf_ts_o_valid(ds_my_fixed128_partitionf_ts_o_valid),
-    .ds_my_fixed64_partitionf_ts_a_o_valid(ds_my_fixed64_partitionf_ts_a_o_valid),
-    .ds_my_fixed64_partitionf_ts_b_o_valid(ds_my_fixed64_partitionf_ts_b_o_valid),
+    .ds_my_fixed128_partitionm_ts_o_valid(ds_my_fixed128_partitionm_ts_o_valid),
+    .ds_my_fixed64_partitionm_ts_a_o_valid(ds_my_fixed64_partitionm_ts_a_o_valid),
+    .ds_my_fixed64_partitionm_ts_b_o_valid(ds_my_fixed64_partitionm_ts_b_o_valid),
     .ds_my_sp_fpmultiplier_0_valid128_jedi(ds_my_sp_fpmultiplier_0_valid128_jedi),
     .ds_my_sp_fpmultiplier_0_valid64a_jedi(ds_my_sp_fpmultiplier_0_valid64a_jedi),
     .ds_my_sp_fpmultiplier_0_valid64b_jedi(ds_my_sp_fpmultiplier_0_valid64b_jedi),
@@ -352,9 +356,9 @@ module SPEX128_top_unit_test;
     $display("<<<<< s_my_fixed_partition_sp_par_c_exp_32d = 0x%x", ds_my_fixed_partition_sp_par_c_exp_32d);   \
     $display("<<<<< s_my_fixed_partition_sp_par_d_exp_a128 = 0x%x", ds_my_fixed_partition_sp_par_d_exp_a128);   \
     $display("<<<<< s_my_fixed_partition_sp_par_e_exp_a128 = 0x%x", ds_my_fixed_partition_sp_par_e_exp_a128);   \
-    $display("<<<<< s_my_fixed128_partitionf_ts_exp_f128 = 0x%x", ds_my_fixed128_partitionf_ts_exp_f128);       \
-    $display("<<<<< s_my_fixed64_partitionf_ts_a_exp_f64a = 0x%x", ds_my_fixed64_partitionf_ts_a_exp_f64a);     \
-    $display("<<<<< s_my_fixed64_partitionf_ts_b_exp_f64b = 0x%x", ds_my_fixed64_partitionf_ts_b_exp_f64b);     \
+    $display("<<<<< s_my_fixed128_partitionm_ts_exp = 0x%x", ds_my_fixed128_partitionm_ts_exp);       \
+    $display("<<<<< s_my_fixed64_partitionm_ts_a_exp_f64a = 0x%x", ds_my_fixed64_partitionm_ts_a_exp_f64a);     \
+    $display("<<<<< s_my_fixed64_partitionm_ts_b_exp_f64b = 0x%x", ds_my_fixed64_partitionm_ts_b_exp_f64b);     \
     $display("<<<<< ------------------------ Level 3 ------------------------");                                \
     $display("<<<<< s_mux_0 = 0x%x", ds_mux_0);                                                                 \
     $display("<<<<< s_mux_1 = 0x%x", ds_mux_1);                                                                 \
@@ -364,8 +368,10 @@ module SPEX128_top_unit_test;
     $display("<<<<< s_my_sp_fpmultiplier_1_jedi = 0x%x", ds_my_sp_fpmultiplier_1_jedi);                             \
     $display("<<<<< s_my_sp_fpmultiplier_2_jedi = 0x%x", ds_my_sp_fpmultiplier_2_jedi);                             \
     $display("<<<<< s_mux_4 = 0x%x", ds_mux_4);                                                                 \
+    $display("<<<<< s_mux_5 = 0x%x", ds_mux_5);                                                                 \
     $display("<<<<< s_my_sp_fpmultiplier_3_jedi = 0x%x", ds_my_sp_fpmultiplier_3_jedi);                             \
     $display("<<<<< s_my_sp_fpmultiplier_4_jedi = 0x%x", ds_my_sp_fpmultiplier_4_jedi);                             \
+    $display("<<<<< s_my_sp_fpmultiplier_5_jedi = 0x%x", ds_my_sp_fpmultiplier_5_jedi);                             \
     $display("<<<<< s_mul3_final_out = 0x%x", ds_mul3_final_out);                                               \
     $display("<<<<< s_mul4_final_out = 0x%x", ds_mul4_final_out);                                               \
     $display("<<<<< =================== End Intermediate Results ===================");
@@ -396,9 +402,9 @@ module SPEX128_top_unit_test;
     $display("<<<<< s_my_fixed_partition_sp_par_c_o_valid32d = %x", ds_my_fixed_partition_sp_par_c_o_valid32d); \
     $display("<<<<< s_my_fixed_partition_sp_par_d_o_valid128 = %x", ds_my_fixed_partition_sp_par_d_o_valid128); \
     $display("<<<<< s_my_fixed_partition_sp_par_e_o_valid128 = %x", ds_my_fixed_partition_sp_par_e_o_valid128); \
-    $display("<<<<< s_my_fixed128_partitionf_ts_o_valid = %x", ds_my_fixed128_partitionf_ts_o_valid); \
-    $display("<<<<< s_my_fixed64_partitionf_ts_a_o_valid = %x", ds_my_fixed64_partitionf_ts_a_o_valid); \
-    $display("<<<<< s_my_fixed64_partitionf_ts_b_o_valid = %x", ds_my_fixed64_partitionf_ts_b_o_valid); \
+    $display("<<<<< s_my_fixed128_partitionm_ts_o_valid = %x", ds_my_fixed128_partitionm_ts_o_valid); \
+    $display("<<<<< s_my_fixed64_partitionm_ts_a_o_valid = %x", ds_my_fixed64_partitionm_ts_a_o_valid); \
+    $display("<<<<< s_my_fixed64_partitionm_ts_b_o_valid = %x", ds_my_fixed64_partitionm_ts_b_o_valid); \
     $display("<<<<< s_my_sp_fpmultiplier_0_valid128_jedi = %x", ds_my_sp_fpmultiplier_0_valid128_jedi); \
     $display("<<<<< s_my_sp_fpmultiplier_0_valid64a_jedi = %x", ds_my_sp_fpmultiplier_0_valid64a_jedi); \
     $display("<<<<< s_my_sp_fpmultiplier_0_valid64b_jedi = %x", ds_my_sp_fpmultiplier_0_valid64b_jedi); \
@@ -421,7 +427,7 @@ module SPEX128_top_unit_test;
     $display("<<<<< =================== End Intermediate valid bits ===================");
 
   `define PRINT_INTERMEDIATE_VALID_BITS_ONELINE \
-    $display("%x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x", ds_my_float_to_fixed_o_valid, ds_my_fixed_partition_sp_par_a_o_valid128, ds_my_fixed_partition_sp_par_a_o_valid64a, ds_my_fixed_partition_sp_par_a_o_valid64b, ds_my_fixed_partition_sp_par_a_o_valid32a, ds_my_fixed_partition_sp_par_a_o_valid32b, ds_my_fixed_partition_sp_par_a_o_valid32c, ds_my_fixed_partition_sp_par_a_o_valid32d, ds_my_fixed_partition_sp_par_b_o_valid128, ds_my_fixed_partition_sp_par_b_o_valid64a, ds_my_fixed_partition_sp_par_b_o_valid64b, ds_my_fixed_partition_sp_par_b_o_valid32a, ds_my_fixed_partition_sp_par_b_o_valid32b, ds_my_fixed_partition_sp_par_b_o_valid32c, ds_my_fixed_partition_sp_par_b_o_valid32d, ds_my_fixed_partition_sp_par_c_o_valid128, ds_my_fixed_partition_sp_par_c_o_valid64a, ds_my_fixed_partition_sp_par_c_o_valid64b, ds_my_fixed_partition_sp_par_c_o_valid32a, ds_my_fixed_partition_sp_par_c_o_valid32b, ds_my_fixed_partition_sp_par_c_o_valid32c, ds_my_fixed_partition_sp_par_c_o_valid32d, ds_my_fixed_partition_sp_par_d_o_valid128, ds_my_fixed_partition_sp_par_e_o_valid128, ds_my_fixed128_partitionf_ts_o_valid, ds_my_fixed64_partitionf_ts_a_o_valid, ds_my_fixed64_partitionf_ts_b_o_valid, ds_my_sp_fpmultiplier_0_valid128_jedi, ds_my_sp_fpmultiplier_0_valid64a_jedi, ds_my_sp_fpmultiplier_0_valid64b_jedi, ds_my_sp_fpmultiplier_0_valid32a_jedi, ds_my_sp_fpmultiplier_0_valid32b_jedi, ds_my_sp_fpmultiplier_0_valid32c_jedi, ds_my_sp_fpmultiplier_0_valid32d_jedi, ds_my_sp_fpmultiplier_1_valid128_jedi, ds_my_sp_fpmultiplier_1_valid64a_jedi, ds_my_sp_fpmultiplier_1_valid64b_jedi, ds_my_sp_fpmultiplier_2_valid128_jedi, ds_my_sp_fpmultiplier_3_valid128_jedi, ds_my_sp_fpmultiplier_3_valid64a_jedi, ds_my_sp_fpmultiplier_3_valid64b_jedi, ds_my_sp_fpmultiplier_3_valid32a_jedi, ds_my_sp_fpmultiplier_3_valid32b_jedi, ds_my_sp_fpmultiplier_3_valid32c_jedi, ds_my_sp_fpmultiplier_3_valid32d_jedi, ds_my_sp_fpmultiplier_4_valid128_jedi);
+    $display("%x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x", ds_my_float_to_fixed_o_valid, ds_my_fixed_partition_sp_par_a_o_valid128, ds_my_fixed_partition_sp_par_a_o_valid64a, ds_my_fixed_partition_sp_par_a_o_valid64b, ds_my_fixed_partition_sp_par_a_o_valid32a, ds_my_fixed_partition_sp_par_a_o_valid32b, ds_my_fixed_partition_sp_par_a_o_valid32c, ds_my_fixed_partition_sp_par_a_o_valid32d, ds_my_fixed_partition_sp_par_b_o_valid128, ds_my_fixed_partition_sp_par_b_o_valid64a, ds_my_fixed_partition_sp_par_b_o_valid64b, ds_my_fixed_partition_sp_par_b_o_valid32a, ds_my_fixed_partition_sp_par_b_o_valid32b, ds_my_fixed_partition_sp_par_b_o_valid32c, ds_my_fixed_partition_sp_par_b_o_valid32d, ds_my_fixed_partition_sp_par_c_o_valid128, ds_my_fixed_partition_sp_par_c_o_valid64a, ds_my_fixed_partition_sp_par_c_o_valid64b, ds_my_fixed_partition_sp_par_c_o_valid32a, ds_my_fixed_partition_sp_par_c_o_valid32b, ds_my_fixed_partition_sp_par_c_o_valid32c, ds_my_fixed_partition_sp_par_c_o_valid32d, ds_my_fixed_partition_sp_par_d_o_valid128, ds_my_fixed_partition_sp_par_e_o_valid128, ds_my_fixed128_partitionm_ts_o_valid, ds_my_fixed64_partitionm_ts_a_o_valid, ds_my_fixed64_partitionm_ts_b_o_valid, ds_my_sp_fpmultiplier_0_valid128_jedi, ds_my_sp_fpmultiplier_0_valid64a_jedi, ds_my_sp_fpmultiplier_0_valid64b_jedi, ds_my_sp_fpmultiplier_0_valid32a_jedi, ds_my_sp_fpmultiplier_0_valid32b_jedi, ds_my_sp_fpmultiplier_0_valid32c_jedi, ds_my_sp_fpmultiplier_0_valid32d_jedi, ds_my_sp_fpmultiplier_1_valid128_jedi, ds_my_sp_fpmultiplier_1_valid64a_jedi, ds_my_sp_fpmultiplier_1_valid64b_jedi, ds_my_sp_fpmultiplier_2_valid128_jedi, ds_my_sp_fpmultiplier_3_valid128_jedi, ds_my_sp_fpmultiplier_3_valid64a_jedi, ds_my_sp_fpmultiplier_3_valid64b_jedi, ds_my_sp_fpmultiplier_3_valid32a_jedi, ds_my_sp_fpmultiplier_3_valid32b_jedi, ds_my_sp_fpmultiplier_3_valid32c_jedi, ds_my_sp_fpmultiplier_3_valid32d_jedi, ds_my_sp_fpmultiplier_4_valid128_jedi);
 
   task automatic wait_n_ticks(int n);
     repeat (n) @(posedge s_i_clk) @(negedge s_i_clk);
@@ -429,17 +435,21 @@ module SPEX128_top_unit_test;
   endtask
 
   // -------- Tunables --------------------------------------------------------
-  localparam int LATENCY_3264 = my_SPEX128_top.my_float_to_fixed.MODULE_LATENCY +
+  localparam int LATENCY_32 = my_SPEX128_top.my_float_to_fixed.MODULE_LATENCY +
                                 my_SPEX128_top.my_fixed_partition_sp_par_a.MODULE_LATENCY_32 +
                                 2 * my_SPEX128_top.my_sp_fpmultiplier_0.MODULE_LATENCY;
-  localparam int LATENCY_128 =  LATENCY_3264 +
-                                my_SPEX128_top.my_sp_fpmultiplier_0.MODULE_LATENCY;
-  localparam int LATENCY     =  LATENCY_128;
-  // LSB error tolerances (difference in integer value of the LSB slice)
-  `define ERR_TOL_LSB_128 200
-  `define ERR_TOL_LSB_64  200000 // 200,000 is for latency_and_ordering to pass
-  `define ERR_TOL_LSB_32  200
-  // Width of the LSB window to compare
+  localparam int LATENCY_64 =   my_SPEX128_top.my_float_to_fixed.MODULE_LATENCY +
+                                my_SPEX128_top.my_fixed_partition_sp_par_a.MODULE_LATENCY_64 +
+                                3 * my_SPEX128_top.my_sp_fpmultiplier_0.MODULE_LATENCY;
+  localparam int LATENCY_128 =  my_SPEX128_top.my_float_to_fixed.MODULE_LATENCY +
+                                my_SPEX128_top.my_fixed_partition_sp_par_a.MODULE_LATENCY_128 +
+                                3 * my_SPEX128_top.my_sp_fpmultiplier_0.MODULE_LATENCY;
+  localparam int LATENCY     =  LATENCY_64;
+  // ULP error tolerances
+  `define ULP_ERR_TOL_LSB_128 5
+  `define ULP_ERR_TOL_LSB_64  2
+  `define ULP_ERR_TOL_LSB_32  2
+  // Error cap width; the helper returns exact ULP distance until this cap is hit.
   `define LSB_WINDOW 16
   // --------------------------------------------------------------------------
 
@@ -448,44 +458,91 @@ module SPEX128_top_unit_test;
     return (v < 0) ? -v : v;
   endfunction
 
+  function automatic int ulp_error_cap(int w);
+    if (w <= 0) begin
+      return 0;
+    end
+    else if (w >= 31) begin
+      return 32'h7FFF_FFFF;
+    end
+    else begin
+      return (1 << w) - 1;
+    end
+  endfunction
+
+  function automatic logic [127:0] ulp_order_128(logic [127:0] x);
+    logic [127:0] sign_mask;
+
+    sign_mask = {1'b1, {127{1'b0}}};
+    return x[127] ? ~x : (x ^ sign_mask);
+  endfunction
+
+  function automatic logic [63:0] ulp_order_64(logic [63:0] x);
+    logic [63:0] sign_mask;
+
+    sign_mask = {1'b1, {63{1'b0}}};
+    return x[63] ? ~x : (x ^ sign_mask);
+  endfunction
+
+  function automatic logic [31:0] ulp_order_32(logic [31:0] x);
+    logic [31:0] sign_mask;
+
+    sign_mask = {1'b1, {31{1'b0}}};
+    return x[31] ? ~x : (x ^ sign_mask);
+  endfunction
+
   function automatic int lsb_error(logic [127:0] expct, logic [127:0] act, int w);
-    int mask;
-    int e, a;
-    // Build a 32-bit mask with the lowest w bits set
-    mask = (w >= 32) ? 32'hFFFF_FFFF : ((1 << w) - 1);
-    // Take only the low 32 bits, then mask
-    e = int'($unsigned(expct[31:0])) & mask;
-    a = int'($unsigned(act[31:0])) & mask;
-    return abs_int(e - a);
+    logic [127:0] expct_ord, act_ord, diff;
+    logic [127:0] cap;
+
+    expct_ord = ulp_order_128(expct);
+    act_ord   = ulp_order_128(act);
+    diff      = (expct_ord >= act_ord) ? (expct_ord - act_ord) : (act_ord - expct_ord);
+    cap       = ulp_error_cap(w);
+
+    if (diff > cap) begin
+      return ulp_error_cap(w);
+    end
+
+    return int'(diff[30:0]);
   endfunction
 
   function automatic print_lsb_error(logic [127:0] expct, logic [127:0] act, int w);
-    int mask;
-    int e, a;
-    // Build a 32-bit mask with the lowest w bits set
-    mask = (w >= 32) ? 32'hFFFF_FFFF : ((1 << w) - 1);
-    // Take only the low 32 bits, then mask
-    e = int'($unsigned(expct[31:0])) & mask;
-    a = int'($unsigned(act[31:0])) & mask;
-    $display(">>>>> abs error:%d", abs_int(e - a));
+    $display(">>>>> abs error:%d", lsb_error(expct, act, w));
+
+    return 0;
   endfunction
 
   function automatic int lsb_error_64_lane(logic [63:0] expct, logic [63:0] act, int w);
-    int mask;
-    int e, a;
-    mask = (w >= 32) ? 32'hFFFF_FFFF : ((1 << w) - 1);
-    e = int'($unsigned(expct[31:0])) & mask;
-    a = int'($unsigned(act[31:0])) & mask;
-    return abs_int(e - a);
+    logic [63:0] expct_ord, act_ord, diff;
+    logic [63:0] cap;
+
+    expct_ord = ulp_order_64(expct);
+    act_ord   = ulp_order_64(act);
+    diff      = (expct_ord >= act_ord) ? (expct_ord - act_ord) : (act_ord - expct_ord);
+    cap       = ulp_error_cap(w);
+
+    if (diff > cap) begin
+      return ulp_error_cap(w);
+    end
+
+    return int'(diff[30:0]);
   endfunction
 
   function automatic int lsb_error_32_lane(logic [31:0] expct, logic [31:0] act, int w);
-    int mask;
-    int e, a;
-    mask = (w >= 32) ? 32'hFFFF_FFFF : ((1 << w) - 1);
-    e = int'($unsigned(expct)) & mask;  // already 32-bit wide
-    a = int'($unsigned(act))  & mask;
-    return abs_int(e - a);
+    logic [31:0] expct_ord, act_ord, diff;
+    logic [31:0] cap;
+
+    expct_ord = ulp_order_32(expct);
+    act_ord   = ulp_order_32(act);
+    diff      = (expct_ord >= act_ord) ? (expct_ord - act_ord) : (act_ord - expct_ord);
+    cap       = ulp_error_cap(w);
+
+    if (diff > cap) begin
+      return ulp_error_cap(w);
+    end
+
+    return int'(diff[30:0]);
   endfunction
 
   // Classifiers
@@ -543,7 +600,12 @@ module SPEX128_top_unit_test;
 
   // Wait latency cycles and check o_error==0
   task automatic await_and_check_no_error();
-    wait_n_ticks(LATENCY);
+    case (s_i_ctrl)
+      CTRL_SINGLE:  wait_n_ticks(LATENCY_128);
+      CTRL_TWO_SP:  wait_n_ticks(LATENCY_64);
+      CTRL_FOUR_SP: wait_n_ticks(LATENCY_32);
+      default:      wait_n_ticks(LATENCY);
+    endcase
     `FAIL_UNLESS(s_o_error == '0)
   endtask
 

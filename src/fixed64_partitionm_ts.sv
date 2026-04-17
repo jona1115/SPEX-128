@@ -1,20 +1,20 @@
 /********************************************************************
  * 
  * Originator   : Jonathan Tan
- * Date         : 11/7/2025
+ * Date         : 4/16/2026
  * 
  ********************************************************************
  * 
  * Description:
- * See fixed128_partitionf_ts.sv. This module is the same but
- * different bit index.
+ * Remaps the 64-bit Taylor-series m partition into a binary64 value
+ * with sign forced to 0 and exponent forced to 1023.
  * 
  ********************************************************************
  * 
  * Modification history:
- *       Ver   |  Who       |  Date	       |  Changes
+ *       Ver   |  Who       |  Date         |  Changes
  *     ------- + ---------- + ------------ + -----------------------
- *       1.00  |  Jonathan  |  11/7/2025   |  Birth of this file
+ *       1.00  |  Codex     |  4/16/2026    |  Birth of this file
  * 
  *******************************************************************/
 
@@ -30,8 +30,8 @@ import fixed128_pkg::*;
 import fixed64_pkg::*;
 import fixed32_pkg::*;
 
-module fixed64_partitionf_ts #(
-  parameter int MODULE_LATENCY        = 4, // This should match MODULE_LATENCY_64 in fixed_partition_sp.sv
+module fixed64_partitionm_ts #(
+  parameter int MODULE_LATENCY        = 9, // This should match MODULE_LATENCY_64 in fixed_partition_sp.sv
   parameter int DELAY_BUFFER_LATENCY  = MODULE_LATENCY - 1,
   
   parameter int NUM_BITS_128  = 128,
@@ -47,11 +47,10 @@ module fixed64_partitionf_ts #(
 
   // Metadata stuff
   input   var float_metadata_t                    i_metadata,
-  // output  float_metadata_t                        o_metadata,
 
   // Data
-  input   logic [26:0]                            i_f,
-  output  binary64_t                              o_exp_f,
+  input   logic [19:0]                            i_m,
+  output  binary64_t                              o_exp_m,
 
   // Handshake
   input   logic                                   i_valid,
@@ -66,27 +65,20 @@ module fixed64_partitionf_ts #(
 );
 
 //=====================================================================================
-// Signal definitions
-//=====================================================================================
-
-//=====================================================================================
 // Module Body
 //=====================================================================================
-binary64_t s_o_exp_f;
+binary64_t s_o_exp_m;
 always_ff @( posedge i_clk ) begin : blockhaha
   if (!i_rst_n) begin
-    s_o_exp_f <= '0;
+    s_o_exp_m <= '0;
   end
   else begin
     if (i_valid) begin
-      s_o_exp_f <= binary64_t'({1'b0, 15'h3FF/*1023*/, 26'b0, i_f[26:1]});
-    end // if (i_valid) begin
-  end // else begin
-end // always_ff
+      s_o_exp_m <= binary64_t'({1'b0, 11'h3FF/*1023*/, 33'b0, i_m[19:1]});
+    end
+  end
+end
 
-/**
- * Register for the valid bit
- */
 logic s_o_valid;
 always_ff @( posedge i_clk ) begin : valid_cit_register
   if (!i_rst_n) begin
@@ -100,58 +92,50 @@ always_ff @( posedge i_clk ) begin : valid_cit_register
       s_o_valid <= '0;
     end
   end
-end // always_ff
+end
 
-/**
- * db = delay buffer
- * We are delaying things to match the latency from fixed_partition_sp.sv
- */
-binary64_t  s_db_o_exp_f;
+binary64_t  s_db_o_exp_m;
 logic       s_db_o_valid;
 
 generate
   if (DELAY_BUFFER_LATENCY == 0) begin : db_bypass
     always_comb begin
-      s_db_o_exp_f = s_o_exp_f;
+      s_db_o_exp_m = s_o_exp_m;
       s_db_o_valid = s_o_valid;
     end
   end
   else begin : db_shift
-    binary64_t  s_db_o_exp_f_pipe [DELAY_BUFFER_LATENCY-1 : 0];
+    binary64_t  s_db_o_exp_m_pipe [DELAY_BUFFER_LATENCY-1 : 0];
     logic       s_db_o_valid_pipe [DELAY_BUFFER_LATENCY-1 : 0];
     int i;
 
     always_ff @( posedge i_clk ) begin : delayyyyy
       if (!i_rst_n) begin
-        s_db_o_exp_f_pipe <= '{default:'0};
+        s_db_o_exp_m_pipe <= '{default:'0};
         s_db_o_valid_pipe <= '{default:'0};
       end
       else begin
-        s_db_o_exp_f_pipe[0] <= s_o_exp_f;
+        s_db_o_exp_m_pipe[0] <= s_o_exp_m;
         s_db_o_valid_pipe[0] <= s_o_valid;
 
         for (i = 1; i < DELAY_BUFFER_LATENCY; i++) begin
-          s_db_o_exp_f_pipe[i] <= s_db_o_exp_f_pipe[i-1];
+          s_db_o_exp_m_pipe[i] <= s_db_o_exp_m_pipe[i-1];
           s_db_o_valid_pipe[i] <= s_db_o_valid_pipe[i-1];
         end
-      end // !i_rst_n else begin
-    end // delayyyyy
+      end
+    end
 
     always_comb begin
-      s_db_o_exp_f = s_db_o_exp_f_pipe[DELAY_BUFFER_LATENCY-1];
+      s_db_o_exp_m = s_db_o_exp_m_pipe[DELAY_BUFFER_LATENCY-1];
       s_db_o_valid = s_db_o_valid_pipe[DELAY_BUFFER_LATENCY-1];
     end
   end
 endgenerate
 
-//=====================================================================================
-// Final assignment
-//=====================================================================================
-// assign o_metadata = i_metadata;
-assign o_exp_f = s_db_o_exp_f;
+assign o_exp_m = s_db_o_exp_m;
 assign o_valid = s_db_o_valid;
 assign o_sanity_identifier = 4'b0000;
 assign o_error = '0;
 assign o_debug = '0;
 
-endmodule // module fixed64_partitionf_ts #()
+endmodule // module fixed64_partitionm_ts #()

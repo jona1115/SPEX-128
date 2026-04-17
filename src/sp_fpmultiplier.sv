@@ -1191,7 +1191,9 @@ always_ff @( posedge i_clk ) begin : stage4_pack_output
       end
       case (s_S3_metadata_anikin.sp_mode)
         SINGLE_MODE: begin
-          if (!(s_S3_metadata_anikin.float_type_a === ZERO || s_S3_metadata_force.float_type_a === ZERO) && 
+          if (!(s_S3_metadata_anikin.float_type_a === ZERO || s_S3_metadata_force.float_type_a === ZERO) &&
+              !((s_S3_metadata_anikin.float_type_a === POS_INF || s_S3_metadata_force.float_type_a === POS_INF) ||
+                (s_S3_metadata_anikin.float_type_a === NEG_INF || s_S3_metadata_force.float_type_a === NEG_INF)) &&
               ((s_S3_metadata_anikin.float_type_a === NAN || s_S3_metadata_force.float_type_a === NAN) ||
               (s_S3_128_jedi.exp === '1 && s_S3_128_potential_result[111:0] !== '0 && s_S3_128_potential_result[111:0] !== '1))) begin
             // If either is NaN, output will be NaN
@@ -1243,6 +1245,8 @@ always_ff @( posedge i_clk ) begin : stage4_pack_output
 
         TWO_SP_MODE: begin
           if (!(s_S3_metadata_anikin.float_type_a === ZERO || s_S3_metadata_force.float_type_a === ZERO) &&
+              !((s_S3_metadata_anikin.float_type_a === POS_INF || s_S3_metadata_force.float_type_a === POS_INF) ||
+                (s_S3_metadata_anikin.float_type_a === NEG_INF || s_S3_metadata_force.float_type_a === NEG_INF)) &&
               ((s_S3_metadata_anikin.float_type_a === NAN || s_S3_metadata_force.float_type_a === NAN) ||
               (s_S3_64a_jedi.exp === '1 && s_S3_64a_potential_result[51:0] !== '0 && s_S3_64a_potential_result[51:0] !== '1))) begin
             // If either is NaN, output will be NaN.
@@ -1292,6 +1296,8 @@ always_ff @( posedge i_clk ) begin : stage4_pack_output
           end
 
           if (!(s_S3_metadata_anikin.float_type_b === ZERO || s_S3_metadata_force.float_type_b === ZERO) &&
+              !((s_S3_metadata_anikin.float_type_b === POS_INF || s_S3_metadata_force.float_type_b === POS_INF) ||
+                (s_S3_metadata_anikin.float_type_b === NEG_INF || s_S3_metadata_force.float_type_b === NEG_INF)) &&
               ((s_S3_metadata_anikin.float_type_b === NAN || s_S3_metadata_force.float_type_b === NAN) ||
               (s_S3_64b_jedi.exp === '1 && s_S3_64b_potential_result[51:0] !== '0 && s_S3_64b_potential_result[51:0] !== '1))) begin
             // If either is NaN, output will be NaN
@@ -1343,6 +1349,8 @@ always_ff @( posedge i_clk ) begin : stage4_pack_output
 
         FOUR_SP_MODE: begin
           if (!(s_S3_metadata_anikin.float_type_a === ZERO || s_S3_metadata_force.float_type_a === ZERO) &&
+              !((s_S3_metadata_anikin.float_type_a === POS_INF || s_S3_metadata_force.float_type_a === POS_INF) ||
+                (s_S3_metadata_anikin.float_type_a === NEG_INF || s_S3_metadata_force.float_type_a === NEG_INF)) &&
               ((s_S3_metadata_anikin.float_type_a === NAN || s_S3_metadata_force.float_type_a === NAN) ||
               (s_S3_32a_jedi.exp === '1 && s_S3_32a_potential_result[22:0] !== '0 && s_S3_32a_potential_result[22:0] !== '1))) begin
             // If either is NaN, output will be NaN
@@ -1393,6 +1401,8 @@ always_ff @( posedge i_clk ) begin : stage4_pack_output
 
 
           if (!(s_S3_metadata_anikin.float_type_b === ZERO || s_S3_metadata_force.float_type_b === ZERO) &&
+              !((s_S3_metadata_anikin.float_type_b === POS_INF || s_S3_metadata_force.float_type_b === POS_INF) ||
+                (s_S3_metadata_anikin.float_type_b === NEG_INF || s_S3_metadata_force.float_type_b === NEG_INF)) &&
               ((s_S3_metadata_anikin.float_type_b === NAN || s_S3_metadata_force.float_type_b === NAN) ||
               (s_S3_32b_jedi.exp === '1 && s_S3_32b_potential_result[22:0] !== '0 && s_S3_32b_potential_result[22:0] !== '1))) begin
             // If either is NaN, output will be NaN
@@ -1443,6 +1453,8 @@ always_ff @( posedge i_clk ) begin : stage4_pack_output
 
 
           if (!(s_S3_metadata_anikin.float_type_c === ZERO || s_S3_metadata_force.float_type_c === ZERO) &&
+              !((s_S3_metadata_anikin.float_type_c === POS_INF || s_S3_metadata_force.float_type_c === POS_INF) ||
+                (s_S3_metadata_anikin.float_type_c === NEG_INF || s_S3_metadata_force.float_type_c === NEG_INF)) &&
               ((s_S3_metadata_anikin.float_type_c === NAN || s_S3_metadata_force.float_type_c === NAN) ||
               (s_S3_32c_jedi.exp === '1 && s_S3_32c_potential_result[22:0] !== '0 && s_S3_32c_potential_result[22:0] !== '1))) begin
             // If either is NaN, output will be NaN
@@ -1493,6 +1505,8 @@ always_ff @( posedge i_clk ) begin : stage4_pack_output
 
           
           if (!(s_S3_metadata_anikin.float_type_d === ZERO || s_S3_metadata_force.float_type_d === ZERO) &&
+              !((s_S3_metadata_anikin.float_type_d === POS_INF || s_S3_metadata_force.float_type_d === POS_INF) ||
+                (s_S3_metadata_anikin.float_type_d === NEG_INF || s_S3_metadata_force.float_type_d === NEG_INF)) &&
               ((s_S3_metadata_anikin.float_type_d === NAN || s_S3_metadata_force.float_type_d === NAN) ||
               (s_S3_32d_jedi.exp === '1 && s_S3_32d_potential_result[22:0] !== '0 && s_S3_32d_potential_result[22:0] !== '1))) begin
             // If either is NaN, output will be NaN

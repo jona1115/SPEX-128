@@ -87,9 +87,9 @@ module SPEX128_top #(
   binary32_t        ds_my_fixed_partition_sp_par_c_exp_32d,
   binary128_t       ds_my_fixed_partition_sp_par_d_exp_a128,
   binary128_t       ds_my_fixed_partition_sp_par_e_exp_a128,
-  binary128_t       ds_my_fixed128_partitionf_ts_exp_f128,
-  binary64_t        ds_my_fixed64_partitionf_ts_a_exp_f64a,
-  binary64_t        ds_my_fixed64_partitionf_ts_b_exp_f64b,
+  binary128_t       ds_my_fixed128_partitionm_ts_exp,
+  binary64_t        ds_my_fixed64_partitionm_ts_a_exp_f64a,
+  binary64_t        ds_my_fixed64_partitionm_ts_b_exp_f64b,
   logic [127:0]     ds_mux_0,
   logic [127:0]     ds_mux_1,
   logic [127:0]     ds_mux_2,
@@ -98,8 +98,10 @@ module SPEX128_top #(
   logic [127:0]     ds_my_sp_fpmultiplier_1_jedi,
   logic [127:0]     ds_my_sp_fpmultiplier_2_jedi,
   logic [127:0]     ds_mux_4,
+  logic [127:0]     ds_mux_5,
   logic [127:0]     ds_my_sp_fpmultiplier_3_jedi,
   logic [127:0]     ds_my_sp_fpmultiplier_4_jedi,
+  logic [127:0]     ds_my_sp_fpmultiplier_5_jedi,
   logic [127:0]     ds_mul3_final_out,
   logic [127:0]     ds_mul4_final_out,
 
@@ -128,9 +130,9 @@ module SPEX128_top #(
   logic             ds_my_fixed_partition_sp_par_c_o_valid32d,
   logic             ds_my_fixed_partition_sp_par_d_o_valid128,
   logic             ds_my_fixed_partition_sp_par_e_o_valid128,
-  logic             ds_my_fixed128_partitionf_ts_o_valid,
-  logic             ds_my_fixed64_partitionf_ts_a_o_valid,
-  logic             ds_my_fixed64_partitionf_ts_b_o_valid,
+  logic             ds_my_fixed128_partitionm_ts_o_valid,
+  logic             ds_my_fixed64_partitionm_ts_a_o_valid,
+  logic             ds_my_fixed64_partitionm_ts_b_o_valid,
   logic             ds_my_sp_fpmultiplier_0_valid128_jedi,
   logic             ds_my_sp_fpmultiplier_0_valid64a_jedi,
   logic             ds_my_sp_fpmultiplier_0_valid64b_jedi,
@@ -314,9 +316,9 @@ logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed_partition_sp_par_b_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed_partition_sp_par_b_debug;
 fixed_partition_sp #(
   .HAS_SIGN(1'b0),
-  .ADDR_BITS_128(13),
-  .ADDR_BITS_64(13),
-  .ADDR_BITS_32(13),
+  .ADDR_BITS_128(11),
+  .ADDR_BITS_64(11),
+  .ADDR_BITS_32(11),
 `ifdef USE_DEDICATED_LUT_FOR_LANE_CD
   .USE_DEDICATED_32_FOR_CD(1'b1),
 `endif
@@ -343,13 +345,13 @@ fixed_partition_sp #(
   .i_rst_n(i_rst_n),
   .i_metadata(s_my_float_to_fixed_metadata),
   .o_metadata(s_my_fixed_partition_sp_par_b_metadata),
-  .i_lane_128(s_my_float_to_fixed_fixed[116:104]),
-  .i_lane_64a(s_my_float_to_fixed_fixed[116:104]),
-  .i_lane_64b(s_my_float_to_fixed_fixed[52:40]),
-  .i_lane_32a(s_my_float_to_fixed_fixed[116:104]),
-  .i_lane_32b(s_my_float_to_fixed_fixed[84:72]),
-  .i_lane_32c(s_my_float_to_fixed_fixed[52:40]),
-  .i_lane_32d(s_my_float_to_fixed_fixed[20:8]),
+  .i_lane_128(s_my_float_to_fixed_fixed[116:106]),
+  .i_lane_64a(s_my_float_to_fixed_fixed[116:106]),
+  .i_lane_64b(s_my_float_to_fixed_fixed[52:42]),
+  .i_lane_32a(s_my_float_to_fixed_fixed[116:106]),
+  .i_lane_32b(s_my_float_to_fixed_fixed[84:74]),
+  .i_lane_32c(s_my_float_to_fixed_fixed[52:42]),
+  .i_lane_32d(s_my_float_to_fixed_fixed[20:10]),
   .o_exp_a128(s_my_fixed_partition_sp_par_b_exp_a128),
   .o_exp_64a(s_my_fixed_partition_sp_par_b_exp_64a),
   .o_exp_64b(s_my_fixed_partition_sp_par_b_exp_64b),
@@ -397,9 +399,9 @@ logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed_partition_sp_par_c_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed_partition_sp_par_c_debug;
 fixed_partition_sp #(
   .HAS_SIGN(1'b0),
-  .ADDR_BITS_128(13),
-  .ADDR_BITS_64(13),
-  .ADDR_BITS_32(11),
+  .ADDR_BITS_128(10),
+  .ADDR_BITS_64(10),
+  .ADDR_BITS_32(10),
 `ifdef USE_DEDICATED_LUT_FOR_LANE_CD
   .USE_DEDICATED_32_FOR_CD(1'b1),
 `endif
@@ -426,13 +428,13 @@ fixed_partition_sp #(
   .i_rst_n(i_rst_n),
   .i_metadata(s_my_float_to_fixed_metadata),
   .o_metadata(s_my_fixed_partition_sp_par_c_metadata),
-  .i_lane_128(s_my_float_to_fixed_fixed[103:91]),
-  .i_lane_64a(s_my_float_to_fixed_fixed[103:91]),
-  .i_lane_64b(s_my_float_to_fixed_fixed[39:27]),
-  .i_lane_32a(s_my_float_to_fixed_fixed[106:96]),
-  .i_lane_32b(s_my_float_to_fixed_fixed[74:64]),
-  .i_lane_32c(s_my_float_to_fixed_fixed[42:32]),
-  .i_lane_32d(s_my_float_to_fixed_fixed[10:0]),
+  .i_lane_128(s_my_float_to_fixed_fixed[105:96]),
+  .i_lane_64a(s_my_float_to_fixed_fixed[105:96]),
+  .i_lane_64b(s_my_float_to_fixed_fixed[41:32]),
+  .i_lane_32a(s_my_float_to_fixed_fixed[105:96]),
+  .i_lane_32b(s_my_float_to_fixed_fixed[73:64]),
+  .i_lane_32c(s_my_float_to_fixed_fixed[41:32]),
+  .i_lane_32d(s_my_float_to_fixed_fixed[9:0]),
   .o_exp_a128(s_my_fixed_partition_sp_par_c_exp_a128),
   .o_exp_64a(s_my_fixed_partition_sp_par_c_exp_64a),
   .o_exp_64b(s_my_fixed_partition_sp_par_c_exp_64b),
@@ -459,8 +461,8 @@ fixed_partition_sp #(
   .o_debug(s_my_fixed_partition_sp_par_c_debug)
 );
 
-logic             unused_my_fixed_partition_sp_par_d_0,
-                  unused_my_fixed_partition_sp_par_d_1,
+logic             s_my_fixed_partition_sp_par_d_o_valid64a,
+                  s_my_fixed_partition_sp_par_d_o_valid64b,
                   unused_my_fixed_partition_sp_par_d_2,
                   unused_my_fixed_partition_sp_par_d_3,
                   unused_my_fixed_partition_sp_par_d_4,
@@ -473,6 +475,8 @@ binary32_t        unused_my_fixed_partition_sp_par_d_32_0,
                   unused_my_fixed_partition_sp_par_d_32_3;
 float_metadata_t  s_my_fixed_partition_sp_par_d_metadata;
 binary128_t       s_my_fixed_partition_sp_par_d_exp_a128;
+binary64_t        s_my_fixed_partition_sp_par_d_exp_64a;
+binary64_t        s_my_fixed_partition_sp_par_d_exp_64b;
 logic             s_my_fixed_partition_sp_par_d_o_valid128;
 // Metadata
 logic [3:0] s_my_fixed_partition_sp_par_d_identifier;
@@ -480,41 +484,46 @@ logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed_partition_sp_par_d_error;
 logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed_partition_sp_par_d_debug;
 fixed_partition_sp #(
   .HAS_SIGN(1'b0),
+  .ADDR_BITS_128(12),
+  .ADDR_BITS_64(12),
+  .ENABLE_64(1'b1),
+`ifdef NAIVE_L2
   .USE_128_FOR_64(1'b0),
-  .USE_128_FOR_32(1'b0),
-  .ENABLE_64(1'b0),
-  .ENABLE_32(1'b0),
-  .ADDR_BITS_128(13),
+  .INIT_128_FILE({"fixed128_d_partition.", `SPEX_RAM_EXT}),
+  .INIT_64_FILE({"fixed64_d_partition.", `SPEX_RAM_EXT}),
+`else
+  .USE_128_FOR_64(1'b1),
   .INIT_128_FILE({"fixed128_d_partition.", `SPEX_RAM_EXT})
+`endif
 ) my_fixed_partition_sp_par_d (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
   .i_metadata(s_my_float_to_fixed_metadata),
   .o_metadata(s_my_fixed_partition_sp_par_d_metadata),
-  .i_lane_128(s_my_float_to_fixed_fixed[90:78]),
-  .i_lane_64a('0),
-  .i_lane_64b('0),
+  .i_lane_128(s_my_float_to_fixed_fixed[95:84]),
+  .i_lane_64a(s_my_float_to_fixed_fixed[95:84]),
+  .i_lane_64b(s_my_float_to_fixed_fixed[31:20]),
   .i_lane_32a('0),
   .i_lane_32b('0),
   .i_lane_32c('0),
   .i_lane_32d('0),
   .o_exp_a128(s_my_fixed_partition_sp_par_d_exp_a128),
-  .o_exp_64a(unused_my_fixed_partition_sp_par_d_64_0),
-  .o_exp_64b(unused_my_fixed_partition_sp_par_d_64_1),
+  .o_exp_64a(s_my_fixed_partition_sp_par_d_exp_64a),
+  .o_exp_64b(s_my_fixed_partition_sp_par_d_exp_64b),
   .o_exp_32a(unused_my_fixed_partition_sp_par_d_32_0),
   .o_exp_32b(unused_my_fixed_partition_sp_par_d_32_1),
   .o_exp_32c(unused_my_fixed_partition_sp_par_d_32_2),
   .o_exp_32d(unused_my_fixed_partition_sp_par_d_32_3),
   .i_valid128(s_my_float_to_fixed_o_valid),
-  .i_valid64a('0),
-  .i_valid64b('0),
+  .i_valid64a(s_my_float_to_fixed_o_valid),
+  .i_valid64b(s_my_float_to_fixed_o_valid),
   .i_valid32a('0),
   .i_valid32b('0),
   .i_valid32c('0),
   .i_valid32d('0),
   .o_valid128(s_my_fixed_partition_sp_par_d_o_valid128),
-  .o_valid64a(unused_my_fixed_partition_sp_par_d_0),
-  .o_valid64b(unused_my_fixed_partition_sp_par_d_1),
+  .o_valid64a(s_my_fixed_partition_sp_par_d_o_valid64a),
+  .o_valid64b(s_my_fixed_partition_sp_par_d_o_valid64b),
   .o_valid32a(unused_my_fixed_partition_sp_par_d_2),
   .o_valid32b(unused_my_fixed_partition_sp_par_d_3),
   .o_valid32c(unused_my_fixed_partition_sp_par_d_4),
@@ -549,14 +558,14 @@ fixed_partition_sp #(
   .USE_128_FOR_32(1'b0),
   .ENABLE_64(1'b0),
   .ENABLE_32(1'b0),
-  .ADDR_BITS_128(13),
+  .ADDR_BITS_128(12),
   .INIT_128_FILE({"fixed128_e_partition.", `SPEX_RAM_EXT})
 ) my_fixed_partition_sp_par_e (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
   .i_metadata(s_my_float_to_fixed_metadata),
   .o_metadata(s_my_fixed_partition_sp_par_e_metadata),
-  .i_lane_128(s_my_float_to_fixed_fixed[77:65]),
+  .i_lane_128(s_my_float_to_fixed_fixed[83:72]),
   .i_lane_64a('0),
   .i_lane_64b('0),
   .i_lane_32a('0),
@@ -589,61 +598,126 @@ fixed_partition_sp #(
   .o_debug(s_my_fixed_partition_sp_par_e_debug)
 );
 
-binary128_t s_my_fixed128_partitionf_ts_exp_f128;
-logic       s_my_fixed128_partitionf_ts_o_valid;
+logic             unused_my_fixed_partition_sp_par_f_0,
+                  unused_my_fixed_partition_sp_par_f_1,
+                  unused_my_fixed_partition_sp_par_f_2,
+                  unused_my_fixed_partition_sp_par_f_3,
+                  unused_my_fixed_partition_sp_par_f_4,
+                  unused_my_fixed_partition_sp_par_f_5;
+binary64_t        unused_my_fixed_partition_sp_par_f_64_0,
+                  unused_my_fixed_partition_sp_par_f_64_1;
+binary32_t        unused_my_fixed_partition_sp_par_f_32_0,
+                  unused_my_fixed_partition_sp_par_f_32_1,
+                  unused_my_fixed_partition_sp_par_f_32_2,
+                  unused_my_fixed_partition_sp_par_f_32_3;
+float_metadata_t  s_my_fixed_partition_sp_par_f_metadata;
+binary128_t       s_my_fixed_partition_sp_par_f_exp_a128;
+logic             s_my_fixed_partition_sp_par_f_o_valid128;
 // Metadata
-logic [3:0] s_my_fixed128_partitionf_ts_identifier;
-logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed128_partitionf_ts_error;
-logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed128_partitionf_ts_debug;
-fixed128_partitionf_ts #() my_fixed128_partitionf_ts (
+logic [3:0] s_my_fixed_partition_sp_par_f_identifier;
+logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed_partition_sp_par_f_error;
+logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed_partition_sp_par_f_debug;
+fixed_partition_sp #(
+  .HAS_SIGN(1'b0),
+  .USE_128_FOR_64(1'b0),
+  .USE_128_FOR_32(1'b0),
+  .ENABLE_64(1'b0),
+  .ENABLE_32(1'b0),
+  .ADDR_BITS_128(12),
+  .INIT_128_FILE({"fixed128_f_partition.", `SPEX_RAM_EXT})
+) my_fixed_partition_sp_par_f (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
   .i_metadata(s_my_float_to_fixed_metadata),
-  .i_f(s_my_float_to_fixed_fixed[64:0]),
-  .o_exp_f(s_my_fixed128_partitionf_ts_exp_f128),
-  .i_valid(s_my_float_to_fixed_o_valid),
-  .o_valid(s_my_fixed128_partitionf_ts_o_valid),
-  .o_sanity_identifier(s_my_fixed128_partitionf_ts_identifier),
-  .o_error(s_my_fixed128_partitionf_ts_error),
-  .o_debug(s_my_fixed128_partitionf_ts_debug)
+  .o_metadata(s_my_fixed_partition_sp_par_f_metadata),
+  .i_lane_128(s_my_float_to_fixed_fixed[71:60]),
+  .i_lane_64a('0),
+  .i_lane_64b('0),
+  .i_lane_32a('0),
+  .i_lane_32b('0),
+  .i_lane_32c('0),
+  .i_lane_32d('0),
+  .o_exp_a128(s_my_fixed_partition_sp_par_f_exp_a128),
+  .o_exp_64a(unused_my_fixed_partition_sp_par_f_64_0),
+  .o_exp_64b(unused_my_fixed_partition_sp_par_f_64_1),
+  .o_exp_32a(unused_my_fixed_partition_sp_par_f_32_0),
+  .o_exp_32b(unused_my_fixed_partition_sp_par_f_32_1),
+  .o_exp_32c(unused_my_fixed_partition_sp_par_f_32_2),
+  .o_exp_32d(unused_my_fixed_partition_sp_par_f_32_3),
+  .i_valid128(s_my_float_to_fixed_o_valid),
+  .i_valid64a('0),
+  .i_valid64b('0),
+  .i_valid32a('0),
+  .i_valid32b('0),
+  .i_valid32c('0),
+  .i_valid32d('0),
+  .o_valid128(s_my_fixed_partition_sp_par_f_o_valid128),
+  .o_valid64a(unused_my_fixed_partition_sp_par_f_0),
+  .o_valid64b(unused_my_fixed_partition_sp_par_f_1),
+  .o_valid32a(unused_my_fixed_partition_sp_par_f_2),
+  .o_valid32b(unused_my_fixed_partition_sp_par_f_3),
+  .o_valid32c(unused_my_fixed_partition_sp_par_f_4),
+  .o_valid32d(unused_my_fixed_partition_sp_par_f_5),
+  .o_sanity_identifier(s_my_fixed_partition_sp_par_f_identifier),
+  .o_error(s_my_fixed_partition_sp_par_f_error),
+  .o_debug(s_my_fixed_partition_sp_par_f_debug)
 );
 
-binary64_t  s_my_fixed64_partitionf_ts_a_exp_f64a;
-logic       s_my_fixed64_partitionf_ts_a_o_valid;
+binary128_t s_my_fixed128_partitionm_ts_exp;
+logic       s_my_fixed128_partitionm_ts_o_valid;
 // Metadata
-logic [3:0] s_my_fixed64_partitionf_ts_a_identifier;
-logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed64_partitionf_ts_a_error;
-logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed64_partitionf_ts_a_debug;
-fixed64_partitionf_ts #() my_fixed64_partitionf_ts_a (
+logic [3:0] s_my_fixed128_partitionm_ts_identifier;
+logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed128_partitionm_ts_error;
+logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed128_partitionm_ts_debug;
+fixed128_partitionm_ts #() my_fixed128_partitionm_ts (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
   .i_metadata(s_my_float_to_fixed_metadata),
-  .i_f(s_my_float_to_fixed_fixed[90:64]),
-  .o_exp_f(s_my_fixed64_partitionf_ts_a_exp_f64a),
+  .i_m(s_my_float_to_fixed_fixed[59:0]),
+  .o_exp_m(s_my_fixed128_partitionm_ts_exp),
   .i_valid(s_my_float_to_fixed_o_valid),
-  .o_valid(s_my_fixed64_partitionf_ts_a_o_valid),
-  .o_sanity_identifier(s_my_fixed64_partitionf_ts_a_identifier),
-  .o_error(s_my_fixed64_partitionf_ts_a_error),
-  .o_debug(s_my_fixed64_partitionf_ts_a_debug)
+  .o_valid(s_my_fixed128_partitionm_ts_o_valid),
+  .o_sanity_identifier(s_my_fixed128_partitionm_ts_identifier),
+  .o_error(s_my_fixed128_partitionm_ts_error),
+  .o_debug(s_my_fixed128_partitionm_ts_debug)
 );
 
-binary64_t  s_my_fixed64_partitionf_ts_b_exp_f64b;
-logic       s_my_fixed64_partitionf_ts_b_o_valid;
+binary64_t  s_my_fixed64_partitionm_ts_a_exp_f64a;
+logic       s_my_fixed64_partitionm_ts_a_o_valid;
 // Metadata
-logic [3:0] s_my_fixed64_partitionf_ts_b_identifier;
-logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed64_partitionf_ts_b_error;
-logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed64_partitionf_ts_b_debug;
-fixed64_partitionf_ts #() my_fixed64_partitionf_ts_b (
+logic [3:0] s_my_fixed64_partitionm_ts_a_identifier;
+logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed64_partitionm_ts_a_error;
+logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed64_partitionm_ts_a_debug;
+fixed64_partitionm_ts #() my_fixed64_partitionm_ts_a (
   .i_clk(i_clk),
   .i_rst_n(i_rst_n),
   .i_metadata(s_my_float_to_fixed_metadata),
-  .i_f(s_my_float_to_fixed_fixed[26:0]),
-  .o_exp_f(s_my_fixed64_partitionf_ts_b_exp_f64b),
+  .i_m(s_my_float_to_fixed_fixed[83:64]),
+  .o_exp_m(s_my_fixed64_partitionm_ts_a_exp_f64a),
   .i_valid(s_my_float_to_fixed_o_valid),
-  .o_valid(s_my_fixed64_partitionf_ts_b_o_valid),
-  .o_sanity_identifier(s_my_fixed64_partitionf_ts_b_identifier),
-  .o_error(s_my_fixed64_partitionf_ts_b_error),
-  .o_debug(s_my_fixed64_partitionf_ts_b_debug)
+  .o_valid(s_my_fixed64_partitionm_ts_a_o_valid),
+  .o_sanity_identifier(s_my_fixed64_partitionm_ts_a_identifier),
+  .o_error(s_my_fixed64_partitionm_ts_a_error),
+  .o_debug(s_my_fixed64_partitionm_ts_a_debug)
+);
+
+binary64_t  s_my_fixed64_partitionm_ts_b_exp_f64b;
+logic       s_my_fixed64_partitionm_ts_b_o_valid;
+// Metadata
+logic [3:0] s_my_fixed64_partitionm_ts_b_identifier;
+logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_fixed64_partitionm_ts_b_error;
+logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_fixed64_partitionm_ts_b_debug;
+fixed64_partitionm_ts #() my_fixed64_partitionm_ts_b (
+  .i_clk(i_clk),
+  .i_rst_n(i_rst_n),
+  .i_metadata(s_my_float_to_fixed_metadata),
+  .i_m(s_my_float_to_fixed_fixed[19:0]),
+  .o_exp_m(s_my_fixed64_partitionm_ts_b_exp_f64b),
+  .i_valid(s_my_float_to_fixed_o_valid),
+  .o_valid(s_my_fixed64_partitionm_ts_b_o_valid),
+  .o_sanity_identifier(s_my_fixed64_partitionm_ts_b_identifier),
+  .o_error(s_my_fixed64_partitionm_ts_b_error),
+  .o_debug(s_my_fixed64_partitionm_ts_b_debug)
 );
 
 
@@ -666,11 +740,11 @@ end // always_ff
  * Level 3
  * 
  *****************************************************************/
-`define S (s_level2_metadata.sp_mode) // todo give this macro a better name
+`define THESPMODE (s_level2_metadata.sp_mode)
 logic [127:0] s_mux_0;
 logic         s_mux_0_valid;
 always_comb begin : mux_0
-  case (`S)
+  case (`THESPMODE)
     SINGLE_MODE: begin
       s_mux_0       = s_my_fixed_partition_sp_par_a_exp_a128;
       s_mux_0_valid = s_my_fixed_partition_sp_par_a_o_valid128;
@@ -704,7 +778,7 @@ end
 logic [127:0] s_mux_1;
 logic         s_mux_1_valid;
 always_comb begin : mux_1
-  case (`S)
+  case (`THESPMODE)
     SINGLE_MODE: begin
       s_mux_1       = s_my_fixed_partition_sp_par_b_exp_a128;
       s_mux_1_valid = s_my_fixed_partition_sp_par_b_o_valid128;
@@ -738,7 +812,7 @@ end
 logic [127:0] s_mux_2;
 logic         s_mux_2_valid;
 always_comb begin : mux_2
-  case (`S)
+  case (`THESPMODE)
     SINGLE_MODE: begin
       s_mux_2       = s_my_fixed_partition_sp_par_c_exp_a128;
       s_mux_2_valid = s_my_fixed_partition_sp_par_c_o_valid128;
@@ -761,17 +835,17 @@ end
 logic [127:0] s_mux_3;
 logic         s_mux_3_valid;
 always_comb begin : mux_3
-  case (`S)
+  case (`THESPMODE)
     SINGLE_MODE: begin
       s_mux_3       = s_my_fixed_partition_sp_par_d_exp_a128;
       s_mux_3_valid = s_my_fixed_partition_sp_par_d_o_valid128;
     end // SINGLE_MODE
 
     TWO_SP_MODE: begin
-      s_mux_3       = {s_my_fixed64_partitionf_ts_a_exp_f64a, 
-                       s_my_fixed64_partitionf_ts_b_exp_f64b};
-      s_mux_3_valid = s_my_fixed64_partitionf_ts_a_o_valid &
-                      s_my_fixed64_partitionf_ts_b_o_valid;
+      s_mux_3       = {s_my_fixed_partition_sp_par_d_exp_64a,
+                       s_my_fixed_partition_sp_par_d_exp_64b};
+      s_mux_3_valid = s_my_fixed_partition_sp_par_d_o_valid64a &
+                      s_my_fixed_partition_sp_par_d_o_valid64b;
     end // TWO_SP_MODE
 
     default: begin
@@ -908,10 +982,10 @@ sp_fpmultiplier #(
   .i_metadata(s_level2_metadata),
   .o_metadata(unused_metadata_2/*not like it is useful anyway*/),
   .i_in_anikin(s_my_fixed_partition_sp_par_e_exp_a128),
-  .i_in_force(s_my_fixed128_partitionf_ts_exp_f128),
+  .i_in_force(s_my_fixed_partition_sp_par_f_exp_a128),
   .o_out_jedi(s_my_sp_fpmultiplier_2_jedi),
   .i_valid128_anikin(s_my_fixed_partition_sp_par_e_o_valid128),
-  .i_valid128_force(s_my_fixed128_partitionf_ts_o_valid),
+  .i_valid128_force(s_my_fixed_partition_sp_par_f_o_valid128),
   .i_valid64a_anikin('0),
   .i_valid64a_force('0),
   .i_valid64b_anikin('0),
@@ -936,74 +1010,10 @@ sp_fpmultiplier #(
   .o_debug(s_my_sp_fpmultiplier_2_debug)
 );
 
-logic [127:0] s_mul2_for_mul4_pipe [SP_FPMULTIPLIER_MODULE_LATENCY-1:0];
-logic         s_mul2_for_mul4_valid_pipe [SP_FPMULTIPLIER_MODULE_LATENCY-1:0];
-logic [127:0] s_mul2_for_mul4_aligned;
-logic         s_mul2_for_mul4_valid_aligned;
-
-// SINGLE_MODE reaches mul4 through mul0/mul1 -> mul3 on one side and only mul2 on the
-// other, so delay mul2 by one multiplier latency before feeding the final multiply.
-always_ff @(posedge i_clk) begin : mul2_for_mul4_align
-  int i;
-  if (!i_rst_n) begin
-    s_mul2_for_mul4_pipe <= '{default:'0};
-    s_mul2_for_mul4_valid_pipe <= '{default:'0};
-  end
-  else begin
-    s_mul2_for_mul4_pipe[0] <= s_my_sp_fpmultiplier_2_jedi;
-    s_mul2_for_mul4_valid_pipe[0] <= s_my_sp_fpmultiplier_2_valid128_jedi;
-
-    for (i = 1; i < SP_FPMULTIPLIER_MODULE_LATENCY; i++) begin
-      s_mul2_for_mul4_pipe[i] <= s_mul2_for_mul4_pipe[i-1];
-      s_mul2_for_mul4_valid_pipe[i] <= s_mul2_for_mul4_valid_pipe[i-1];
-    end
-  end
-end
-
-assign s_mul2_for_mul4_aligned = s_mul2_for_mul4_pipe[SP_FPMULTIPLIER_MODULE_LATENCY-1];
-assign s_mul2_for_mul4_valid_aligned = s_mul2_for_mul4_valid_pipe[SP_FPMULTIPLIER_MODULE_LATENCY-1];
-
 logic [127:0] s_mux_4;
 logic         s_mux_4_valid;
-logic [127:0] s_mux_4_foursp_raw;
-logic         s_mux_4_foursp_valid_raw;
-logic [127:0] s_mux_4_foursp_pipe [SP_FPMULTIPLIER_MODULE_LATENCY-1:0];
-logic         s_mux_4_foursp_valid_pipe [SP_FPMULTIPLIER_MODULE_LATENCY-1:0];
-logic [127:0] s_mux_4_foursp_aligned;
-logic         s_mux_4_foursp_valid_aligned;
-
-assign s_mux_4_foursp_raw = {s_my_fixed_partition_sp_par_c_exp_32a,
-                             s_my_fixed_partition_sp_par_c_exp_32b,
-                             s_my_fixed_partition_sp_par_c_exp_32c,
-                             s_my_fixed_partition_sp_par_c_exp_32d};
-assign s_mux_4_foursp_valid_raw = s_my_fixed_partition_sp_par_c_o_valid32a &
-                                  s_my_fixed_partition_sp_par_c_o_valid32b &
-                                  s_my_fixed_partition_sp_par_c_o_valid32c &
-                                  s_my_fixed_partition_sp_par_c_o_valid32d;
-
-// FOUR_SP bypasses multiplier_1, so delay partition-c by the bypassed multiplier latency.
-always_ff @(posedge i_clk) begin : mux_4_foursp_align
-  int i;
-  if (!i_rst_n) begin
-    s_mux_4_foursp_pipe <= '{default:'0};
-    s_mux_4_foursp_valid_pipe <= '{default:'0};
-  end
-  else begin
-    s_mux_4_foursp_pipe[0] <= s_mux_4_foursp_raw;
-    s_mux_4_foursp_valid_pipe[0] <= s_mux_4_foursp_valid_raw;
-
-    for (i = 1; i < SP_FPMULTIPLIER_MODULE_LATENCY; i++) begin
-      s_mux_4_foursp_pipe[i] <= s_mux_4_foursp_pipe[i-1];
-      s_mux_4_foursp_valid_pipe[i] <= s_mux_4_foursp_valid_pipe[i-1];
-    end
-  end
-end
-
-assign s_mux_4_foursp_aligned = s_mux_4_foursp_pipe[SP_FPMULTIPLIER_MODULE_LATENCY-1];
-assign s_mux_4_foursp_valid_aligned = s_mux_4_foursp_valid_pipe[SP_FPMULTIPLIER_MODULE_LATENCY-1];
-
 always_comb begin : mux_4
-  case (`S)
+  case (`THESPMODE)
     SINGLE_MODE: begin
       s_mux_4       = s_my_sp_fpmultiplier_1_jedi;
       s_mux_4_valid = s_my_sp_fpmultiplier_1_valid128_jedi;
@@ -1016,9 +1026,16 @@ always_comb begin : mux_4
     end // TWO_SP_MODE
 
     FOUR_SP_MODE: begin
-      s_mux_4       = s_mux_4_foursp_aligned;
-      s_mux_4_valid = s_mux_4_foursp_valid_aligned;
-
+      s_mux_4       = {
+                        s_my_fixed_partition_sp_par_c_exp_32a,
+                        s_my_fixed_partition_sp_par_c_exp_32b,
+                        s_my_fixed_partition_sp_par_c_exp_32c,
+                        s_my_fixed_partition_sp_par_c_exp_32d
+                      };
+      s_mux_4_valid = s_my_fixed_partition_sp_par_c_o_valid32a &
+                      s_my_fixed_partition_sp_par_c_o_valid32b &
+                      s_my_fixed_partition_sp_par_c_o_valid32c &
+                      s_my_fixed_partition_sp_par_c_o_valid32d;
     end
 
     default: begin
@@ -1080,6 +1097,146 @@ sp_fpmultiplier #(
   .o_debug(s_my_sp_fpmultiplier_3_debug)
 );
 
+float_metadata_t unused_metadata_5;
+logic [127:0] s_my_sp_fpmultiplier_5_jedi;
+logic s_my_sp_fpmultiplier_5_valid128_jedi;
+logic s_my_sp_fpmultiplier_5_valid64a_jedi;
+logic s_my_sp_fpmultiplier_5_valid64b_jedi;
+logic s_my_sp_fpmultiplier_5_valid32a_jedi;
+logic s_my_sp_fpmultiplier_5_valid32b_jedi;
+logic s_my_sp_fpmultiplier_5_valid32c_jedi;
+logic s_my_sp_fpmultiplier_5_valid32d_jedi;
+// Metadata
+logic [3:0] s_my_sp_fpmultiplier_5_identifier;
+logic [ERROR_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_5_error;
+logic [DEBUG_SIGNAL_NUM_BITS-1:0] s_my_sp_fpmultiplier_5_debug;
+logic unused_mul5_1, unused_mul5_2, unused_mul5_3, unused_mul5_4, unused_mul5_5, unused_mul5_6;
+binary128_t s_single_m_for_mul5_pipe [SP_FPMULTIPLIER_MODULE_LATENCY-1:0];
+logic       s_single_m_for_mul5_valid_pipe [SP_FPMULTIPLIER_MODULE_LATENCY-1:0];
+binary128_t s_single_m_for_mul5_aligned;
+logic       s_single_m_for_mul5_valid_aligned;
+
+// SINGLE_MODE needs the partition-m path delayed by one multiplier latency so it
+// arrives alongside mul2 at my_sp_fpmultiplier_5.
+always_ff @(posedge i_clk) begin : single_m_for_mul5_align
+  int i;
+  if (!i_rst_n) begin
+    s_single_m_for_mul5_pipe <= '{default:'0};
+    s_single_m_for_mul5_valid_pipe <= '{default:'0};
+  end
+  else begin
+    s_single_m_for_mul5_pipe[0] <= s_my_fixed128_partitionm_ts_exp;
+    s_single_m_for_mul5_valid_pipe[0] <= s_my_fixed128_partitionm_ts_o_valid;
+
+    for (i = 1; i < SP_FPMULTIPLIER_MODULE_LATENCY; i++) begin
+      s_single_m_for_mul5_pipe[i] <= s_single_m_for_mul5_pipe[i-1];
+      s_single_m_for_mul5_valid_pipe[i] <= s_single_m_for_mul5_valid_pipe[i-1];
+    end
+  end
+end
+
+assign s_single_m_for_mul5_aligned = s_single_m_for_mul5_pipe[SP_FPMULTIPLIER_MODULE_LATENCY-1];
+assign s_single_m_for_mul5_valid_aligned = s_single_m_for_mul5_valid_pipe[SP_FPMULTIPLIER_MODULE_LATENCY-1];
+
+sp_fpmultiplier #(
+  .INTMUL_LATENCY(SP_FPMULTIPLIER_INTMUL_LATENCY),
+  .SURROUNDING_LOGIC(SP_FPMULTIPLIER_SURROUNDING_LOGIC),
+  .MODULE_LATENCY(SP_FPMULTIPLIER_MODULE_LATENCY)
+) my_sp_fpmultiplier_5 (
+  .i_clk(i_clk),
+  .i_rst_n(i_rst_n),
+  .i_metadata(s_level2_metadata),
+  .o_metadata(unused_metadata_5/*not like it is useful anyway*/),
+  .i_in_anikin(s_my_sp_fpmultiplier_2_jedi),
+  .i_in_force(s_single_m_for_mul5_aligned),
+  .o_out_jedi(s_my_sp_fpmultiplier_5_jedi),
+  .i_valid128_anikin(s_my_sp_fpmultiplier_2_valid128_jedi),
+  .i_valid128_force(s_single_m_for_mul5_valid_aligned),
+  .i_valid64a_anikin('0),
+  .i_valid64a_force('0),
+  .i_valid64b_anikin('0),
+  .i_valid64b_force('0),
+  .i_valid32a_anikin('0),
+  .i_valid32a_force('0),
+  .i_valid32b_anikin('0),
+  .i_valid32b_force('0),
+  .i_valid32c_anikin('0),
+  .i_valid32c_force('0),
+  .i_valid32d_anikin('0),
+  .i_valid32d_force('0),
+  .o_valid128_jedi(s_my_sp_fpmultiplier_5_valid128_jedi),
+  .o_valid64a_jedi(unused_mul5_1),
+  .o_valid64b_jedi(unused_mul5_2),
+  .o_valid32a_jedi(unused_mul5_3),
+  .o_valid32b_jedi(unused_mul5_4),
+  .o_valid32c_jedi(unused_mul5_5),
+  .o_valid32d_jedi(unused_mul5_6),
+  .o_sanity_identifier(s_my_sp_fpmultiplier_5_identifier),
+  .o_error(s_my_sp_fpmultiplier_5_error),
+  .o_debug(s_my_sp_fpmultiplier_5_debug)
+);
+
+// fixed64_partitionm_ts produces its valid/data one registered stage later than the
+// shared fixed_partition_sp path reaches mul0/mul1, so the final TWO_SP m-alignment
+// only needs two multiplier latencies minus one extra register stage.
+localparam int TWO_SP_M_ALIGN_DEPTH = (2 * SP_FPMULTIPLIER_MODULE_LATENCY) - 1;
+binary64_t     s_64_par_m_lane_a_delay_pipe [TWO_SP_M_ALIGN_DEPTH-1:0];
+binary64_t     s_64_par_m_lane_b_delay_pipe [TWO_SP_M_ALIGN_DEPTH-1:0];
+logic          s_64_par_m_lane_a_delay_valid_pipe [TWO_SP_M_ALIGN_DEPTH-1:0];
+logic          s_64_par_m_lane_b_delay_valid_pipe [TWO_SP_M_ALIGN_DEPTH-1:0];
+binary64_t     s_64_par_m_lane_a_delay_aligned;
+binary64_t     s_64_par_m_lane_b_delay_aligned;
+logic         s_64_par_m_lane_a_delay_valid_aligned;
+logic         s_64_par_m_lane_b_delay_valid_aligned;
+always_ff @(posedge i_clk) begin : par64_m_align
+  int i;
+  if (!i_rst_n) begin
+    s_64_par_m_lane_a_delay_pipe        <= '{default:'0};
+    s_64_par_m_lane_b_delay_pipe        <= '{default:'0};
+    s_64_par_m_lane_a_delay_valid_pipe  <= '{default:'0};
+    s_64_par_m_lane_b_delay_valid_pipe  <= '{default:'0};
+  end
+  else begin
+    s_64_par_m_lane_a_delay_pipe[0]       <= s_my_fixed64_partitionm_ts_a_exp_f64a;
+    s_64_par_m_lane_b_delay_pipe[0]       <= s_my_fixed64_partitionm_ts_b_exp_f64b;
+    s_64_par_m_lane_a_delay_valid_pipe[0] <= s_my_fixed64_partitionm_ts_a_o_valid;
+    s_64_par_m_lane_b_delay_valid_pipe[0] <= s_my_fixed64_partitionm_ts_b_o_valid;
+    for (i = 1; i < TWO_SP_M_ALIGN_DEPTH; i++) begin
+      s_64_par_m_lane_a_delay_pipe[i]       <= s_64_par_m_lane_a_delay_pipe[i-1];
+      s_64_par_m_lane_b_delay_pipe[i]       <= s_64_par_m_lane_b_delay_pipe[i-1];
+      s_64_par_m_lane_a_delay_valid_pipe[i] <= s_64_par_m_lane_a_delay_valid_pipe[i-1];
+      s_64_par_m_lane_b_delay_valid_pipe[i] <= s_64_par_m_lane_b_delay_valid_pipe[i-1];
+    end
+  end
+end
+
+assign s_64_par_m_lane_a_delay_aligned        = s_64_par_m_lane_a_delay_pipe[TWO_SP_M_ALIGN_DEPTH-1];
+assign s_64_par_m_lane_b_delay_aligned        = s_64_par_m_lane_b_delay_pipe[TWO_SP_M_ALIGN_DEPTH-1];
+assign s_64_par_m_lane_a_delay_valid_aligned  = s_64_par_m_lane_a_delay_valid_pipe[TWO_SP_M_ALIGN_DEPTH-1];
+assign s_64_par_m_lane_b_delay_valid_aligned  = s_64_par_m_lane_b_delay_valid_pipe[TWO_SP_M_ALIGN_DEPTH-1];
+
+logic [127:0] s_mux_5;
+logic         s_mux_5_valid;
+always_comb begin : mux_5
+  case (`THESPMODE)
+    SINGLE_MODE: begin
+      s_mux_5       = s_my_sp_fpmultiplier_5_jedi;
+      s_mux_5_valid = s_my_sp_fpmultiplier_5_valid128_jedi;
+    end // SINGLE_MODE
+
+    TWO_SP_MODE: begin
+      s_mux_5       = {s_64_par_m_lane_a_delay_aligned, s_64_par_m_lane_b_delay_aligned};
+      s_mux_5_valid = s_64_par_m_lane_a_delay_valid_aligned &
+                      s_64_par_m_lane_b_delay_valid_aligned;
+    end // TWO_SP_MODE
+
+    default: begin
+      s_mux_5       = '0;
+      s_mux_5_valid = '0;
+    end
+  endcase
+end
+
 float_metadata_t unused_metadata_4;
 logic [127:0] s_my_sp_fpmultiplier_4_jedi;
 logic s_my_sp_fpmultiplier_4_valid128_jedi;
@@ -1105,14 +1262,14 @@ sp_fpmultiplier #(
   .i_metadata(s_level2_metadata),
   .o_metadata(unused_metadata_4/*not like it is useful anyway*/),
   .i_in_anikin(s_my_sp_fpmultiplier_3_jedi),
-  .i_in_force(s_mul2_for_mul4_aligned),
+  .i_in_force(s_mux_5),
   .o_out_jedi(s_my_sp_fpmultiplier_4_jedi),
   .i_valid128_anikin(s_my_sp_fpmultiplier_3_valid128_jedi),
-  .i_valid128_force(s_mul2_for_mul4_valid_aligned),
-  .i_valid64a_anikin('0),
-  .i_valid64a_force('0),
-  .i_valid64b_anikin('0),
-  .i_valid64b_force('0),
+  .i_valid128_force(s_mux_5_valid),
+  .i_valid64a_anikin(s_my_sp_fpmultiplier_3_valid64a_jedi),
+  .i_valid64a_force(s_64_par_m_lane_a_delay_valid_aligned),
+  .i_valid64b_anikin(s_my_sp_fpmultiplier_3_valid64b_jedi),
+  .i_valid64b_force(s_64_par_m_lane_b_delay_valid_aligned),
   .i_valid32a_anikin('0),
   .i_valid32a_force('0),
   .i_valid32b_anikin('0),
@@ -1122,8 +1279,8 @@ sp_fpmultiplier #(
   .i_valid32d_anikin('0),
   .i_valid32d_force('0),
   .o_valid128_jedi(s_my_sp_fpmultiplier_4_valid128_jedi),
-  .o_valid64a_jedi(unused_mul4_1),
-  .o_valid64b_jedi(unused_mul4_2),
+  .o_valid64a_jedi(s_my_sp_fpmultiplier_4_valid64a_jedi),
+  .o_valid64b_jedi(s_my_sp_fpmultiplier_4_valid64b_jedi),
   .o_valid32a_jedi(unused_mul4_3),
   .o_valid32b_jedi(unused_mul4_4),
   .o_valid32c_jedi(unused_mul4_5),
@@ -1134,10 +1291,41 @@ sp_fpmultiplier #(
 );
 
 // Finish line subnormal type processing
-`define SA (s_level2_metadata.float_type_a) // todo give this macro a better name
-`define SB (s_level2_metadata.float_type_b) // todo give this macro a better name
-`define SC (s_level2_metadata.float_type_c) // todo give this macro a better name
-`define SD (s_level2_metadata.float_type_d) // todo give this macro a better name
+`define LANEA_FLOATTYPE (s_level2_metadata.float_type_a)
+`define LANEB_FLOATTYPE (s_level2_metadata.float_type_b)
+`define LANEC_FLOATTYPE (s_level2_metadata.float_type_c)
+`define LANED_FLOATTYPE (s_level2_metadata.float_type_d)
+localparam int TWO_SP_OUTPUT_METADATA_DELAY = my_fixed_partition_sp_par_a.MODULE_LATENCY_64 +
+                                              (3 * my_sp_fpmultiplier_0.MODULE_LATENCY);
+float_metadata_t s_two_sp_output_metadata_pipe [TWO_SP_OUTPUT_METADATA_DELAY-1:0];
+logic            s_two_sp_output_metadata_valid_pipe [TWO_SP_OUTPUT_METADATA_DELAY-1:0];
+float_metadata_t s_two_sp_output_metadata;
+always_ff @(posedge i_clk) begin : two_sp_output_metadata_align
+  int i;
+  if (!i_rst_n) begin
+    s_two_sp_output_metadata_pipe <= '{default:'0};
+    s_two_sp_output_metadata_valid_pipe <= '{default:'0};
+    s_two_sp_output_metadata <= '0;
+  end
+  else begin
+    s_two_sp_output_metadata_pipe[0] <= (s_my_float_to_fixed_o_valid &&
+                                         s_my_float_to_fixed_metadata.sp_mode == TWO_SP_MODE) ?
+                                        s_my_float_to_fixed_metadata : '0;
+    s_two_sp_output_metadata_valid_pipe[0] <= s_my_float_to_fixed_o_valid &&
+                                              (s_my_float_to_fixed_metadata.sp_mode == TWO_SP_MODE);
+
+    for (i = 1; i < TWO_SP_OUTPUT_METADATA_DELAY; i++) begin
+      s_two_sp_output_metadata_pipe[i] <= s_two_sp_output_metadata_pipe[i-1];
+      s_two_sp_output_metadata_valid_pipe[i] <= s_two_sp_output_metadata_valid_pipe[i-1];
+    end
+
+    if (s_two_sp_output_metadata_valid_pipe[TWO_SP_OUTPUT_METADATA_DELAY-1]) begin
+      s_two_sp_output_metadata <= s_two_sp_output_metadata_pipe[TWO_SP_OUTPUT_METADATA_DELAY-1];
+    end
+  end
+end
+`define TWO_SP_LANEA_FLOATTYPE (s_two_sp_output_metadata.float_type_a)
+`define TWO_SP_LANEB_FLOATTYPE (s_two_sp_output_metadata.float_type_b)
 `define BINARY128_POSZERO   (128'h0000_0000_0000_0000_0000_0000_0000_0000)
 `define BINARY128_ONE       (128'h3FFF_0000_0000_0000_0000_0000_0000_0000)
 `define BINARY128_POSINF    (128'h7FFF_0000_0000_0000_0000_0000_0000_0000)
@@ -1152,55 +1340,55 @@ sp_fpmultiplier #(
 `define BINARY32_NAN_POS    (32'h7FC0_0001)
 logic [127:0] s_mul3_final_out;
 always_comb begin : finish_line_subnormal_type_processing_mul3
-  case (`S)
+  case (`THESPMODE)
     TWO_SP_MODE: begin
-      s_mul3_final_out[127:64] =  (`SA === ZERO)          ? `BINARY64_ONE     :
-                                  (`SA === POS_INF)       ? `BINARY64_POSINF  :
-                                  (`SA === NEG_INF)       ? `BINARY64_POSZERO :
-                                  (`SA === NAN)           ? `BINARY64_NAN_POS :
-                                  (`SA === POS_DENORMAL)  ? `BINARY64_ONE     :
-                                  (`SA === NEG_DENORMAL)  ? `BINARY64_ONE     :
+      s_mul3_final_out[127:64] =  (`LANEA_FLOATTYPE === ZERO)          ? `BINARY64_ONE     :
+                                  (`LANEA_FLOATTYPE === POS_INF)       ? `BINARY64_POSINF  :
+                                  (`LANEA_FLOATTYPE === NEG_INF)       ? `BINARY64_POSZERO :
+                                  (`LANEA_FLOATTYPE === NAN)           ? `BINARY64_NAN_POS :
+                                  (`LANEA_FLOATTYPE === POS_DENORMAL)  ? `BINARY64_ONE     :
+                                  (`LANEA_FLOATTYPE === NEG_DENORMAL)  ? `BINARY64_ONE     :
                                   s_my_sp_fpmultiplier_3_jedi[127:64];
-      s_mul3_final_out[63:0]   =  (`SB === ZERO)          ? `BINARY64_ONE     :
-                                  (`SB === POS_INF)       ? `BINARY64_POSINF  :
-                                  (`SB === NEG_INF)       ? `BINARY64_POSZERO :
-                                  (`SB === NAN)           ? `BINARY64_NAN_POS :
-                                  (`SB === POS_DENORMAL)  ? `BINARY64_ONE     :
-                                  (`SB === NEG_DENORMAL)  ? `BINARY64_ONE     :
+      s_mul3_final_out[63:0]   =  (`LANEB_FLOATTYPE === ZERO)          ? `BINARY64_ONE     :
+                                  (`LANEB_FLOATTYPE === POS_INF)       ? `BINARY64_POSINF  :
+                                  (`LANEB_FLOATTYPE === NEG_INF)       ? `BINARY64_POSZERO :
+                                  (`LANEB_FLOATTYPE === NAN)           ? `BINARY64_NAN_POS :
+                                  (`LANEB_FLOATTYPE === POS_DENORMAL)  ? `BINARY64_ONE     :
+                                  (`LANEB_FLOATTYPE === NEG_DENORMAL)  ? `BINARY64_ONE     :
                                   s_my_sp_fpmultiplier_3_jedi[63:0];
     end
 
     FOUR_SP_MODE: begin
-      s_mul3_final_out[127:96] =  (`SA === ZERO)          ? `BINARY32_ONE     :
-                                  (`SA === POS_INF)       ? `BINARY32_POSINF  :
-                                  (`SA === NEG_INF)       ? `BINARY32_POSZERO :
-                                  (`SA === NAN)           ? `BINARY32_NAN_POS :
-                                  (`SA === POS_DENORMAL)  ? `BINARY32_ONE     :
-                                  (`SA === NEG_DENORMAL)  ? `BINARY32_ONE     :
+      s_mul3_final_out[127:96] =  (`LANEA_FLOATTYPE === ZERO)          ? `BINARY32_ONE     :
+                                  (`LANEA_FLOATTYPE === POS_INF)       ? `BINARY32_POSINF  :
+                                  (`LANEA_FLOATTYPE === NEG_INF)       ? `BINARY32_POSZERO :
+                                  (`LANEA_FLOATTYPE === NAN)           ? `BINARY32_NAN_POS :
+                                  (`LANEA_FLOATTYPE === POS_DENORMAL)  ? `BINARY32_ONE     :
+                                  (`LANEA_FLOATTYPE === NEG_DENORMAL)  ? `BINARY32_ONE     :
                                   s_my_sp_fpmultiplier_3_jedi[127:96];
 
-      s_mul3_final_out[95:64] =   (`SB === ZERO)          ? `BINARY32_ONE     :
-                                  (`SB === POS_INF)       ? `BINARY32_POSINF  :
-                                  (`SB === NEG_INF)       ? `BINARY32_POSZERO :
-                                  (`SB === NAN)           ? `BINARY32_NAN_POS :
-                                  (`SB === POS_DENORMAL)  ? `BINARY32_ONE     :
-                                  (`SB === NEG_DENORMAL)  ? `BINARY32_ONE     :
+      s_mul3_final_out[95:64] =   (`LANEB_FLOATTYPE === ZERO)          ? `BINARY32_ONE     :
+                                  (`LANEB_FLOATTYPE === POS_INF)       ? `BINARY32_POSINF  :
+                                  (`LANEB_FLOATTYPE === NEG_INF)       ? `BINARY32_POSZERO :
+                                  (`LANEB_FLOATTYPE === NAN)           ? `BINARY32_NAN_POS :
+                                  (`LANEB_FLOATTYPE === POS_DENORMAL)  ? `BINARY32_ONE     :
+                                  (`LANEB_FLOATTYPE === NEG_DENORMAL)  ? `BINARY32_ONE     :
                                   s_my_sp_fpmultiplier_3_jedi[95:64];
 
-      s_mul3_final_out[63:32] =   (`SC === ZERO)          ? `BINARY32_ONE     :
-                                  (`SC === POS_INF)       ? `BINARY32_POSINF  :
-                                  (`SC === NEG_INF)       ? `BINARY32_POSZERO :
-                                  (`SC === NAN)           ? `BINARY32_NAN_POS :
-                                  (`SC === POS_DENORMAL)  ? `BINARY32_ONE     :
-                                  (`SC === NEG_DENORMAL)  ? `BINARY32_ONE     :
+      s_mul3_final_out[63:32] =   (`LANEC_FLOATTYPE === ZERO)          ? `BINARY32_ONE     :
+                                  (`LANEC_FLOATTYPE === POS_INF)       ? `BINARY32_POSINF  :
+                                  (`LANEC_FLOATTYPE === NEG_INF)       ? `BINARY32_POSZERO :
+                                  (`LANEC_FLOATTYPE === NAN)           ? `BINARY32_NAN_POS :
+                                  (`LANEC_FLOATTYPE === POS_DENORMAL)  ? `BINARY32_ONE     :
+                                  (`LANEC_FLOATTYPE === NEG_DENORMAL)  ? `BINARY32_ONE     :
                                   s_my_sp_fpmultiplier_3_jedi[63:32];
 
-      s_mul3_final_out[31:0] =    (`SD === ZERO)          ? `BINARY32_ONE     :
-                                  (`SD === POS_INF)       ? `BINARY32_POSINF  :
-                                  (`SD === NEG_INF)       ? `BINARY32_POSZERO :
-                                  (`SD === NAN)           ? `BINARY32_NAN_POS :
-                                  (`SD === POS_DENORMAL)  ? `BINARY32_ONE     :
-                                  (`SD === NEG_DENORMAL)  ? `BINARY32_ONE     :
+      s_mul3_final_out[31:0] =    (`LANED_FLOATTYPE === ZERO)          ? `BINARY32_ONE     :
+                                  (`LANED_FLOATTYPE === POS_INF)       ? `BINARY32_POSINF  :
+                                  (`LANED_FLOATTYPE === NEG_INF)       ? `BINARY32_POSZERO :
+                                  (`LANED_FLOATTYPE === NAN)           ? `BINARY32_NAN_POS :
+                                  (`LANED_FLOATTYPE === POS_DENORMAL)  ? `BINARY32_ONE     :
+                                  (`LANED_FLOATTYPE === NEG_DENORMAL)  ? `BINARY32_ONE     :
                                   s_my_sp_fpmultiplier_3_jedi[31:0];
     end
 
@@ -1212,14 +1400,31 @@ end
 
 logic [127:0] s_mul4_final_out;
 always_comb begin : finish_line_subnormal_type_processing_mul4
-  case (`S)
+  case (`THESPMODE)
+    TWO_SP_MODE: begin
+      s_mul4_final_out[127:64] =  (`TWO_SP_LANEA_FLOATTYPE === ZERO)          ? `BINARY64_ONE     :
+                                  (`TWO_SP_LANEA_FLOATTYPE === POS_INF)       ? `BINARY64_POSINF  :
+                                  (`TWO_SP_LANEA_FLOATTYPE === NEG_INF)       ? `BINARY64_POSZERO :
+                                  (`TWO_SP_LANEA_FLOATTYPE === NAN)           ? `BINARY64_NAN_POS :
+                                  (`TWO_SP_LANEA_FLOATTYPE === POS_DENORMAL)  ? `BINARY64_ONE     :
+                                  (`TWO_SP_LANEA_FLOATTYPE === NEG_DENORMAL)  ? `BINARY64_ONE     :
+                                  s_my_sp_fpmultiplier_4_jedi[127:64];
+      s_mul4_final_out[63:0]   =  (`TWO_SP_LANEB_FLOATTYPE === ZERO)          ? `BINARY64_ONE     :
+                                  (`TWO_SP_LANEB_FLOATTYPE === POS_INF)       ? `BINARY64_POSINF  :
+                                  (`TWO_SP_LANEB_FLOATTYPE === NEG_INF)       ? `BINARY64_POSZERO :
+                                  (`TWO_SP_LANEB_FLOATTYPE === NAN)           ? `BINARY64_NAN_POS :
+                                  (`TWO_SP_LANEB_FLOATTYPE === POS_DENORMAL)  ? `BINARY64_ONE     :
+                                  (`TWO_SP_LANEB_FLOATTYPE === NEG_DENORMAL)  ? `BINARY64_ONE     :
+                                  s_my_sp_fpmultiplier_4_jedi[63:0];
+    end
+  
     SINGLE_MODE: begin
-      s_mul4_final_out =  (`SA === ZERO)          ? `BINARY128_ONE      :
-                          (`SA === POS_INF)       ? `BINARY128_POSINF   :
-                          (`SA === NEG_INF)       ? `BINARY128_POSZERO  :
-                          (`SA === NAN)           ? `BINARY128_NAN_POS  :
-                          (`SA === POS_DENORMAL)  ? `BINARY128_ONE      :  // For now we treat denormal as zero, todo
-                          (`SA === NEG_DENORMAL)  ? `BINARY128_ONE      :  // For now we treat denormal as zero, todo
+      s_mul4_final_out =  (`LANEA_FLOATTYPE === ZERO)          ? `BINARY128_ONE      :
+                          (`LANEA_FLOATTYPE === POS_INF)       ? `BINARY128_POSINF   :
+                          (`LANEA_FLOATTYPE === NEG_INF)       ? `BINARY128_POSZERO  :
+                          (`LANEA_FLOATTYPE === NAN)           ? `BINARY128_NAN_POS  :
+                          (`LANEA_FLOATTYPE === POS_DENORMAL)  ? `BINARY128_ONE      :  // For now we treat denormal as zero, todo
+                          (`LANEA_FLOATTYPE === NEG_DENORMAL)  ? `BINARY128_ONE      :  // For now we treat denormal as zero, todo
                           s_my_sp_fpmultiplier_4_jedi;
     end
 
@@ -1232,15 +1437,15 @@ end
 //=====================================================================================
 // Final assignment
 //=====================================================================================
-assign o_exp_x              = `S === SINGLE_MODE  ?  s_mul4_final_out :
-                              `S === TWO_SP_MODE  ?  s_mul3_final_out :
-                              `S === FOUR_SP_MODE ?  s_mul3_final_out :
+assign o_exp_x              = `THESPMODE === SINGLE_MODE  ?  s_mul4_final_out :
+                              `THESPMODE === TWO_SP_MODE  ?  s_mul4_final_out :
+                              `THESPMODE === FOUR_SP_MODE ?  s_mul3_final_out :
                               '0;
 assign o_ready              = '1; //todo
-assign o_valid              = `S === SINGLE_MODE  ?  s_my_sp_fpmultiplier_4_valid128_jedi     :
-                              `S === TWO_SP_MODE  ?  s_my_sp_fpmultiplier_3_valid64a_jedi &
-                                                     s_my_sp_fpmultiplier_3_valid64b_jedi     :
-                              `S === FOUR_SP_MODE ?  s_my_sp_fpmultiplier_3_valid32a_jedi &
+assign o_valid              = `THESPMODE === SINGLE_MODE  ?  s_my_sp_fpmultiplier_4_valid128_jedi     :
+                              `THESPMODE === TWO_SP_MODE  ?  s_my_sp_fpmultiplier_4_valid64a_jedi &
+                                                     s_my_sp_fpmultiplier_4_valid64b_jedi     :
+                              `THESPMODE === FOUR_SP_MODE ?  s_my_sp_fpmultiplier_3_valid32a_jedi &
                                                      s_my_sp_fpmultiplier_3_valid32b_jedi &
                                                      s_my_sp_fpmultiplier_3_valid32c_jedi &
                                                      s_my_sp_fpmultiplier_3_valid32d_jedi     :
@@ -1252,9 +1457,9 @@ assign o_error              = s_my_float_to_fixed_error &
                               s_my_fixed_partition_sp_par_c_error &
                               s_my_fixed_partition_sp_par_d_error &
                               s_my_fixed_partition_sp_par_e_error &
-                              s_my_fixed128_partitionf_ts_error &
-                              s_my_fixed64_partitionf_ts_a_error &
-                              s_my_fixed64_partitionf_ts_b_error &
+                              s_my_fixed128_partitionm_ts_error &
+                              s_my_fixed64_partitionm_ts_a_error &
+                              s_my_fixed64_partitionm_ts_b_error &
                               s_my_sp_fpmultiplier_0_error &
                               s_my_sp_fpmultiplier_1_error &
                               s_my_sp_fpmultiplier_2_error &
@@ -1288,9 +1493,9 @@ assign ds_my_fixed_partition_sp_par_c_exp_32c = s_my_fixed_partition_sp_par_c_ex
 assign ds_my_fixed_partition_sp_par_c_exp_32d = s_my_fixed_partition_sp_par_c_exp_32d;
 assign ds_my_fixed_partition_sp_par_d_exp_a128 = s_my_fixed_partition_sp_par_d_exp_a128;
 assign ds_my_fixed_partition_sp_par_e_exp_a128 = s_my_fixed_partition_sp_par_e_exp_a128;
-assign ds_my_fixed128_partitionf_ts_exp_f128 = s_my_fixed128_partitionf_ts_exp_f128;
-assign ds_my_fixed64_partitionf_ts_a_exp_f64a = s_my_fixed64_partitionf_ts_a_exp_f64a;
-assign ds_my_fixed64_partitionf_ts_b_exp_f64b = s_my_fixed64_partitionf_ts_b_exp_f64b;
+assign ds_my_fixed128_partitionm_ts_exp = s_my_fixed128_partitionm_ts_exp;
+assign ds_my_fixed64_partitionm_ts_a_exp_f64a = s_my_fixed64_partitionm_ts_a_exp_f64a;
+assign ds_my_fixed64_partitionm_ts_b_exp_f64b = s_my_fixed64_partitionm_ts_b_exp_f64b;
 assign ds_mux_0 = s_mux_0;
 assign ds_mux_1 = s_mux_1;
 assign ds_mux_2 = s_mux_2;
@@ -1299,8 +1504,10 @@ assign ds_my_sp_fpmultiplier_0_jedi = s_my_sp_fpmultiplier_0_jedi;
 assign ds_my_sp_fpmultiplier_1_jedi = s_my_sp_fpmultiplier_1_jedi;
 assign ds_my_sp_fpmultiplier_2_jedi = s_my_sp_fpmultiplier_2_jedi;
 assign ds_mux_4 = s_mux_4;
+assign ds_mux_5 = s_mux_5;
 assign ds_my_sp_fpmultiplier_3_jedi = s_my_sp_fpmultiplier_3_jedi;
 assign ds_my_sp_fpmultiplier_4_jedi = s_my_sp_fpmultiplier_4_jedi;
+assign ds_my_sp_fpmultiplier_5_jedi = s_my_sp_fpmultiplier_5_jedi;
 assign ds_mul3_final_out = s_mul3_final_out;
 assign ds_mul4_final_out = s_mul4_final_out;
 assign ds_my_float_to_fixed_metadata = s_my_float_to_fixed_metadata;
@@ -1329,9 +1536,9 @@ assign ds_my_fixed_partition_sp_par_c_o_valid32c = s_my_fixed_partition_sp_par_c
 assign ds_my_fixed_partition_sp_par_c_o_valid32d = s_my_fixed_partition_sp_par_c_o_valid32d;
 assign ds_my_fixed_partition_sp_par_d_o_valid128 = s_my_fixed_partition_sp_par_d_o_valid128;
 assign ds_my_fixed_partition_sp_par_e_o_valid128 = s_my_fixed_partition_sp_par_e_o_valid128;
-assign ds_my_fixed128_partitionf_ts_o_valid = s_my_fixed128_partitionf_ts_o_valid;
-assign ds_my_fixed64_partitionf_ts_a_o_valid = s_my_fixed64_partitionf_ts_a_o_valid;
-assign ds_my_fixed64_partitionf_ts_b_o_valid = s_my_fixed64_partitionf_ts_b_o_valid;
+assign ds_my_fixed128_partitionm_ts_o_valid = s_my_fixed128_partitionm_ts_o_valid;
+assign ds_my_fixed64_partitionm_ts_a_o_valid = s_my_fixed64_partitionm_ts_a_o_valid;
+assign ds_my_fixed64_partitionm_ts_b_o_valid = s_my_fixed64_partitionm_ts_b_o_valid;
 assign ds_my_sp_fpmultiplier_0_valid128_jedi = s_my_sp_fpmultiplier_0_valid128_jedi;
 assign ds_my_sp_fpmultiplier_0_valid64a_jedi = s_my_sp_fpmultiplier_0_valid64a_jedi;
 assign ds_my_sp_fpmultiplier_0_valid64b_jedi = s_my_sp_fpmultiplier_0_valid64b_jedi;
