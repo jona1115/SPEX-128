@@ -1,27 +1,27 @@
 # After cloning
 1. This repo uses submodules, run this after cloning: `git submodule update --init --recursive`
 2. Install required tools, see section: [Installation of Tools](https://github.com/jona1115/SPEX-128?tab=readme-ov-file#installation-of-tools)
-3. ⚠️ Source the setup file, everytime, before doing anything: `source setup.sh`
+3. ⚠️ Source the setup file, every time, before doing anything: `source setup.sh`
 
 # Shortcuts
 Below are easy, copy-pastable commands to do stuff. They, in theory, should "just work".
-1. Run svunit test using Modelsim/Questasim:
+1. Run the SVUnit test using ModelSim/QuestaSim:
     ```sh
     cd tests/svunit/float_to_fixed      # You can go into any test folders, important!
     ../svunit_run.sh -s modelsim --ci   # Run -h for more info, --ci flag is more cleaner imo
                                         # By default, the script will use the current test folder
-                                        # name as the DUT module, so folder name has to be the
+                                        # name as the DUT module, so the folder name has to be the
                                         # same as module name!
     # Advanced:
-    # To compile additional module, use --also flag, you can "--also" more than once
+    # To compile additional modules, use --also flag, you can "--also" more than once
     cd tests/svunit/float_to_fixed      # Again, where you run the script is very important
     ../svunit_run.sh -s modelsim --also fixed128_partitionm_ts --also xxx
     ```
-2. Run svunit test (simulator questasim or modelsim) and open questa/modelsim waveform viewer:
+2. Run the SVUnit test (QuestaSim or ModelSim) and open the Questa/ModelSim waveform viewer:
     ```sh
     cd tests/svunit/float_to_fixed      # You can go into any test folders
     ../sim_and_gen_waveform.sh          # Run -h flag for more info
-    # You could also generate and open modelsim in oneline:
+    # You could also generate and open modelsim in one line:
     ../sim_and_gen_waveform.sh && vsim -view ./waves/svunit.wlf &
     # And even include the do file cli:
     ../sim_and_gen_waveform.sh && vsim -view ./waves/svunit.wlf -do "./dos/wave.do" &
@@ -34,30 +34,35 @@ Below are easy, copy-pastable commands to do stuff. They, in theory, should "jus
 # Creating/running SVUnit Tests
 Note: If you are just running tests, you don't need to care about this.
 ```sh
-# To create a test when you dont have the UUT (Unit Under Test) code yet
+# To create a test when you don't have the UUT (Unit Under Test) code yet
 create_unit_test.pl -module_name name_of_module_you_wanna_test
 
 # To create a test when you have the UUT code
 create_unit_test.pl name_of_module_you_wanna_test.sv
 
-# Generate filelist (for verilator to pick up which files to compile)
+# Generate filelist (for Verilator to pick up which files to compile)
 ./gen_filelist.sh # Run this in project root
 
-# Run the test using modelsim simulator
+# Run the test using the modelsim simulator
 # cd to tests/svunit/float_to_fixed
-runSVUnit -s modelsim -f path/to/filelist.f # If you want to run svunit manually
+runSVUnit -s modelsim -f path/to/filelist.f # If you want to run SVUnit manually
 # --- OR ---
 ./svunit_run.sh -s <simulator> # This script is just cool, use it instead of manually 
-                               # for <simulator>, use questasim, or modelsim, DO NOT use 
+                               # for <simulator>, use QuestaSim, or ModelSim, DO NOT use 
                                # verilator (at least v5.040), it doesn't work
 ```
 ### Test Driven Development (TDD)
-I want to dedicate this section to describing my testing/developing philosophy. I use TDD, it works, and in my opinion, creates a positive feedback loop of self-documenting, and self-testing code. Not to mention easier to CI. So when you are reading the code, maybe take time to also look over the test. This is because the code is derived by the tests, not the other way around.
+I want to dedicate this section to describing my testing/developing philosophy. I use TDD, it works, and in my opinion, creates a positive feedback loop of self-documenting and self-testing code. Not to mention easier to CI. So when you are reading the code, maybe take time to look over the test as well. This is because the code is derived by the tests, not the other way around.
 
-# Vivado
-I use Vivado to synthesize for FPGA.
+# Synthesis and Implementation
+I use Vivado 2023.1 to synthesize for Xilinx UltraScale+ xczu19eg-ffve1924-3-e.
 Common Vivado issues:
 - Vivado tends to throw an error saying level 2's lookup tables are too big, run this command to make Vivado happy: `set_param synth.elaboration.rodinMoreOptions "rt::set_parameter var_size_limit 1048576"`
+
+I use Cadence Genus v22.16-s078_1 for ASIC synthesis and Innovus v22.10 for place-and-route. I used the [TSMC 65nm node](https://www.tsmc.com/english/dedicatedFoundry/technology/logic/l_65nm). The final chip has a core area of about $1.5mm^2$ and looks like this:
+
+<img width="500" height="306" alt="image" src="https://github.com/user-attachments/assets/347e331e-9afb-422d-aa5a-89393a54dd6d" />
+
 
 # Installation of Tools
 ## SVUnit (no need to install, see ["After cloning"](https://github.com/jona1115/SPEX-128?tab=readme-ov-file#after-cloning))
@@ -79,13 +84,13 @@ git clone git@github.com:verilator/verilator.git
 cd verilator
 git checkout v5.040 # this tag is tried and true
 
-# Commands below are from the verilator installation docs
+# Commands below are from the Verilator installation docs
 # Prerequisites:
 sudo apt-get install git help2man perl python3 make autoconf g++ flex bison ccache
 sudo apt-get install libgoogle-perftools-dev numactl perl-doc
-sudo apt-get install libfl2  # Ubuntu only (ignore if gives error)
-sudo apt-get install libfl-dev  # Ubuntu only (ignore if gives error)
-sudo apt-get install zlibc zlib1g zlib1g-dev  # Ubuntu only (ignore if gives error)
+sudo apt-get install libfl2  # Ubuntu only (ignore if it gives an error)
+sudo apt-get install libfl-dev  # Ubuntu only (ignore if it gives an error)
+sudo apt-get install zlibc zlib1g zlib1g-dev  # Ubuntu only (ignore if it gives an error)
 
 unsetenv VERILATOR_ROOT
 autoconf         # Create ./configure script
