@@ -59,9 +59,10 @@ I use Vivado 2023.1 to synthesize for Xilinx UltraScale+ xczu19eg-ffve1924-3-e.
 Common Vivado issues:
 - Vivado tends to throw an error saying level 2's lookup tables are too big, run this command to make Vivado happy: `set_param synth.elaboration.rodinMoreOptions "rt::set_parameter var_size_limit 1048576"`
 
-I use Cadence Genus v22.16-s078_1 for ASIC synthesis and Innovus v22.10 for place-and-route. I used the [TSMC 65nm node](https://www.tsmc.com/english/dedicatedFoundry/technology/logic/l_65nm). The final chip has a core area of about $1.5mm^2$ and looks like this:
+I use Cadence Genus v22.16-s078_1 for ASIC synthesis and Innovus v22.10 for place-and-route. I used the [TSMC 65nm node](https://www.tsmc.com/english/dedicatedFoundry/technology/logic/l_65nm). The final chip has a core area of about $1.8mm^2$ and looks like this:
 
-<img width="500" height="306" alt="image" src="https://github.com/user-attachments/assets/347e331e-9afb-422d-aa5a-89393a54dd6d" />
+<img width="600" alt="Screenshot 2026-04-30 at 5 46 47 PM" src="https://github.com/user-attachments/assets/bfa2f824-f2e9-4192-a832-9ae94ce3ee79" />
+
 
 
 # Installation of Tools
