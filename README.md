@@ -54,6 +54,8 @@ runSVUnit -s modelsim -f path/to/filelist.f # If you want to run SVUnit manually
                                # for <simulator>, use QuestaSim, or ModelSim, DO NOT use 
                                # verilator (at least v5.040), it doesn't work
 ```
+(but honestly, it is faster to just copy and paste existing test code and modify them...)
+
 ### Test Driven Development (TDD)
 I want to dedicate this section to describing my testing/developing philosophy. I use TDD, it works, and in my opinion, creates a positive feedback loop of self-documenting and self-testing code. Not to mention easier to CI. So when you are reading the code, maybe take time to look over the test as well. This is because the code is derived by the tests, not the other way around.
 
