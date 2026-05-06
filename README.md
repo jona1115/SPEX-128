@@ -1,3 +1,6 @@
+[![DOI](https://zenodo.org/badge/1081601132.svg)](https://doi.org/10.5281/zenodo.20058685)
+
+
 # After cloning
 1. This repo uses submodules, run this after cloning: `git submodule update --init --recursive`
 2. Install required tools, see section: [Installation of Tools](https://github.com/jona1115/SPEX-128?tab=readme-ov-file#installation-of-tools)
