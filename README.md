@@ -112,3 +112,6 @@ Follow [this link](https://gist.github.com/Razer6/cafc172b5cffae189b4ecda06cf6c6
 1. 99% of bash scripts are AI-generated. I don't bash like that, and I don't care (at least at this time) about learning to bash.
 2. Some code is debugged with the help of AI, but only a super minority of the code is written by AI.
 3. Code written by AI is cited in comments, using language like: "ChatGPT generated", "vibe coded", etc.
+
+# Credit
+This repo is part of a published work (still in review), come back later for the BibTeX!
