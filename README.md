@@ -1,6 +1,3 @@
-[![DOI](https://zenodo.org/badge/1081601132.svg)](https://doi.org/10.5281/zenodo.20058685)
-
-
 # After cloning
 1. This repo uses submodules, run this after cloning: `git submodule update --init --recursive`
 2. Install required tools, see section: [Installation of Tools](https://github.com/jona1115/SPEX-128?tab=readme-ov-file#installation-of-tools)
@@ -114,4 +111,7 @@ Follow [this link](https://gist.github.com/Razer6/cafc172b5cffae189b4ecda06cf6c6
 3. Code written by AI is cited in comments, using language like: "ChatGPT generated", "vibe coded", etc.
 
 # Credit
+
+[![DOI](https://zenodo.org/badge/1081601132.svg)](https://doi.org/10.5281/zenodo.20058685)
+
 This repo is part of a published work (still in review), come back later for the BibTeX!
